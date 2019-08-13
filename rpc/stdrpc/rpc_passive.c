@@ -17,47 +17,32 @@
 #include "ltg_rpc.h"
 
 static int __pasv_sd__ = -1;
+static int __pasv_port__ = -1;
 
 #define NETINFO_TIMEOUT (10 * 60)
 
 int rpc_getinfo(char *infobuf, uint32_t *infobuflen)
 {
         int ret;
-        uint32_t port = ng.port;
+        uint32_t port = __pasv_port__;
         ltg_net_info_t *info;
-        char _buf[MAX_BUF_LEN];
         
         if (ltgconf.daemon && port == (uint32_t)-1) {
                 ret = EAGAIN;
                 GOTO(err_ret, ret);
         }
 
-        while (ltgconf.daemon && ng.local_nid.id == 0) {
+        while (ltgconf.daemon && ltg_global.local_nid.id == 0) {
                 DWARN("wait nid inited\n");
                 sleep(1);
         }
         
-        if (ng.info_local[0] == '\0' ||  gettime() - ng.info_time > NETINFO_TIMEOUT) {
-                ret = net_getinfo(infobuf, infobuflen, ng.port);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
-
-                memcpy(ng.info_local, infobuf, *infobuflen);
-        } else {
-                memcpy(_buf, ng.info_local, sizeof(ng.info_local));
-                info = (ltg_net_info_t *)_buf;
-
-                if (net_isnull(&info->id) && !net_isnull(net_getnid()))
-                        info->id = *net_getnid();
-
-                memcpy(infobuf, info, info->len);
-                *infobuflen = info->len;
-
-                LTG_ASSERT(strcmp(info->name, "none"));
-        }
+        ret = net_getinfo(infobuf, infobuflen, __pasv_port__);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
 
         info = (ltg_net_info_t *)infobuf;
-        DBUG("port %d, %u\n", ntohs(info->info[0].port), ng.port);
+        DBUG("port %d, %u\n", ntohs(info->info[0].port), __pasv_port__);
 
         return 0;
 err_ret:
@@ -234,8 +219,7 @@ int rpc_passive(uint32_t port)
         }
 
         __pasv_sd__ = sd;
-
-        ng.port = port;
+        __pasv_port__ = port;
 
         DINFO("listen %u, nid %u\n", port, net_getnid()->id);
 

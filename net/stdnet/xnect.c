@@ -12,6 +12,8 @@
 #include "ltg_rpc.h"
 #include "ltg_core.h"
 
+extern net_proto_t net_proto;
+
 ssize_t _send(int sockfd, const void *buf, size_t len, int flags)
 {
         int ret;
@@ -76,7 +78,7 @@ static int __sock_connect(net_handle_t *nh, const sock_info_t *info,
 
         LTG_ASSERT(timeout < 30);
 
-        ret = sdevent_connect(info, nh, &ng.op, 0, timeout);
+        ret = sdevent_connect(info, nh, &net_proto, 0, timeout);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
         }

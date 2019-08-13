@@ -20,7 +20,7 @@
 
 struct ltgconf_t ltgconf;
 ltg_netconf_t ltg_netconf;
-
+ltg_global_t ltg_global;
 int ltg_nofile_max = 0;
 
 extern analysis_t *default_analysis;
@@ -45,8 +45,17 @@ err_ret:
         return ret;
 }
 
-int ltg_conf_init(const char *name, uint64_t coremask, int rpc_timeout,
-                  int polling_timeout, int rdma,
+static void __ltg_global_init()
+{
+        memset(&ltg_global, 0x0, sizeof(ltg_global_t));
+
+        ltg_global.master_magic = 1;
+        UNIMPLEMENTED(__NULL__);
+}
+
+
+int ltg_conf_init(const char *sysname, const char *srv_name, const char *workdir,
+                  uint64_t coremask, int rpc_timeout, int polling_timeout, int rdma,
                   int performance_analysis, int use_huge,
                   int backtrace, int daemon, int coreflag, int tls)
 {
@@ -57,6 +66,7 @@ int ltg_conf_init(const char *name, uint64_t coremask, int rpc_timeout,
                 use_huge = 0;
         }
 #endif
+        __ltg_global_init();
         
         ret = __get_nofailmax(&ltg_nofile_max);
         if (ret)
@@ -64,8 +74,15 @@ int ltg_conf_init(const char *name, uint64_t coremask, int rpc_timeout,
 
         memset(&ltgconf, 0x0, sizeof(ltgconf));
 
-        strcpy(ltgconf.system_name, name);
-        strcpy(ltgconf.workdir, "/tmp/ltg");
+        strcpy(ltgconf.system_name, sysname);
+        strcpy(ltgconf.service_name, srv_name);
+        if (workdir) {
+                strcpy(ltgconf.workdir, workdir);
+        } else {
+                LTG_ASSERT(!daemon);
+                ltgconf.workdir[0] = '\0';
+        }
+
         ltgconf.maxcore = 1;
         ltgconf.rdma = rdma;
         ltgconf.rpc_timeout = rpc_timeout;
@@ -172,7 +189,7 @@ static int __ltg_init_stage2(const char *name)
         if (ret)
                 GOTO(err_ret, ret);
         
-        ret = rpc_init(NULL, name, -1, NULL);
+        ret = rpc_init(name);
         if (ret)
                 GOTO(err_ret, ret);
 

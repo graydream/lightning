@@ -19,6 +19,7 @@
 #include "utils/nodeid.h"
 #include "utils/fnotify.h"
 #include "utils/etcd.h"
+#include "utils/ltg_global.h"
 
 #include "ltg_mem.h"
 

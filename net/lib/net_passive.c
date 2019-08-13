@@ -55,7 +55,7 @@ int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port)
 
                 info->info_count = count;
                         
-                LTG_ASSERT(strlen(ng.name));
+                LTG_ASSERT(strlen(ltgconf.service_name));
                 if (ltgconf.daemon) {
                         LTG_ASSERT(count);
                 }
@@ -67,7 +67,7 @@ int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port)
                 
         info->id = *net_getnid();
         info->magic = LTG_MSG_MAGIC;
-        info->uptime = ng.uptime;
+        info->uptime = gettime();
 
         ret = gethostname(hostname, MAX_NAME_LEN);
         if (unlikely(ret < 0)) {
@@ -75,7 +75,7 @@ int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port)
                 GOTO(err_ret, ret);
         }
                 
-        snprintf(info->name, MAX_NAME_LEN, "%s:%s", hostname, ng.name);
+        snprintf(info->name, MAX_NAME_LEN, "%s:%s", hostname, ltgconf.service_name);
 
         DINFO("info.name %s\n", info->name);
 
@@ -91,8 +91,6 @@ int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port)
                 ret = EAGAIN;
                 GOTO(err_ret, ret);
         }
-
-        ng.info_time = gettime();
 
         DBUG("local nid "NID_FORMAT" info_count %u port %u\n",
              NID_ARG(&info->id), info->info_count, port);

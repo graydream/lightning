@@ -7,7 +7,7 @@
 #include "ltg_utils.h"
 
 /* rpc_lib.c */
-int rpc_init(net_proto_t *op, const char *name, int seq, const char *path);
+int rpc_init(const char *name);
 int rpc_destroy(void);
 
 /* rpc_passive.c */
