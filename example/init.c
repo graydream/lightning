@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
                 exit(1);
         }
 
-        ret = core_init(0, 0, 0);
+        ret = core_init(0, 0);
         if (ret)
                 GOTO(err_ret, ret);
         

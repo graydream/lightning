@@ -103,14 +103,13 @@ typedef struct __core {
         uint64_t stat_nr2;
         struct timeval  stat_t1;
         struct timeval  stat_t2;
-        int tls_count;
-        void *tls[0];
+        void *tls[TLS_MAX];
 } core_t;
 
 //typedef void (*poller_t)(core_t *core, void *ctx);
 #define CORE_FLAG_POLLING 0x0020
 
-int core_init(uint64_t mask, int tls, int flag);
+int core_init(uint64_t mask, int flag);
 int core_usedby(uint64_t mask, int idx);
 int core_used(int idx);
 uint64_t core_mask();

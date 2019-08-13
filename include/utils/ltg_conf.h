@@ -66,7 +66,6 @@ struct ltgconf_t {
         int rpc_timeout;
         int backtrace;
         int coreflag;
-        int tls;
 
         int polling_timeout;
         uint64_t coremask;
@@ -88,9 +87,5 @@ extern ltg_netconf_t ltg_netconf;
 
 #define SOCKID_NORMAL 10
 #define SOCKID_CORENET 20
-
-#define ENABLE_HUGEPAGE 1
-
-#define ENABLE_ANALYSIS 0
 
 #endif

@@ -62,11 +62,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  ***************************************************************************/
-#include "utils/macros.h"
 
 #ifndef _RINGBUF_H_
 #define _RINGBUF_H_
 
+#include "utils/macros.h"
 /**
  * @file
  * RTE Ring

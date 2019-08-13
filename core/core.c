@@ -325,18 +325,18 @@ static void * IO_FUNC __core_worker(void *_args)
 
 #define POLLING_LOCK 1
 
-static int __core_create(core_t **_core, const char *name, int hash, int tls_max, int flag)
+static int __core_create(core_t **_core, const char *name, int hash, int flag)
 {
         int ret, lock;
         core_t *core;
 
         UNIMPLEMENTED(__WARN__);//slab_stream_alloc
 
-        ret = ltg_malloc((void **)&core, sizeof(*core) + sizeof(void *) * tls_max);
+        ret = ltg_malloc((void **)&core, sizeof(*core));
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        memset(core, 0x0, sizeof(*core) + sizeof(void *) * tls_max);
+        memset(core, 0x0, sizeof(*core));
 
 #if POLLING_LOCK
         lock = ltgconf.daemon && (flag & CORE_FLAG_POLLING);
@@ -356,7 +356,6 @@ static int __core_create(core_t **_core, const char *name, int hash, int tls_max
         core->sche_idx = -1;
         core->hash = hash;
         core->flag = flag;
-        core->tls_count = tls_max;
         core->keepalive = gettime();
         core->last_scan = gettime();
 
@@ -383,7 +382,7 @@ err_ret:
         return ret;
 }
 
-int core_init(uint64_t mask, int tls, int flag)
+int core_init(uint64_t mask, int flag)
 {
         int ret;
         core_t *core = NULL;
@@ -426,7 +425,7 @@ int core_init(uint64_t mask, int tls, int flag)
                 if (!core_used(i))
                         continue;
 
-                ret = __core_create(&core, "core", i, tls, flag);
+                ret = __core_create(&core, "core", i, flag);
                 if (unlikely(ret))
                         UNIMPLEMENTED(__DUMP__);
 
@@ -508,7 +507,7 @@ void core_tls_set(int type, void *ptr)
         if (core == NULL)
                 LTG_ASSERT(0);
 
-        LTG_ASSERT(type <= core->tls_count);
+        LTG_ASSERT(type <= TLS_MAX);
 
         core->tls[type] = ptr;
 }

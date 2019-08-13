@@ -16,7 +16,7 @@
 #include "ltg_utils.h"
 #include "ltg_core.h"
 #include "utils/nodeid.h"
-#include "ltg.h"
+#include "ltg_lib.h"
 
 struct ltgconf_t ltgconf;
 ltg_netconf_t ltg_netconf;
@@ -48,7 +48,7 @@ err_ret:
 int ltg_conf_init(const char *name, uint64_t coremask, int rpc_timeout,
                   int polling_timeout, int rdma,
                   int performance_analysis, int use_huge,
-                  int backtrace, int daemon, int coreflag, int tls)
+                  int backtrace, int daemon, int coreflag)
 {
         int ret;
 
@@ -79,7 +79,6 @@ int ltg_conf_init(const char *name, uint64_t coremask, int rpc_timeout,
         ltgconf.use_huge = use_huge;
         ltgconf.daemon = daemon;
         ltgconf.coreflag = coreflag;
-        ltgconf.tls = tls;
 
         
         ltgconf.coremask = coremask;
@@ -144,7 +143,7 @@ static int __ltg_init_stage1(const char *name)
                         GOTO(err_ret, ret);            
         }
         
-        ret = core_init(ltgconf.coremask, ltgconf.tls, ltgconf.coreflag);
+        ret = core_init(ltgconf.coremask, ltgconf.coreflag);
         if (ret)
                 GOTO(err_ret, ret);
 

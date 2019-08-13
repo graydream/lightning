@@ -209,6 +209,7 @@ inline seg_t *seg_ext_create(ltgbuf_t *buf, void *data, uint32_t size,
 /*seg hugepage object*/
 
 #if ENABLE_HUGEPAGE
+
 static void __seg_huge_free(seg_t *seg)
 {
         LTG_ASSERT(seg->huge.head);

@@ -2,7 +2,7 @@
 #define __LTG_UTILS_H__
 
 #include "3part.h"
-
+#include "ltg_def.h"
 #include "utils/ltg_conf.h"
 #include "utils/dbg_proto.h"
 #include "utils/ltg_dbg.h"
@@ -19,7 +19,6 @@
 #include "utils/nodeid.h"
 #include "utils/fnotify.h"
 #include "utils/etcd.h"
-
 #include "ltg_mem.h"
 
 #endif

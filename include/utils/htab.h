@@ -1,19 +1,17 @@
-#ifndef __HASH_TABLE_H__
-#define __HASH_TABLE_H__
-
-/* shamlessly stolean from http://www.sf.net/projects/sandiaportals/ */
+#ifndef __HTAB_H__
+#define __HTAB_H__
 
 #include <stdint.h>
 
 #include "ltg_conf.h"
 
-typedef struct hashtable_entry {
+typedef struct htab_entry {
         uint32_t key;
         void *value;
-        struct hashtable_entry *next;
+        struct htab_entry *next;
 } *htab_entry_t;
 
-typedef struct hashtable {
+typedef struct htab {
         char name[MAX_NAME_LEN];
         unsigned int size;
         unsigned int num_of_entries;

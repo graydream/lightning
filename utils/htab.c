@@ -19,7 +19,7 @@ uint32_t key_from_str(char *s)
         return hash_str(s);
 }
 
-static htab_entry_t *hashtable_lookup(htab_t t, void *comparator, uint32_t k,
+static htab_entry_t *htab_lookup(htab_t t, void *comparator, uint32_t k,
                                      int (*compare_func)(const void *, const void *),
                                      int *success)
 {
@@ -62,7 +62,7 @@ int htab_resize(htab_t t, int size)
         for (i = 0; i < old_size; i++)
                 for (j = old_entries[i]; j; j = n) {
                         n = j->next;
-                        position = hashtable_lookup(t, 0, j->key, 0, &success);
+                        position = htab_lookup(t, 0, j->key, 0, &success);
                         j->next = *position;
                         *position = j;
                 }
@@ -94,7 +94,7 @@ htab_t htab_create(int (*compare_func)(const void *, const void *),
         void *ptr;
         htab_t new;
 
-        len = sizeof(struct hashtable);
+        len = sizeof(struct htab);
 
         ret = ltg_malloc(&ptr, len);
         if (ret)
@@ -133,7 +133,7 @@ void *htab_find(htab_t t, void *comparator)
         int success;
         htab_entry_t *entry;
 
-        entry = hashtable_lookup(t, comparator, (*t->key_func)(comparator),
+        entry = htab_lookup(t, comparator, (*t->key_func)(comparator),
                                  t->compare_func, &success);
 
         if (success)
@@ -160,7 +160,7 @@ int htab_insert(htab_t t, void *value, void *comparator, int overwrite)
 
         k = (*t->key_func)(comparator);
 
-        position = hashtable_lookup(t, comparator, k, t->compare_func, &success);
+        position = htab_lookup(t, comparator, k, t->compare_func, &success);
 
         if (success) {
                 if (!overwrite) {
@@ -170,7 +170,7 @@ int htab_insert(htab_t t, void *value, void *comparator, int overwrite)
 
                 entry = *position;
         } else {
-                len = sizeof(struct hashtable_entry);
+                len = sizeof(struct htab_entry);
 
                 ret = ltg_malloc(&ptr, len);
                 if (ret)
@@ -206,7 +206,7 @@ int htab_remove(htab_t t, void *comparator, void **value)
         int success;
         htab_entry_t *position, entry;
 
-        position = hashtable_lookup(t, comparator, (*t->key_func)(comparator),
+        position = htab_lookup(t, comparator, (*t->key_func)(comparator),
                                 t->compare_func, &success);
 
         if (!success)
