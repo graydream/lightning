@@ -10,28 +10,21 @@
 #include "ltg_net.h"
 #include "ltg_rpc.h"
 
-net_global_t ng;
-
 extern int ltg_nofile_max;
+net_proto_t net_proto;
 
-int net_init(net_proto_t *op)
+int net_init()
 {
         int ret;
-	//int ksubversion;
 
-        //LTG_ASSERT(NET_HANDLE_LEN >= sizeof(net_handle_t));
-
-        if (op)
-                ng.op = *op;
-
-        ng.op.head_len = sizeof(ltg_net_head_t);
-        ng.op.writer = ng.op.writer ? ng.op.writer
+        net_proto.head_len = sizeof(ltg_net_head_t);
+        net_proto.writer = net_proto.writer ? net_proto.writer
                 : net_events_handle_write;
-        ng.op.reader = ng.op.reader ? ng.op.reader
+        net_proto.reader = net_proto.reader ? net_proto.reader
                 : net_events_handle_read;
-        ng.op.pack_len = ng.op.pack_len ? ng.op.pack_len
+        net_proto.pack_len = net_proto.pack_len ? net_proto.pack_len
                 : rpc_pack_len;
-        ng.op.pack_handler = ng.op.pack_handler ? ng.op.pack_handler
+        net_proto.pack_handler = net_proto.pack_handler ? net_proto.pack_handler
                 : rpc_pack_handler;
 
         ret = netable_init(ltgconf.daemon);

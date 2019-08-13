@@ -84,9 +84,9 @@ static int IO_FUNC __corerpc_request_handler(corerpc_ctx_t *ctx, const ltg_net_h
         ltgbuf_init(&rpc_request->buf, 0);
         ltgbuf_merge(&rpc_request->buf, buf);
 
-        if (unlikely(head->master_magic != ng.master_magic)) {
+        if (unlikely(head->master_magic != ltg_global.master_magic)) {
                 DERROR("got stale msg, master_magic %x:%x\n",
-                       head->master_magic, ng.master_magic);
+                       head->master_magic, ltg_global.master_magic);
                 handler = __request_stale;
         } else {
                 handler = prog->handler ? prog->handler : __request_nosys;

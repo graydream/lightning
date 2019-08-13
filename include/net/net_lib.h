@@ -91,7 +91,7 @@ static inline int ltg_pack_err(ltgbuf_t *pack)
 }
 
 /* net_lib.c */
-int net_init(net_proto_t *);
+int net_init();
 int net_destroy(void);
 
 /* net_passive.c */

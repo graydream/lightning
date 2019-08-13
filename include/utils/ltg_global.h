@@ -1,31 +1,17 @@
-#ifndef __NET_GLOBAL_H__
-#define __NET_GLOBAL_H__
+#ifndef __LTG_GLOBAL_H__
+#define __LTG_GLOBAL_H__
 
-#include <uuid/uuid.h>
-#include "sdevent.h"
-#include "ltg_utils.h"
+#include "ltg_id.h"
 
 #define LNET_PORT_NULL ((uint32_t)-1)
 
 typedef struct {
-        int inited;
-        net_proto_t op;
         nid_t local_nid;
-
-        char name[MAX_PATH_LEN];
-        char home[MAX_PATH_LEN];
-        uint32_t seq; /*local seq*/
-        uint32_t port;
-        uint32_t uptime;
-        time_t info_time;
-        char info_local[MAX_INFO_LEN];
-        int daemon;
+        //uint32_t port;
         uint32_t master_magic;
-} net_global_t;
+} ltg_global_t;
 
-/*init in net_lib.c*/
-
-extern net_global_t ng;
+extern ltg_global_t ltg_global;
 
 static inline int net_isnull(const nid_t *nid)
 {
@@ -40,12 +26,12 @@ static inline int net_isnull(const nid_t *nid)
 
 static inline const nid_t *net_getnid()
 {
-        return &ng.local_nid;
+        return &ltg_global.local_nid;
 }
 
 static inline void net_setnid(const nid_t *nid)
 {
-        ng.local_nid = *nid;
+        ltg_global.local_nid = *nid;
 }
 
 static inline int net_islocal(const nid_t *nid)
@@ -73,6 +59,6 @@ static inline int is_local(const nid_t *nid)
 
 static inline uint64_t net_getnodeid(void)
 {
-        return ng.local_nid.id;
+        return ltg_global.local_nid.id;
 }
 #endif

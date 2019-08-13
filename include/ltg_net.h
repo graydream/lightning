@@ -3,7 +3,6 @@
 
 #include "net/net_lib.h"
 #include "net/network.h"
-#include "net/net_global.h"
 #include "net/sock_buffer.h"
 #include "net/sdevent.h"
 #include "net/sock_tcp.h"

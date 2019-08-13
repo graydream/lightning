@@ -272,7 +272,7 @@ static int __core_worker_init(core_t *core)
         if (ret)
                 GOTO(err_ret, ret);
 
-        if (ng.daemon) {
+        if (ltgconf.daemon) {
                 ret = mem_ring_private_init(core->hash);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);

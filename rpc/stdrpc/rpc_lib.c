@@ -8,32 +8,15 @@
 
 int rpc_inited = 0;
 
-int rpc_init(net_proto_t *op, const char *name, int seq, const char *path)
+int rpc_init(const char *name)
 {
         int ret;
 
-        (void) path;
+        (void) name;
         
-#if 0
-        if (!op->request_handler) {
-                DERROR("you need a request handler, halt\n");
-
-                LTG_ASSERT(0);
-        }
-#endif
-        ret = net_init(op);
+        ret = net_init();
         if (ret)
                 GOTO(err_ret, ret);
-
-        if (strlen(name) >= MAX_NAME_LEN) {
-                ret = EINVAL;
-                GOTO(err_ret, ret);
-        }
-
-        if (seq != -1)
-                ng.seq = seq;
-
-        strcpy(ng.name, name);
 
         ret = net_rpc_init();
         if (ret)

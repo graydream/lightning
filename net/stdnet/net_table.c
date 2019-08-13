@@ -800,17 +800,13 @@ int netable_rname1(const nid_t *nid, char *name)
                 GOTO(err_ret, ret);
         }
         
-        if (net_islocal(nid)) {
-                strcpy(name, ng.name);
-        } else {
-                ent = __netable_nidfind(nid);
+        ent = __netable_nidfind(nid);
                 
-                if (ent && strlen(ent->lname)) {
-                        strcpy(name, ent->lname);
-                } else {
-                        ret = ENONET;
-                        GOTO(err_ret, ret);
-                }
+        if (ent && strlen(ent->lname)) {
+                strcpy(name, ent->lname);
+        } else {
+                ret = ENONET;
+                GOTO(err_ret, ret);
         }
 
         DBUG("%u %s\n", nid->id, name);

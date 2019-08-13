@@ -57,6 +57,7 @@ typedef struct {
 /* global configure */
 struct ltgconf_t {
         char system_name[MAXSIZE];
+        char service_name[MAXSIZE];
         char workdir[MAXSIZE];
         int coredump;
         int restart;
