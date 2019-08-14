@@ -10,12 +10,12 @@
 
 rpc_table_t *corerpc_self()
 {
-        return core_tls_get(VARIABLE_CORERPC);
+        return core_tls_get(NULL, VARIABLE_CORERPC);
 }
 
 rpc_table_t *corerpc_self_byctx(void *ctx)
 {
-        return core_tls_getfrom1(ctx, VARIABLE_CORERPC);
+        return core_tls_get(ctx, VARIABLE_CORERPC);
 }
 
 static int __corerpc_init__(const char *name, core_t *core, rpc_table_t **_rpc_table)
@@ -43,7 +43,7 @@ void corerpc_scan(void *ctx)
         if (likely(__rpc_table_private__)) {
 #if 1
                 rpc_table_scan(__rpc_table_private__, _min(ltgconf.rpc_timeout, 10), 1);
-                sche_run(core_tls_getfrom1(ctx, VARIABLE_SCHEDULE));
+                sche_run(core_tls_get(ctx, VARIABLE_SCHEDULE));
 #else
                 rpc_table_scan(__rpc_table_private__, _min(ltgconf.rpc_timeout, 10), 0);
 #endif

@@ -42,12 +42,12 @@ typedef corenet_ring_ltgbuf_t corenet_node_t;
 
 static void IO_FUNC *__corenet_get_byctx(void *ctx)
 {
-        return core_tls_getfrom1(ctx, VARIABLE_CORENET_RING);
+        return core_tls_get(ctx, VARIABLE_CORENET_RING);
 }
 
 static void IO_FUNC *__corenet_get()
 {
-        return core_tls_get(VARIABLE_CORENET_RING);
+        return core_tls_get(NULL, VARIABLE_CORENET_RING);
 }
 
 int corenet_ring_init(int max, corenet_ring_t **_corenet)

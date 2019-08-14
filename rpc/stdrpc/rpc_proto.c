@@ -7,7 +7,7 @@
 #include "ltg_utils.h"
 #include "ltg_core.h"
 
-static net_prog_t  net_prog[MSG_MAX];
+static net_prog_t  net_prog[LTG_MSG_MAX];
 
 STATIC void __request_nosys(void *arg)
 {

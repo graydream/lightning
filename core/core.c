@@ -33,7 +33,7 @@ int core_request_va1(int hash, int priority, const char *name,
 
 core_t *core_self()
 {
-        //return core_tls_get(VARIABLE_CORE);
+        //return core_tls_get(NULL, VARIABLE_CORE);
         return __core__;
 }
 
@@ -146,7 +146,6 @@ void IO_FUNC core_worker_run(core_t *core)
 {
         struct list_head *pos;
         routine_t *routine;
-        void *ctx = NULL;
 
         core->stat_nr2++;
 
@@ -158,7 +157,7 @@ void IO_FUNC core_worker_run(core_t *core)
 
         list_for_each(pos, &core->poller_list) {
                 routine = (void *)pos;
-                routine->func(core, ctx, routine->ctx);
+                routine->func(core, core, routine->ctx);
 
                 //sche_run(core->sche);
         }
@@ -167,7 +166,7 @@ void IO_FUNC core_worker_run(core_t *core)
 
         list_for_each(pos, &core->routine_list) {
                 routine = (void *)pos;
-                routine->func(core, ctx, routine->ctx);
+                routine->func(core, core, routine->ctx);
 
                 //sche_run(core->sche);
         }
@@ -179,7 +178,7 @@ void IO_FUNC core_worker_run(core_t *core)
 
                 list_for_each(pos, &core->scan_list) {
                         routine = (void *)pos;
-                        routine->func(core, ctx, routine->ctx);
+                        routine->func(core, core, routine->ctx);
                 }
 
 
@@ -190,11 +189,11 @@ void IO_FUNC core_worker_run(core_t *core)
                 core_stat(core);
         }
 
-        gettime_refresh(ctx);
-        timer_expire(ctx);
+        gettime_refresh(core);
+        timer_expire(core);
 
 #if ENABLE_ANALYSIS
-        analysis_merge(ctx);
+        analysis_merge(core);
 #endif
 
 #if SCHE_ANALYSIS
@@ -507,7 +506,7 @@ void core_tls_set(int type, void *ptr)
         if (core == NULL)
                 LTG_ASSERT(0);
 
-        LTG_ASSERT(type <= TLS_MAX);
+        LTG_ASSERT(type <= LTG_TLS_MAX);
 
         core->tls[type] = ptr;
 }
@@ -867,30 +866,19 @@ int core_request(int coreid, int group, const char *name, func_va_t exec, ...)
         return core_request_va1(coreid, group, name, exec, ap);
 }
 
-void * IO_FUNC core_tls_getfrom(void *_core, int type)
+void * IO_FUNC core_tls_get(void *_core, int type)
 {
-        core_t *core = _core;
+        core_t *core = core_self();
+
+        if (_core) {
+                LTG_ASSERT(_core == core);
+        }
 
         if (unlikely(core == NULL || core->tls[type] == NULL))
                 return NULL;
 
         return core->tls[type];
 }
-
-void * IO_FUNC core_tls_get(int type)
-{
-        core_t *core = core_self();
-
-        return core_tls_getfrom(core, type);
-}
-
-void * IO_FUNC core_tls_getfrom1(void *core, int type)
-{
-        (void) core;
-
-        return core_tls_get(type);
-}
-
 
 void coremask_trans(coremask_t *coremask, uint64_t mask)
 {

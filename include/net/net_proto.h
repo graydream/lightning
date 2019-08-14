@@ -29,7 +29,6 @@ typedef enum {
         MSG_RINGLOCK,
         MSG_RANGE,
         MSG_MDS,
-        MSG_MAX,
 } net_progtype_t;
 
 typedef struct {

@@ -53,7 +53,7 @@ typedef corenet_rdma_node_t corenet_node_t;
 
 static void *__corenet_get()
 {
-        return core_tls_get(VARIABLE_CORENET_RDMA);
+        return core_tls_get(NULL, VARIABLE_CORENET_RDMA);
 }
 
 static void __corenet_rdma_checklist_add(corenet_rdma_t *corenet, corenet_node_t *node)
@@ -1256,7 +1256,7 @@ static int __corenet_rdma_resolve_route(struct rdma_cm_id *cm_id, core_t *core, 
         ctx->sockid = *sockid;
         ctx->sockid.reply = corerpc_reply_rdma;
         cm_id->context = rdma_handler;
-        rdma_handler->private_mem = core_tls_getfrom(core, VARIABLE_HUGEPAGE);
+        rdma_handler->private_mem = core_tls_get(core, VARIABLE_HUGEPAGE);
 
         ret = __corenet_rdma_create_qp(core, cm_id, rdma_handler);
         if (ret)
@@ -1647,7 +1647,7 @@ void corenet_rdma_connect_request(struct rdma_cm_event *ev, void *_core)
 
         cm_id->context = (void *)rdma_handler;
         ctx->sockid.rdma_handler = (void *)rdma_handler;
-        rdma_handler->private_mem = core_tls_getfrom(core, VARIABLE_HUGEPAGE);
+        rdma_handler->private_mem = core_tls_get(core, VARIABLE_HUGEPAGE);
 
         ret = __corenet_rdma_create_qp(core, cm_id, rdma_handler);
         if (unlikely(ret))

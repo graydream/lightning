@@ -52,7 +52,7 @@ err_ret:
 
 void IO_FUNC *slab_static_alloc(size_t size)
 {
-        slab_t *slab = core_tls_get(VARIABLE_SLAB_STATIC);
+        slab_t *slab = core_tls_get(NULL, VARIABLE_SLAB_STATIC);
 
         if (unlikely(slab == NULL)) {
                 slab = __slab_public__;
@@ -63,7 +63,7 @@ void IO_FUNC *slab_static_alloc(size_t size)
 
 void IO_FUNC slab_static_free(void *ptr)
 {
-        slab_t *slab = core_tls_get(VARIABLE_SLAB_STATIC);
+        slab_t *slab = core_tls_get(NULL, VARIABLE_SLAB_STATIC);
 
         if (unlikely(slab == NULL)) {
                 slab = __slab_public__;

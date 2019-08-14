@@ -28,12 +28,12 @@ typedef struct {
 
 static  corenet_maping_t *__corenet_maping_get__()
 {
-        return core_tls_get(VARIABLE_MAPING);
+        return core_tls_get(NULL, VARIABLE_MAPING);
 }
 
 static corenet_maping_t IO_FUNC *__corenet_maping_get_byctx(void *core)
 {
-        return core_tls_getfrom1(core, VARIABLE_MAPING);
+        return core_tls_get(core, VARIABLE_MAPING);
 }
 
 int corenet_maping_loading(const nid_t *nid)

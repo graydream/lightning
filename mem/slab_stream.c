@@ -69,7 +69,7 @@ err_ret:
 
 void IO_FUNC *slab_stream_alloc(size_t size)
 {
-        slab_t *slab = core_tls_get(VARIABLE_SLAB_STREAM);
+        slab_t *slab = core_tls_get(NULL, VARIABLE_SLAB_STREAM);
 
         if (unlikely(slab == NULL)) {
                 slab = __slab_public__;
@@ -80,7 +80,7 @@ void IO_FUNC *slab_stream_alloc(size_t size)
 
 void IO_FUNC slab_stream_free(void *ptr)
 {
-        slab_t *slab = core_tls_get(VARIABLE_SLAB_STREAM);
+        slab_t *slab = core_tls_get(NULL, VARIABLE_SLAB_STREAM);
 
         if (unlikely(slab == NULL)) {
                 slab = __slab_public__;

@@ -103,7 +103,7 @@ typedef struct __core {
         uint64_t stat_nr2;
         struct timeval  stat_t1;
         struct timeval  stat_t2;
-        void *tls[TLS_MAX];
+        void *tls[LTG_TLS_MAX];
 } core_t;
 
 //typedef void (*poller_t)(core_t *core, void *ctx);
@@ -121,9 +121,7 @@ core_t *core_self();
 int core_request(int coreid, int group, const char *name, func_va_t exec, ...);
 int core_ring_wait(int hash, int priority, const char *name, func_va_t exec, ...);
 void core_tls_set(int type, void *ptr);
-void *core_tls_get(int type);
-void *core_tls_getfrom(void *core, int type);
-void *core_tls_getfrom1(void *core, int type);
+void *core_tls_get(void *core, int type);
 int core_islocal(const coreid_t *coreid);
 int core_getid(coreid_t *coreid);
 int core_init_modules(const char *name, func_va_t exec, ...);

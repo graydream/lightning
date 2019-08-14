@@ -319,7 +319,7 @@ int timer_insert(const char *name, void *ctx, func_t func, suseconds_t usec)
         group_t *group;
         ytimer_t *timer;
 
-        timer = core_tls_get(VARIABLE_TIMER);
+        timer = core_tls_get(NULL, VARIABLE_TIMER);
         if (likely(timer)) {
                 DBUG("timer insert %s %ju\n", name, usec);
                 LTG_ASSERT(timer->thread == sche_getid());
@@ -366,7 +366,7 @@ static void __timer_expire_task(void *arg)
 void IO_FUNC timer_expire(void *ctx)
 {
         ytimer_t *timer;
-        timer = core_tls_getfrom1(ctx, VARIABLE_TIMER);
+        timer = core_tls_get(ctx, VARIABLE_TIMER);
 
         if (unlikely(timer == NULL))
                 return;

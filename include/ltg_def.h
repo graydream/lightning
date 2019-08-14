@@ -1,7 +1,9 @@
 #ifndef __LTG_DEF_H__
 #define __LTG_DEF_H__
 
-#define TLS_MAX 256
+#define LTG_TLS_MAX 256
+
+#define LTG_MSG_MAX 512
 
 #define ENABLE_HUGEPAGE 1
 

@@ -16,7 +16,7 @@ typedef struct {
 
 
 
-static net_prog_t net_prog[MSG_MAX];
+static net_prog_t net_prog[LTG_MSG_MAX];
 
 static void __request_nosys(void *arg)
 {
