@@ -47,7 +47,7 @@ int corenet_rdma_connect(uint32_t addr, uint32_t port, sockid_t *sockid)
 
 #if 1
         ret = sche_thread_solo(SCHE_THREAD_MISC, _random(), FALSE, "rdma_connect", -1, __rdma_connect_request,
-                             addr, port, core, sockid);
+                               addr, port, core, sockid);
 #else
         ret = corenet_rdma_connect_by_channel(addr, port, core, sockid);
 #endif
