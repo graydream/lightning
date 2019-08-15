@@ -28,12 +28,12 @@ typedef struct {
 
 static  corenet_maping_t *__corenet_maping_get__()
 {
-        return __core_tls_get(NULL, VARIABLE_MAPING);
+        return core_tls_get(NULL, VARIABLE_MAPING);
 }
 
 static corenet_maping_t IO_FUNC *__corenet_maping_get_byctx(void *core)
 {
-        return __core_tls_get(core, VARIABLE_MAPING);
+        return core_tls_get(core, VARIABLE_MAPING);
 }
 
 int corenet_maping_loading(const nid_t *nid)
@@ -456,7 +456,7 @@ static int __corenet_maping_init__(corenet_maping_t **_maping)
                 entry->nid = nid;
         }
 
-        __core_tls_set(VARIABLE_MAPING, maping);
+        core_tls_set(VARIABLE_MAPING, maping);
         if (_maping)
                 *_maping = maping;
 

@@ -513,7 +513,7 @@ static int __tcp_sock_getaddr(uint32_t network, uint32_t mask, uint32_t *_addr)
                 DBUG("ifname %s, %s\n", ifcreq->ifr_name, _inet_ntoa(addr));
                 //DBUG("got sock info %s %u %s\n", _inet_ntoa(addr), i, ifcreq->ifr_name);
                 if ((addr & mask) == (network & mask)) {
-                        DINFO("ifname %s, %s\n", ifcreq->ifr_name, _inet_ntoa(addr));
+                        DBUG("ifname %s, %s\n", ifcreq->ifr_name, _inet_ntoa(addr));
                         //DINFO("got sock info %u & %u  %u & %u\n", addr, mask, network, mask);
                         done = 1;
                         break;

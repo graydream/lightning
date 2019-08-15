@@ -78,7 +78,7 @@ int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port)
                 
         snprintf(info->name, MAX_NAME_LEN, "%s:%s", hostname, ltgconf.service_name);
 
-        DINFO("info.name %s\n", info->name);
+        DBUG("info.name %s\n", info->name);
 
         if (port != LNET_PORT_NULL)
                 LTG_ASSERT(info->info_count);

@@ -3,7 +3,7 @@
 
 #define LTG_TLS_MAX 256
 
-#define LTG_MSG_MAX 512
+#define LTG_MSG_MAX 256
 
 #define ENABLE_HUGEPAGE 1
 

@@ -11,7 +11,7 @@
 #include "cpuset.h"
 
 typedef enum {
-        VARIABLE_CORE,
+        VARIABLE_CORE = LTG_TLS_MAX,
         VARIABLE_MAPING,
         VARIABLE_SLAB_STATIC,
         VARIABLE_SLAB_STREAM,
@@ -24,7 +24,6 @@ typedef enum {
         VARIABLE_TIMER,
         VARIABLE_GETTIME,
         VARIABLE_ANALYSIS,
-        VARIABLE_KEEP,
 } variable_type_t;
 
 typedef int (*core_exec)(void *ctx, void *buf, int *count);
@@ -34,6 +33,7 @@ typedef int (*core_func)();
 typedef void (*core_exit)();
 
 #define CORE_MAX 64
+#define LTG_TLS_MAX_KEEP (LTG_TLS_MAX * 2)
 
 typedef struct {
         struct list_head hook;
@@ -103,7 +103,7 @@ typedef struct __core {
         uint64_t stat_nr2;
         struct timeval  stat_t1;
         struct timeval  stat_t2;
-        void *tls[LTG_TLS_MAX];
+        void *tls[LTG_TLS_MAX_KEEP];
 } core_t;
 
 //typedef void (*poller_t)(core_t *core, void *ctx);
@@ -120,8 +120,6 @@ core_t *core_self();
 
 int core_request(int coreid, int group, const char *name, func_va_t exec, ...);
 int core_ring_wait(int hash, int priority, const char *name, func_va_t exec, ...);
-void __core_tls_set(int type, void *ptr);
-void *__core_tls_get(void *core, int type);
 void core_tls_set(int type, void *ptr);
 void *core_tls_get(void *core, int type);
 

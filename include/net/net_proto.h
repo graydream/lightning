@@ -19,20 +19,8 @@ typedef int (*net_event_read_handler)(void *sock, void *ctx);
 #define net_request_handler func_t
 
 typedef enum {
-        MSG_NULL, //XXX:fix this type
-        MSG_HEARTBEAT,
-        MSG_KEEP,
-
-#if 0
-        MSG_LOOKUP,
-        MSG_PING,
-        MSG_MDP,
-        MSG_REPLICA,
-        MSG_LEASE,
-        MSG_RINGLOCK,
-        MSG_RANGE,
-        MSG_MDS,
-#endif
+        MSG_KEEP = LTG_MSG_MAX, //XXX:fix this type
+        MSG_NET,
 } net_progtype_t;
 
 typedef struct {
@@ -42,7 +30,7 @@ typedef struct {
 
 typedef struct {
         uint32_t head_len; //length of proto head, not suitable for http
-        net_pack_len      pack_len;          /*return the length of a pack */
+        net_pack_len pack_len;          /*return the length of a pack */
         net_event_read_handler reader;
         net_event_write_handler writer;
         net_pack_handler  pack_handler;

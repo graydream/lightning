@@ -7,7 +7,9 @@
 #include "ltg_utils.h"
 #include "ltg_core.h"
 
-static net_prog_t  net_prog[LTG_MSG_MAX];
+#define LTG_MSG_MAX_KEEP (LTG_MSG_MAX * 2)
+
+static net_prog_t  __stdnet_prog__[LTG_MSG_MAX_KEEP];
 
 STATIC void __request_nosys(void *arg)
 {
@@ -102,8 +104,8 @@ STATIC int __rpc_request_handler(const nid_t *nid, const sockid_t *sockid,
               head->msgid.figerprint);
 
         msgid = &head->msgid;
-        LTG_ASSERT(head->prog < LTG_MSG_MAX);
-        prog = &net_prog[head->prog];
+        LTG_ASSERT(head->prog < LTG_MSG_MAX_KEEP);
+        prog = &__stdnet_prog__[head->prog];
 
 #ifdef HAVE_STATIC_ASSERT
         static_assert(sizeof(*rpc_request)  < sizeof(mem_cache128_t), "rpc_request_t");
@@ -198,25 +200,18 @@ int rpc_pack_handler(const nid_t *nid, const sockid_t *sockid, ltgbuf_t *buf)
         return 0;
 }
 
-void __rpc_request_register(int type, net_request_handler handler, void *context)
+void rpc_request_register(int type, net_request_handler handler, void *context)
 {
         net_prog_t *prog;
 
-        LTG_ASSERT(type < LTG_MSG_MAX);
-        prog = &net_prog[type];
+        DINFO("set %d %p\n", type, handler);
+        
+        LTG_ASSERT(type < LTG_MSG_MAX_KEEP);
+        prog = &__stdnet_prog__[type];
 
         LTG_ASSERT(prog->handler == NULL);
         LTG_ASSERT(prog->context == NULL);
 
         prog->handler = handler;
         prog->context = context;
-}
-
-void rpc_request_register(int type, net_request_handler handler, void *context)
-{
-#if 0
-        __rpc_request_register(type + MSG_KEEP, handler, context);
-#else
-        __rpc_request_register(type, handler, context);
-#endif
 }

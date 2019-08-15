@@ -13,7 +13,6 @@ int rpc_destroy(void);
 /* rpc_passive.c */
 int rpc_passive(uint32_t port);
 int rpc_start();
-void __rpc_request_register(int type, net_request_handler handler, void *context);
 void rpc_request_register(int type, net_request_handler handler, void *context);
 void stdrpc_reply_tcp(void *ctx, void *arg);
 

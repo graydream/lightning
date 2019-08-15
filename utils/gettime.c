@@ -31,7 +31,7 @@ typedef struct {
 
 void IO_FUNC gettime_refresh(void *ctx)
 {
-        gettime_t *gettime = __core_tls_get(ctx, VARIABLE_GETTIME);
+        gettime_t *gettime = core_tls_get(ctx, VARIABLE_GETTIME);
 
         LTG_ASSERT(gettime);
         gettime->cycle++;
@@ -57,7 +57,7 @@ int IO_FUNC _gettimeofday(struct timeval *tv, struct timezone *tz)
 {
         (void) tz;
         
-        gettime_t *gettime = __core_tls_get(NULL, VARIABLE_GETTIME);
+        gettime_t *gettime = core_tls_get(NULL, VARIABLE_GETTIME);
 
         if (likely(gettime && (ltgconf.polling_timeout == 0 || ltgconf.rdma))) {
                 *tv = gettime->tv;
@@ -80,7 +80,7 @@ int gettime_private_init()
         memset(gettime, 0x0, sizeof(*gettime));
         gettimeofday(&gettime->tv, NULL);
 
-        __core_tls_set(VARIABLE_GETTIME, gettime);
+        core_tls_set(VARIABLE_GETTIME, gettime);
 
         return 0;
 err_ret:

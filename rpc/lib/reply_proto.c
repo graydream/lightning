@@ -21,7 +21,7 @@ void stdrpc_reply_init_prep(const msgid_t *msgid, ltgbuf_t *buf, ltgbuf_t *data,
         net_rep->magic = LTG_MSG_MAGIC;
         net_rep->len = sizeof(ltg_net_head_t);
         net_rep->type = LTG_MSG_REP;
-        net_rep->prog = MSG_NULL;
+        net_rep->prog = 0;
         net_rep->msgid = *msgid;
         net_rep->crcode = 0;
         net_rep->blocks = 0;
@@ -57,7 +57,7 @@ void stdrpc_reply_error_prep(const msgid_t *msgid, ltgbuf_t *buf, int _error)
         net_rep->magic = LTG_MSG_MAGIC;
         net_rep->len = sizeof(ltg_net_head_t) + len;
         net_rep->type = LTG_MSG_REP;
-        net_rep->prog = MSG_NULL;
+        net_rep->prog = 0;
         net_rep->msgid = *msgid;
         net_rep->crcode = 0;
         net_rep->blocks = 0;
@@ -90,7 +90,7 @@ void stdrpc_reply_error(const sockid_t *sockid, const msgid_t *msgid, int _error
         net_rep->magic = LTG_MSG_MAGIC;
         net_rep->len = sizeof(ltg_net_head_t) + len;
         net_rep->type = LTG_MSG_REP;
-        net_rep->prog = MSG_NULL;
+        net_rep->prog = 0;
         net_rep->msgid = *msgid;
         net_rep->crcode = 0;
         net_rep->blocks = 0;

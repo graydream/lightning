@@ -14,7 +14,9 @@ typedef struct {
         uint64_t latency;
 } rpc_ctx_t;
 
-static net_prog_t net_prog[LTG_MSG_MAX];
+#define LTG_MSG_MAX_KEEP (LTG_MSG_MAX * 2)
+
+static net_prog_t __corenet_prog__[LTG_MSG_MAX_KEEP];
 
 static void __request_nosys(void *arg)
 {
@@ -66,8 +68,8 @@ static int IO_FUNC __corerpc_request_handler(corerpc_ctx_t *ctx, const ltg_net_h
               head->msgid.figerprint);
 
         msgid = &head->msgid;
-        LTG_ASSERT(head->prog < LTG_MSG_MAX);
-        prog = &net_prog[head->prog];
+        LTG_ASSERT(head->prog < LTG_MSG_MAX_KEEP);
+        prog = &__corenet_prog__[head->prog];
 
         rpc_request = slab_stream_alloc(sizeof(*rpc_request));
         if (!rpc_request) {
@@ -297,27 +299,18 @@ int corerpc_recv(void *_ctx, void *buf, int *_count)
         return 0;
 }
 
-void __corerpc_register(int type, net_request_handler handler, void *context)
+void corerpc_register(int type, net_request_handler handler, void *context)
 {
         net_prog_t *prog;
 
-        LTG_ASSERT(type < LTG_MSG_MAX);
-        prog = &net_prog[type];
+        LTG_ASSERT(type < LTG_MSG_MAX_KEEP);
+        prog = &__corenet_prog__[type];
 
         LTG_ASSERT(prog->handler == NULL);
         LTG_ASSERT(prog->context == NULL);
         
         prog->handler = handler;
         prog->context = context;
-}
-
-void corerpc_register(int type, net_request_handler handler, void *context)
-{
-#if 0
-        __corerpc_register(type + MSG_KEEP, handler, context);
-#else
-        __corerpc_register(type, handler, context);
-#endif
 }
 
 
