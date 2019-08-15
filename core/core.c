@@ -33,7 +33,7 @@ int core_request_va1(int hash, int priority, const char *name,
 
 core_t *core_self()
 {
-        //return core_tls_get(NULL, VARIABLE_CORE);
+        //return __core_tls_get(NULL, VARIABLE_CORE);
         return __core__;
 }
 
@@ -217,7 +217,7 @@ static int __core_worker_init(core_t *core)
         snprintf(name, sizeof(name), "%s[%u]", core->name, core->hash);
 
         __core__ = core;
-        core_tls_set(VARIABLE_CORE, core);
+        __core_tls_set(VARIABLE_CORE, core);
 
         int nodeid = -1;
         if (core->main_core) {
@@ -235,7 +235,7 @@ static int __core_worker_init(core_t *core)
 
         if (ltgconf.daemon) {
                 void *hugepage = hugepage_private_init(core->hash, nodeid);
-                core_tls_set(VARIABLE_HUGEPAGE, hugepage);
+                __core_tls_set(VARIABLE_HUGEPAGE, hugepage);
         }
 
         core->interrupt_eventfd = -1;
@@ -247,7 +247,7 @@ static int __core_worker_init(core_t *core)
                 GOTO(err_ret, ret);
         }
 
-        core_tls_set(VARIABLE_SCHEDULE, core->sche);
+        __core_tls_set(VARIABLE_SCHEDULE, core->sche);
 
         DINFO("%s[%u] sche[%d] inited\n", core->name, core->hash, core->sche_idx);
 
@@ -497,18 +497,6 @@ core_t *core_get(int hash)
 {
         LTG_ASSERT(core_used(hash));
         return __core_array__[hash];
-}
-
-void core_tls_set(int type, void *ptr)
-{
-        core_t *core = core_self();
-
-        if (core == NULL)
-                LTG_ASSERT(0);
-
-        LTG_ASSERT(type <= LTG_TLS_MAX);
-
-        core->tls[type] = ptr;
 }
 
 void core_iterator(func1_t func, const void *opaque)
@@ -866,7 +854,7 @@ int core_request(int coreid, int group, const char *name, func_va_t exec, ...)
         return core_request_va1(coreid, group, name, exec, ap);
 }
 
-void * IO_FUNC core_tls_get(void *_core, int type)
+void * IO_FUNC __core_tls_get(void *_core, int type)
 {
         core_t *core = core_self();
 
@@ -874,10 +862,34 @@ void * IO_FUNC core_tls_get(void *_core, int type)
                 LTG_ASSERT(_core == core);
         }
 
+        LTG_ASSERT(type <= LTG_TLS_MAX);
+
         if (unlikely(core == NULL || core->tls[type] == NULL))
                 return NULL;
 
         return core->tls[type];
+}
+
+void __core_tls_set(int type, void *ptr)
+{
+        core_t *core = core_self();
+
+        if (core == NULL)
+                LTG_ASSERT(0);
+
+        LTG_ASSERT(type <= LTG_TLS_MAX);
+        LTG_ASSERT(core->tls[type] == NULL);
+        core->tls[type] = ptr;
+}
+
+void core_tls_set(int type, void *ptr)
+{
+        return __core_tls_set(type + VARIABLE_KEEP, ptr); 
+}
+
+void * IO_FUNC core_tls_get(void *_core, int type)
+{
+        return __core_tls_get(_core, type + VARIABLE_KEEP);
 }
 
 void coremask_trans(coremask_t *coremask, uint64_t mask)

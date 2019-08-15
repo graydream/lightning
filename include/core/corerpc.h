@@ -54,7 +54,7 @@ typedef struct corerpc_op {
         msgid_t msgid;
 } corerpc_op_t;
 
-// rpc table
+void __corerpc_register(int type, net_request_handler handler, void *context);
 void corerpc_register(int type, net_request_handler handler, void *context);
 
 int corerpc_postwait(const char *name, const coreid_t *coreid, const void *request,

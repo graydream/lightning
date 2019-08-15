@@ -407,7 +407,7 @@ int analysis_private_create(const char *_name)
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        core_tls_set(VARIABLE_ANALYSIS, ana);
+        __core_tls_set(VARIABLE_ANALYSIS, ana);
 
         return 0;
 err_ret:
@@ -416,7 +416,7 @@ err_ret:
 
 int analysis_private_queue(const char *_name, const char *type, uint64_t _time)
 {
-        analysis_t *ana = core_tls_get(NULL, VARIABLE_ANALYSIS);
+        analysis_t *ana = __core_tls_get(NULL, VARIABLE_ANALYSIS);
 
         if (ana) {
                 return analysis_queue(ana, _name, type, _time);
@@ -519,7 +519,7 @@ err_ret:
 
 void IO_FUNC analysis_merge(void *ctx)
 {
-        analysis_t *ana = core_tls_get(ctx, VARIABLE_ANALYSIS);
+        analysis_t *ana = __core_tls_get(ctx, VARIABLE_ANALYSIS);
 
         if (likely(ana)) {
                 __analysis__(ana, NULL);

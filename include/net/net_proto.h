@@ -21,6 +21,9 @@ typedef int (*net_event_read_handler)(void *sock, void *ctx);
 typedef enum {
         MSG_NULL, //XXX:fix this type
         MSG_HEARTBEAT,
+        MSG_KEEP,
+
+#if 0
         MSG_LOOKUP,
         MSG_PING,
         MSG_MDP,
@@ -29,6 +32,7 @@ typedef enum {
         MSG_RINGLOCK,
         MSG_RANGE,
         MSG_MDS,
+#endif
 } net_progtype_t;
 
 typedef struct {

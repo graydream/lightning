@@ -37,12 +37,12 @@ static int __corenet_add(corenet_tcp_t *corenet, const sockid_t *sockid, void *c
 
 static void IO_FUNC *__corenet_get()
 {
-        return core_tls_get(NULL, VARIABLE_CORENET_TCP);
+        return __core_tls_get(NULL, VARIABLE_CORENET_TCP);
 }
 
 static void IO_FUNC *__corenet_get_byctx(void *ctx)
 {
-        return core_tls_get(ctx, VARIABLE_CORENET_TCP);
+        return __core_tls_get(ctx, VARIABLE_CORENET_TCP);
 }
 
 static void __corenet_set_out(corenet_node_t *node)
@@ -991,7 +991,7 @@ static int __corenet_tcp_exec(void *ctx, corenet_node_t *node, event_t *ev)
         args->node = node;
 
         sche_task_new("corenet_tcp_exec", __corenet_tcp_exec__, args, -1);
-        sche_run(core_tls_get(ctx, VARIABLE_SCHEDULE));
+        sche_run(__core_tls_get(ctx, VARIABLE_SCHEDULE));
 
         return 0;
 err_ret:
@@ -1119,7 +1119,7 @@ static int __corenet_tcp_exec(void *ctx, corenet_node_t *node, event_t *ev)
                 sche_task_new("corenet_tcp_recv", __corenet_tcp_exec_recv, node, -1);
         }
 
-        sche_run(core_tls_get(ctx, VARIABLE_SCHEDULE));
+        sche_run(__core_tls_get(ctx, VARIABLE_SCHEDULE));
 
         return 0;
 err_ret:
@@ -1308,7 +1308,7 @@ void corenet_tcp_commit(void *ctx)
                 return;
 
         sche_task_new("corenet_tcp_commit", __corenet_tcp_commit_task, ctx, -1);
-        sche_run(core_tls_get(ctx, VARIABLE_SCHEDULE));
+        sche_run(__core_tls_get(ctx, VARIABLE_SCHEDULE));
 }
 
 #else
@@ -1351,7 +1351,7 @@ static int __corenet_tcp_commit(void *ctx, const sockid_t *sockid, ltgbuf_t *buf
 
 #if 1
         sche_task_new("corenet_tcp_send", __corenet_tcp_exec_send_nowait, node, -1);
-        sche_run(core_tls_get(ctx, VARIABLE_SCHEDULE));
+        sche_run(__core_tls_get(ctx, VARIABLE_SCHEDULE));
 #else
 #if 0
         ret =  __corenet_tcp_send(node);
@@ -1389,7 +1389,7 @@ void corenet_tcp_commit(void *ctx)
                 slab_stream_free(corenet_fwd);
         }
 
-        sche_run(core_tls_get(ctx, VARIABLE_SCHEDULE));
+        sche_run(__core_tls_get(ctx, VARIABLE_SCHEDULE));
 }
 
 #endif
@@ -1463,7 +1463,7 @@ int corenet_tcp_init(int max, corenet_tcp_t **_corenet)
                 GOTO(err_free, ret);
 
 
-        core_tls_set(VARIABLE_CORENET_TCP, corenet);
+        __core_tls_set(VARIABLE_CORENET_TCP, corenet);
         if (_corenet)
                 *_corenet = corenet;
 

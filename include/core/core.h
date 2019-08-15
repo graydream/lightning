@@ -24,7 +24,7 @@ typedef enum {
         VARIABLE_TIMER,
         VARIABLE_GETTIME,
         VARIABLE_ANALYSIS,
-        VARIABLE_MAX,
+        VARIABLE_KEEP,
 } variable_type_t;
 
 typedef int (*core_exec)(void *ctx, void *buf, int *count);
@@ -120,8 +120,11 @@ core_t *core_self();
 
 int core_request(int coreid, int group, const char *name, func_va_t exec, ...);
 int core_ring_wait(int hash, int priority, const char *name, func_va_t exec, ...);
+void __core_tls_set(int type, void *ptr);
+void *__core_tls_get(void *core, int type);
 void core_tls_set(int type, void *ptr);
 void *core_tls_get(void *core, int type);
+
 int core_islocal(const coreid_t *coreid);
 int core_getid(coreid_t *coreid);
 int core_init_modules(const char *name, func_va_t exec, ...);

@@ -304,7 +304,7 @@ int net_rpc_init()
         __request_set_handler(NET_RPC_COREADDR, __net_srv_corenetinfo, "net_srv_coreinfo");
 #endif
 
-        rpc_request_register(MSG_HEARTBEAT, __request_handler, NULL);
+        __rpc_request_register(MSG_HEARTBEAT, __request_handler, NULL);
 
         return 0;
 }

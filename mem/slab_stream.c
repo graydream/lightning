@@ -54,7 +54,7 @@ int slab_stream_private_init()
         if (ret)
                 GOTO(err_ret, ret);
 
-        core_tls_set(VARIABLE_SLAB_STREAM, slab);
+        __core_tls_set(VARIABLE_SLAB_STREAM, slab);
 
 #if 1
         ret = core_register_scan("slab_stream_scan", __slab_scan, slab);
@@ -69,7 +69,7 @@ err_ret:
 
 void IO_FUNC *slab_stream_alloc(size_t size)
 {
-        slab_t *slab = core_tls_get(NULL, VARIABLE_SLAB_STREAM);
+        slab_t *slab = __core_tls_get(NULL, VARIABLE_SLAB_STREAM);
 
         if (unlikely(slab == NULL)) {
                 slab = __slab_public__;
@@ -80,7 +80,7 @@ void IO_FUNC *slab_stream_alloc(size_t size)
 
 void IO_FUNC slab_stream_free(void *ptr)
 {
-        slab_t *slab = core_tls_get(NULL, VARIABLE_SLAB_STREAM);
+        slab_t *slab = __core_tls_get(NULL, VARIABLE_SLAB_STREAM);
 
         if (unlikely(slab == NULL)) {
                 slab = __slab_public__;
