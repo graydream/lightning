@@ -72,7 +72,7 @@ int ltg_malign(void **_ptr, size_t align, size_t size)
         int i;
         void *ptr=NULL;
 
-        DINFO("mem %u\n", (int)size);
+        DBUG("mem %u\n", (int)size);
         
         /* Test whether the SIZE argument is valid.  It must be a power of
         two multiple of sizeof (void *).  */
@@ -107,7 +107,7 @@ int ltg_malloc(void **_ptr, size_t size)
                 return 0;
         }
 
-        DINFO("mem %u\n", (int)size);
+        DBUG("mem %u\n", (int)size);
 
 #if 0
         if (size < sizeof(struct list_head))
@@ -139,7 +139,7 @@ void *ltg_malloc1(size_t size)
 {
         void *ptr = malloc(size);
 
-        DINFO("mem %u\n", (int)size);
+        DBUG("mem %u\n", (int)size);
         
         if (ptr) {
                 __ltg_malloc_bind(ptr, size);
@@ -154,7 +154,7 @@ inline int ltg_realloc(void **_ptr, size_t size, size_t newsize)
         int ret, i;
         void *ptr;
 
-        DINFO("mem %u\n", (int)size);
+        DBUG("mem %u\n", (int)size);
         
         if (*_ptr == NULL && size == 0) /*malloc*/ {
                 ret = ltg_malloc(&ptr, newsize);
