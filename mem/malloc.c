@@ -57,11 +57,23 @@ static void __free__(void *mem)
 #endif
 }
 
+void __ltg_malloc_bind(void *ptr, size_t size)
+{
+
+        core_t *core = core_self();
+        if (core && core->main_core){
+                long unsigned int node_id = core->main_core->node_id;
+                mbind(ptr, size, MPOL_PREFERRED, &node_id, 3, 0);
+        }
+}
+
 int ltg_malign(void **_ptr, size_t align, size_t size)
 {
         int i;
         void *ptr=NULL;
 
+        DBUG("mem %u\n", (int)size);
+        
         /* Test whether the SIZE argument is valid.  It must be a power of
         two multiple of sizeof (void *).  */
         if (align % sizeof (void *) != 0
@@ -71,13 +83,17 @@ int ltg_malign(void **_ptr, size_t align, size_t size)
 
         for (i = 0; i < 3; i++) {
                 ptr = __memalign__(align, size);
-                if (ptr != NULL)
+                if (ptr != NULL) {
+                        __ltg_malloc_bind(ptr, size);
+
                         *_ptr = ptr;
                         return 0;
+                }
         }
 
         return ENOMEM;
 }
+
 
 int ltg_malloc(void **_ptr, size_t size)
 {
@@ -91,23 +107,21 @@ int ltg_malloc(void **_ptr, size_t size)
                 return 0;
         }
 
-        if (size > 4096)
-                DBUG("big mem %u\n", (int)size);
+        DBUG("mem %u\n", (int)size);
 
-	    if (size < sizeof(struct list_head))
+#if 0
+        if (size < sizeof(struct list_head))
                 size = sizeof(struct list_head);
+#endif
 
         for (i = 0; i < 3; i++) {
                 ptr = __calloc__(1, size);
-                if (ptr != NULL)
+                if (ptr != NULL) {
+                        __ltg_malloc_bind(ptr, size);
+                        
                         goto out;
+                }
         }
-
-        core_t *core = core_self();
-	if (core && core->main_core){
-		long unsigned int node_id = core->main_core->node_id;
-		mbind(ptr, size, MPOL_PREFERRED, &node_id, 3, 0);
-	}
 
         ret = ENOMEM;
 
@@ -121,11 +135,27 @@ err_ret:
         return ret;
 }
 
+void *ltg_malloc1(size_t size)
+{
+        void *ptr = malloc(size);
+
+        DBUG("mem %u\n", (int)size);
+        
+        if (ptr) {
+                __ltg_malloc_bind(ptr, size);
+        }
+
+        return ptr;
+}
+
+
 inline int ltg_realloc(void **_ptr, size_t size, size_t newsize)
 {
         int ret, i;
         void *ptr;
 
+        DBUG("mem %u\n", (int)size);
+        
         if (*_ptr == NULL && size == 0) /*malloc*/ {
                 ret = ltg_malloc(&ptr, newsize);
                 if (ret)
@@ -145,15 +175,20 @@ inline int ltg_realloc(void **_ptr, size_t size, size_t newsize)
                 memset(ptr + newsize, 0x0, size - newsize);
         }
 
+#if 0
         if (newsize < sizeof(struct list_head))
                 newsize = sizeof(struct list_head);
+#endif
 
         ret = ENOMEM;
         for (i = 0; i < 3; i++) {
                 ptr = realloc(*_ptr, newsize);
-                if (ptr != NULL)
+                if (ptr != NULL) {
+                        __ltg_malloc_bind(ptr, size);
                         goto out;
+                }
         }
+
         GOTO(err_ret, ret);
 out:
         if (newsize > size)

@@ -311,6 +311,13 @@ int hugepage_getfree(void **_addr, uint64_t *phyaddr)
                 GOTO(err_ret, ret);
         }
 
+        core_t *core = core_self();
+        if (likely(core)) {
+                DINFO("%s[%d] hugepage getfree\n", core->name, core->hash);
+        } else {
+                DINFO("none[-1] hugepage getfree\n");
+        }
+        
         hpage = __get_free_hugepage(head);
 
         if (phyaddr)

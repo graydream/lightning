@@ -26,12 +26,21 @@ int ltg_nofile_max = 0;
 extern analysis_t *default_analysis;
 
 #define XMITBUF (1024 * 1024 * 100)     /* 100MB */
+#define MAX_OPEN_FILE 100000
 
 static int __get_nofailmax(int *nofilemax)
 {
         int ret;
         struct rlimit rlim_new;
 
+        rlim_new.rlim_cur = MAX_OPEN_FILE;
+        rlim_new.rlim_max = MAX_OPEN_FILE;
+        ret = setrlimit(RLIMIT_NOFILE, &rlim_new);
+        if (ret == -1) {
+                ret = errno;
+                GOTO(err_ret, ret);
+        }
+        
         ret = getrlimit(RLIMIT_NOFILE, &rlim_new);
         if (ret == -1) {
                 ret = errno;

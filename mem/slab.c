@@ -212,8 +212,15 @@ static int __slab_extend(slab_bucket_t *slab, uint32_t magic, uint32_t coreid)
                 list_add_tail(&md->hook, &slab->list);
         }
 
-        DINFO("%s split %u count %u, total %u, tid %d\n", slab->name, slab->split, count,
-              slab->count, slab->tid);
+        if (likely(core)) {
+                DINFO("%s[%d] %s split %u count %u, total %u\n",
+                      core->name, core->hash, slab->name, slab->split, count,
+                      slab->count);
+        } else {
+                DINFO("none[-1] %s split %u count %u, total %u\n",
+                      slab->name, slab->split, count,
+                      slab->count);
+        }
 
         return 0;
 err_ret:
