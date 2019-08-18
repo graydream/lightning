@@ -105,9 +105,9 @@ static void __heartbeat(void *_ent)
 #endif
 
         lost = sent - reply;
-        if (lost > 1 && lost <= ltgconf.hb_retry) {
+        if (lost > 1 && lost <= ltgconf_global.hb_retry) {
                 DINFO("heartbeat %s lost ack %u\n", netable_rname_nid(&hb_ent->parent), lost);
-        } else if (lost > ltgconf.hb_retry) {
+        } else if (lost > ltgconf_global.hb_retry) {
                 DWARN("heartbeat %s fail, lost ack %u\n", netable_rname_nid(&hb_ent->parent), lost);
                 netable_close(&hb_ent->parent, "timeout at hb", &hb_ent->ltime);
                 ret = ETIME;
@@ -129,7 +129,7 @@ static void __heartbeat(void *_ent)
          *
          * @todo 高负载情况下，为了减少误判的可能性，此方案有待改进
          */
-        ret = timer_insert("heartbeat", hb_ent, __heartbeat, hb_ent->timeout / ltgconf.hb_retry);
+        ret = timer_insert("heartbeat", hb_ent, __heartbeat, hb_ent->timeout / ltgconf_global.hb_retry);
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 

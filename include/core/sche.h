@@ -358,10 +358,10 @@ int sche_getid();
                 sche_value_get(TASK_VALUE_LEASE, &__lease__);       \
                 LTG_ASSERT(__lease__);                                     \
                 diff = gettime() - __lease__;                          \
-                if (__lease__!= -1 && diff > ltgconf.lease_timeout) {   \
+                if (__lease__!= -1 && diff > ltgconf_global.lease_timeout) {   \
                         __ret__ = ETIMEDOUT;                            \
                         DERROR("Process leaving via %s ret %d lease %u timeout %u %u\n", \
-                               #label, __ret__, __lease__, ltgconf.lease_timeout, diff); \
+                               #label, __ret__, __lease__, ltgconf_global.lease_timeout, diff); \
                         goto label;                                     \
                 }                                                       \
         } while (0)

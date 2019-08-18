@@ -94,7 +94,7 @@ static void *__conn_scan(void *arg)
         (void) arg;
         
         while (1) {
-                sleep(ltgconf.rpc_timeout / 2);
+                sleep(ltgconf_global.rpc_timeout / 2);
                 __conn_scan__();
         }
 
@@ -120,7 +120,7 @@ static void *__conn_retry(void *arg)
         const nid_t *nid = arg;
 
         while (1) {
-                if (retry > ltgconf.rpc_timeout * 2 && !conn_online(nid, -1)) {
+                if (retry > ltgconf_global.rpc_timeout * 2 && !conn_online(nid, -1)) {
                         DINFO("retry conn to %s fail, exit\n", network_rname(nid));
                         break;
                 }
@@ -285,7 +285,7 @@ int conn_online(const nid_t *nid, int _tmo)
         if (netable_connected(nid))
                 return 1;
 
-        tmo = _tmo == -1 ? ltgconf.rpc_timeout : _tmo;
+        tmo = _tmo == -1 ? ltgconf_global.rpc_timeout : _tmo;
         time_t last_update = netable_last_update(nid);
 
         if (gettime() - last_update < tmo) {

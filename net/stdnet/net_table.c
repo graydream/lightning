@@ -97,7 +97,7 @@ static int __entry_load(entry_t *ent, const ltg_net_info_t *info,
         ent->sock = *sock;
         LTG_ASSERT(sock->u.sd.type == SOCKID_NORMAL);
         ent->status = NETABLE_CONN;
-        ent->timeout = 1000 * 1000 * ltgconf.hb_timeout;
+        ent->timeout = 1000 * 1000 * ltgconf_global.hb_timeout;
         sprintf(ent->lname, "%s", info->name);
         __netable_update_ltime(ent);
 
@@ -652,7 +652,7 @@ int netable_connectable(const nid_t *nid, int force)
         if (force)
                 return 1;
 
-        wait = ltgconf.lease_timeout / 2;
+        wait = ltgconf_global.lease_timeout / 2;
         ent = __netable_nidfind(nid);
         if (ent == NULL)
                 return 1;

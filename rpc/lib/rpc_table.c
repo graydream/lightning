@@ -112,7 +112,7 @@ static int __rpc_table_check(rpc_table_t *rpc_table, slot_t *slot, uint32_t now)
         }
 
         if (slot->timeout && now > slot->timeout
-            && (now - slot->timeout > (uint32_t)ltgconf.rpc_timeout / 2)) {
+            && (now - slot->timeout > (uint32_t)ltgconf_global.rpc_timeout / 2)) {
                 DINFO("%s @ %s/%u(%s) check, id (%u, %x), used %u timeout %d\n", slot->name,
                       _inet_ntoa(slot->sockid.addr), slot->sockid.sd, conn, slot->msgid.idx,
                       slot->msgid.figerprint, (int)(now - slot->begin), slot->timeout);
@@ -128,7 +128,7 @@ static int __rpc_table_check(rpc_table_t *rpc_table, slot_t *slot, uint32_t now)
                       _inet_ntoa(slot->sockid.addr), slot->sockid.sd,
                       conn, slot->msgid.idx,
                       slot->msgid.figerprint,
-                      ltgconf.rpc_timeout,
+                      ltgconf_global.rpc_timeout,
                       (int)(now - slot->begin), slot->timeout);
 
                 LTG_ASSERT(slot->func);
@@ -255,13 +255,13 @@ static void  *__rpc_table_scan_worker(void *arg)
                         continue;
                 }
 
-                if (ltgconf.daemon) {
+                if (ltgconf_global.daemon) {
                         sleep(2);
                 } else {
                         sleep(1);
                 }
 
-                interval = _min(ltgconf.rpc_timeout, 10);
+                interval = _min(ltgconf_global.rpc_timeout, 10);
                 rpc_table_scan(rpc_table, interval, 0);
         }
 

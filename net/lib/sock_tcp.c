@@ -209,7 +209,7 @@ int tcp_sock_tuning(int sd, int tuning, int nonblock)
                 GOTO(err_ret, ret);
         }
 
-        xmit_buf = ltgconf.wmem_max;
+        xmit_buf = ltgconf_global.wmem_max;
         ret = setsockopt(sd, SOL_SOCKET, SO_SNDBUF, &xmit_buf, sizeof(int));
         if (ret == -1) {
                 ret = errno;
@@ -217,7 +217,7 @@ int tcp_sock_tuning(int sd, int tuning, int nonblock)
                 GOTO(err_ret, ret);
         }
 
-        xmit_buf = ltgconf.rmem_max;
+        xmit_buf = ltgconf_global.rmem_max;
         ret = setsockopt(sd, SOL_SOCKET, SO_RCVBUF, &xmit_buf, sizeof(int));
         if (ret == -1) {
                 ret = errno;
@@ -235,9 +235,9 @@ int tcp_sock_tuning(int sd, int tuning, int nonblock)
                 GOTO(err_ret, ret);
         }
 
-        if (xmit_buf != ltgconf.wmem_max * 2) {
+        if (xmit_buf != ltgconf_global.wmem_max * 2) {
                 DERROR("Can't set tcp send buf to %d (got %d)\n",
-                       ltgconf.wmem_max, xmit_buf);
+                       ltgconf_global.wmem_max, xmit_buf);
         }
 
         DBUG("sock %u, send buf %u\n", sd, xmit_buf);
@@ -252,9 +252,9 @@ int tcp_sock_tuning(int sd, int tuning, int nonblock)
                 GOTO(err_ret, ret);
         }
 
-        if (xmit_buf != ltgconf.rmem_max * 2) {
+        if (xmit_buf != ltgconf_global.rmem_max * 2) {
                 DERROR("Can't set tcp recv buf to %d (got %d)\n",
-                       ltgconf.rmem_max, xmit_buf);
+                       ltgconf_global.rmem_max, xmit_buf);
         }
 
         DBUG("sock %u, recv buf %u\n", sd, xmit_buf);
@@ -396,7 +396,7 @@ int tcp_sock_accept(net_handle_t *nh, int srv_sd, int tuning, int nonblock)
         memset(&sin, 0, sizeof(sin));
         alen = sizeof(struct sockaddr_in);
 
-        sd = __tcp_accept(srv_sd, (struct sockaddr *)&sin, &alen, ltgconf.rpc_timeout / 2);
+        sd = __tcp_accept(srv_sd, (struct sockaddr *)&sin, &alen, ltgconf_global.rpc_timeout / 2);
         if (sd < 0) {
 	        ret = -sd;
                 DERROR("srv_sd %d, %u\n", srv_sd, ret);
@@ -543,10 +543,10 @@ int tcp_sock_getaddr(uint32_t *info_count, sock_info_t *info,
         uint32_t addr, count;
 
         count = 0;
-        for (i = 0; i < ltg_netconf.count; i++) {
+        for (i = 0; i < ltg_netconf_global.count; i++) {
                 LTG_ASSERT(count < info_count_max);
-                ret = __tcp_sock_getaddr(ltg_netconf.network[i].network,
-                                         ltg_netconf.network[i].mask, &addr);
+                ret = __tcp_sock_getaddr(ltg_netconf_global.network[i].network,
+                                         ltg_netconf_global.network[i].mask, &addr);
                 if (unlikely(ret)) {
                         continue;
                 }

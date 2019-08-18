@@ -82,7 +82,7 @@ int analysis_queue(analysis_t *ana, const char *_name, const char *type, uint64_
         char tmp[MAX_NAME_LEN];
         const char *name;
 
-        if (unlikely(ltgconf.performance_analysis == 0)) {
+        if (unlikely(ltgconf_global.performance_analysis == 0)) {
                 return 0;
         }
 

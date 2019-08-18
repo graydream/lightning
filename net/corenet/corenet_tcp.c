@@ -1138,7 +1138,7 @@ int corenet_tcp_poll(void *ctx, int tmo)
         corenet_tcp_t *__corenet__ = __corenet_get_byctx(ctx);
 
         DBUG("polling %d begin\n", tmo);
-        LTG_ASSERT(tmo >= 0 && tmo < ltgconf.rpc_timeout * 2);
+        LTG_ASSERT(tmo >= 0 && tmo < ltgconf_global.rpc_timeout * 2);
         nfds = _epoll_wait(__corenet__->corenet.epoll_fd, events, 512, tmo * 1000);
         if (unlikely(nfds < 0)) {
                 UNIMPLEMENTED(__DUMP__);

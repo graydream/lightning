@@ -35,7 +35,7 @@ void IO_FUNC gettime_refresh(void *ctx)
 
         LTG_ASSERT(gettime);
         gettime->cycle++;
-        if (unlikely((gettime->cycle % GETTIME_CYCLE == 0) || ltgconf.performance_analysis)) {
+        if (unlikely((gettime->cycle % GETTIME_CYCLE == 0) || ltgconf_global.performance_analysis)) {
                 gettimeofday(&gettime->tv, NULL);
         }
 
@@ -59,7 +59,7 @@ int IO_FUNC _gettimeofday(struct timeval *tv, struct timezone *tz)
         
         gettime_t *gettime = core_tls_get(NULL, VARIABLE_GETTIME);
 
-        if (likely(gettime && (ltgconf.polling_timeout == 0 || ltgconf.rdma))) {
+        if (likely(gettime && (ltgconf_global.polling_timeout == 0 || ltgconf_global.rdma))) {
                 *tv = gettime->tv;
         } else {
                 gettimeofday(tv, NULL);

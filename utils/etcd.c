@@ -10,7 +10,7 @@
 
 #define __ETCD_SRV__  "127.0.0.1:2379"
 
-extern struct ltgconf_t ltgconf;
+extern ltgconf_t ltgconf_global;
 
 static int __etcd_open_str(char *server, etcd_session *_sess);
 static int __etcd_get__(const char *srv, const char *key, etcd_node_t **result, int consistent);
@@ -31,7 +31,7 @@ static int  __etcd_set__(const char *key, const char *value,
         }
 
         ret = etcd_set(sess, (void *)key, (void *)value, (void *)precond, flag,
-                       ttl, ltgconf.rpc_timeout / 2);
+                       ttl, ltgconf_global.rpc_timeout / 2);
         if (ret != ETCD_OK) {
                 if (ret == ETCD_PREVCONT) {
                         ret = EEXIST;
@@ -70,7 +70,7 @@ static int __etcd_get__(const char *srv, const char *key, etcd_node_t **result, 
                 GOTO(err_ret, ret);
         }
                 
-        ret = etcd_get(sess, (void *)key, ltgconf.rpc_timeout / 2, &node, consistent);
+        ret = etcd_get(sess, (void *)key, ltgconf_global.rpc_timeout / 2, &node, consistent);
         if(ret != ETCD_OK){
                 if (ret == ETCD_ENOENT) {
                         ret = ENOKEY;
@@ -141,12 +141,12 @@ static int __etcd_set(const char *key, const char *value,
         }
 
         ANALYSIS_END(0, IO_WARN, NULL);
-        //ANALYSIS_ASSERT(0, 1000 * 1000 * (ltgconf.rpc_timeout), NULL);
+        //ANALYSIS_ASSERT(0, 1000 * 1000 * (ltgconf_global.rpc_timeout), NULL);
 
         return 0;
 err_ret:
         ANALYSIS_END(0, IO_WARN, NULL);
-        //ANALYSIS_ASSERT(0, 1000 * 1000 * (ltgconf.rpc_timeout), NULL);
+        //ANALYSIS_ASSERT(0, 1000 * 1000 * (ltgconf_global.rpc_timeout), NULL);
         return ret;
 }
 
@@ -205,12 +205,12 @@ static int __etcd_get(const char *key, etcd_node_t **result, int consistent)
         }
 
         ANALYSIS_END(0, IO_WARN, NULL);
-        //ANALYSIS_ASSERT(0, 1000 * 1000 * (ltgconf.rpc_timeout), NULL);
+        //ANALYSIS_ASSERT(0, 1000 * 1000 * (ltgconf_global.rpc_timeout), NULL);
 
         return 0;
 err_ret:
         ANALYSIS_END(0, IO_WARN, NULL);
-        //ANALYSIS_ASSERT(0, 1000 * 1000 * (ltgconf.rpc_timeout), NULL);
+        //ANALYSIS_ASSERT(0, 1000 * 1000 * (ltgconf_global.rpc_timeout), NULL);
         return ret;
 }
 
@@ -425,7 +425,7 @@ int etcd_mkdir(const char *prefix, const char *dir, int ttl)
         precond.type = prevExist;
         precond.value = "false";
 
-        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf.system_name, prefix, dir);
+        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, dir);
         ret = __etcd_set(key, NULL, &precond, ETCD_DIR, ttl);
         if (ret) {
                 //DWARN("mkdir dir: %s, ret: %d\n", dir, ret);
@@ -445,7 +445,7 @@ int etcd_create_text(const char *prefix, const char *_key, const char *_value, i
 
         LTG_ASSERT(strcmp(_value, ""));
 
-        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf.system_name, prefix, _key);
+        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
         strcpy(value, _value);
 
         precond.type = prevExist;
@@ -490,7 +490,7 @@ int etcd_update_text(const char *prefix, const char *_key, const char *_value,
 
         LTG_ASSERT(strcmp(_value, ""));
 
-        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf.system_name, prefix, _key);
+        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
         strcpy(value, _value);
 
         if (idx) {
@@ -546,7 +546,7 @@ int etcd_get_text(const char *prefix, const char *_key, char *value, int *idx)
         char key[MAX_PATH_LEN];
         etcd_node_t *node = NULL;
 
-        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf.system_name, prefix, _key);
+        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
         ret = __etcd_get(key, &node, 1);
         if(ret){
                 GOTO(err_ret, ret);
@@ -633,7 +633,7 @@ int etcd_readdir(const char *_key, char *buf, int *buflen)
         char key[MAX_PATH_LEN];
         etcd_node_t *node = NULL;
 
-        snprintf(key, MAX_NAME_LEN, "/%s/%s", ltgconf.system_name, _key);
+        snprintf(key, MAX_NAME_LEN, "/%s/%s", ltgconf_global.system_name, _key);
         ret = __etcd_get(key, &node, 0);
         if(ret){
                 GOTO(err_ret, ret);
@@ -676,7 +676,7 @@ int etcd_list(const char *_key, etcd_node_t **_node)
         char key[MAX_PATH_LEN];
         etcd_node_t *node = NULL;
 
-        snprintf(key, MAX_NAME_LEN, "/%s/%s", ltgconf.system_name, _key);
+        snprintf(key, MAX_NAME_LEN, "/%s/%s", ltgconf_global.system_name, _key);
         ret = __etcd_get(key, &node, 0);
         if(ret){
                 GOTO(err_ret, ret);
@@ -698,7 +698,7 @@ int etcd_list1(const char *prefix, const char *_key, etcd_node_t **_node)
         char key[MAX_PATH_LEN];
         etcd_node_t *node = NULL;
 
-        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf.system_name, prefix, _key);
+        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
         ret = __etcd_get(key, &node, 0);
         if(ret){
                 GOTO(err_ret, ret);
@@ -730,7 +730,7 @@ int etcd_lock_init(etcd_lock_t *lock, const char *prefix, const char *key,
                 GOTO(err_ret, ret);
 
         LTG_ASSERT(strlen(key) + 1 <= MAX_PATH_LEN);
-        snprintf(lock->key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf.system_name, prefix, key);
+        snprintf(lock->key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, key);
 
         ret = gethostname(lock->hostname, MAX_NAME_LEN);
         if (ret)
@@ -1042,7 +1042,7 @@ int etcd_del(const char *prefix, const char *_key)
                 GOTO(err_ret, ret);
         }
 
-        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf.system_name, prefix, _key);
+        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
 
         DINFO("remove %s\n", key);
         ret = __etcd_del(sess, key);
@@ -1075,7 +1075,7 @@ int etcd_del_dir(const char *prefix, const char *_key, int recursive)
                 GOTO(err_ret, ret);
         }
 
-        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf.system_name, prefix, _key);
+        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
 
         DINFO("remove dir %s, recursive: %d\n", key, recursive);
         ret = __etcd_del_dir(sess, key, recursive);
@@ -1126,7 +1126,7 @@ int etcd_set_text(const char *prefix, const char *_key, const char *_value, int 
 
         //LTG_ASSERT(strcmp(_value, ""));
 
-        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf.system_name, prefix, _key);
+        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
         strcpy(value, _value);
 
         precond = NULL;        

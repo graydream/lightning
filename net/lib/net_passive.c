@@ -13,7 +13,7 @@ static void __net_checkinfo(const sock_info_t *sock, int count)
 {
         int i;
 
-        if (ltgconf.daemon) {
+        if (ltgconf_global.daemon) {
                 LTG_ASSERT(count);
         }
 
@@ -56,13 +56,13 @@ int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port)
 
                 info->info_count = count;
                         
-                LTG_ASSERT(strlen(ltgconf.service_name));
-                if (ltgconf.daemon) {
+                LTG_ASSERT(strlen(ltgconf_global.service_name));
+                if (ltgconf_global.daemon) {
                         LTG_ASSERT(count);
                 }
         }
 
-        if (ltgconf.daemon) {
+        if (ltgconf_global.daemon) {
                 LTG_ASSERT(count);
         }
                 
@@ -76,7 +76,7 @@ int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port)
                 GOTO(err_ret, ret);
         }
                 
-        snprintf(info->name, MAX_NAME_LEN, "%s:%s", hostname, ltgconf.service_name);
+        snprintf(info->name, MAX_NAME_LEN, "%s:%s", hostname, ltgconf_global.service_name);
 
         DBUG("info.name %s\n", info->name);
 

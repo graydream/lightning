@@ -27,12 +27,12 @@ int rpc_getinfo(char *infobuf, uint32_t *infobuflen)
         uint32_t port = __pasv_port__;
         ltg_net_info_t *info;
         
-        if (ltgconf.daemon && port == (uint32_t)-1) {
+        if (ltgconf_global.daemon && port == (uint32_t)-1) {
                 ret = EAGAIN;
                 GOTO(err_ret, ret);
         }
 
-        while (ltgconf.daemon && ltg_global.local_nid.id == 0) {
+        while (ltgconf_global.daemon && ltg_global.local_nid.id == 0) {
                 DWARN("wait nid inited\n");
                 sleep(1);
         }

@@ -239,7 +239,7 @@ retry:
                 goto out;
         }
 
-        if (ltgconf.daemon == 0) {
+        if (ltgconf_global.daemon == 0) {
 #if 0
                 instat_t instat;
                 ret = mds_rpc_getstat(nid, &instat);

@@ -116,7 +116,7 @@ static int __cpu_lock(int cpu_id, int *_fd)
         int ret, fd, flags;
         char path[MAX_PATH_LEN];
 
-        snprintf(path, MAX_PATH_LEN, "%s/cpulock/%d", ltgconf.workdir, cpu_id);
+        snprintf(path, MAX_PATH_LEN, "%s/cpulock/%d", ltgconf_global.workdir, cpu_id);
 
         DBUG("try lock cpu %s\n", path);
         ret = path_validate(path, LLIB_NOTDIR, LLIB_DIRCREATE);
@@ -204,7 +204,7 @@ static void __cpuset_getcpu(coreinfo_t **master)
                       coreinfo->physical_package_id,
                       coreinfo->core_id);
         } else {
-                DERROR("can not allcate cpu, reduce ltgconf.polling_core please\n");
+                DERROR("can not allcate cpu, reduce ltgconf_global.polling_core please\n");
                 EXIT(EINVAL);
         }
 }
@@ -299,7 +299,7 @@ int cpuset_set(const char *name, int cpu)
         size_t n;
         coreinfo_t *coreinfo;
 
-        if (!ltgconf.daemon || cpu == -1)
+        if (!ltgconf_global.daemon || cpu == -1)
                 return 0;
 
         coreinfo = &__coreinfo__[cpu];

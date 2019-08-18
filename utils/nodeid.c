@@ -103,7 +103,7 @@ int nodeid_load(nodeid_t *_id)
         char key[MAX_NAME_LEN], value[MAX_BUF_LEN];
         nid_t nid;
 
-        sprintf(key, "%s/%s/nid", ltgconf.workdir, STATUS_PRE);
+        sprintf(key, "%s/%s/nid", ltgconf_global.workdir, STATUS_PRE);
 
         ret = _get_text(key, value, MAX_BUF_LEN);
         if (ret < 0) {
@@ -149,7 +149,7 @@ int nodeid_init(nodeid_t *_id, const char *name)
         if (ret)
                 GOTO(err_ret, ret);
         
-        sprintf(key, "%s/%s/nid", ltgconf.workdir, STATUS_PRE);
+        sprintf(key, "%s/%s/nid", ltgconf_global.workdir, STATUS_PRE);
         ret = path_validate(key, LLIB_NOTDIR, LLIB_DIRCREATE);
         if (ret)
                 GOTO(err_ret, ret);

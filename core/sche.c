@@ -137,19 +137,19 @@ static inline void __sche_check_running_used(sche_t *sche, taskctx_t *taskctx, u
 
 static inline void __sche_check_yield_used(sche_t *sche, taskctx_t *taskctx, uint64_t used)
 {
-        if (unlikely(used < (uint64_t)1000 * 1000 * (ltgconf.lease_timeout / 2 + 1))) {
+        if (unlikely(used < (uint64_t)1000 * 1000 * (ltgconf_global.lease_timeout / 2 + 1))) {
                 return;
         }
 
-        if (unlikely(used > (uint64_t)1000 * 1000 * (ltgconf.rpc_timeout * 2))) {
+        if (unlikely(used > (uint64_t)1000 * 1000 * (ltgconf_global.rpc_timeout * 2))) {
                 __sche_backtrace__(sche->name, sche->id, taskctx->id, sche->scan_seq);
 
-                if (unlikely(used > (uint64_t)1000 * 1000 * (ltgconf.rpc_timeout * 2))) {
+                if (unlikely(used > (uint64_t)1000 * 1000 * (ltgconf_global.rpc_timeout * 2))) {
                         DERROR("%s[%u][%u] %s.%s wait %fs, total %lu, retval %u\n",
                               sche->name, sche->id, taskctx->id,
                               taskctx->name, taskctx->wait_name, (double)used / (1000 * 1000),
                               gettime() - taskctx->ctime.tv_sec, taskctx->retval);
-                } else if (unlikely(used > (uint64_t)1000 * 1000 * (ltgconf.rpc_timeout * 1))) {
+                } else if (unlikely(used > (uint64_t)1000 * 1000 * (ltgconf_global.rpc_timeout * 1))) {
                         DWARN("%s[%u][%u] %s.%s wait %fs, total %lu, retval %u\n",
                               sche->name, sche->id, taskctx->id,
                               taskctx->name, taskctx->wait_name, (double)used / (1000 * 1000),
@@ -167,18 +167,18 @@ static inline void __sche_check_scan_used(sche_t *sche, taskctx_t *taskctx, uint
 {
         /* notice: time_used is seconds */
         if (unlikely(taskctx->sleeping
-                     || time_used < (uint64_t)(ltgconf.lease_timeout / 2 + 1))) {
+                     || time_used < (uint64_t)(ltgconf_global.lease_timeout / 2 + 1))) {
                 return;
         }
 
         if (unlikely((taskctx->wait_tmo != -1 && time_used > (uint64_t)taskctx->wait_tmo))
-                        || time_used > (uint64_t)ltgconf.rpc_timeout) {
+                        || time_used > (uint64_t)ltgconf_global.rpc_timeout) {
                 DINFO("%s[%u][%u] %s status %u time_used %lus\n", sche->name,
                       sche->id, taskctx->id, taskctx->name, taskctx->state, time_used);
 
                 if (!taskctx->sleeping)
                         __sche_backtrace_set(taskctx);
-        } else if (unlikely(time_used > (uint64_t)ltgconf.rpc_timeout / 2)) {
+        } else if (unlikely(time_used > (uint64_t)ltgconf_global.rpc_timeout / 2)) {
                 DWARN("%s[%u][%u] %s status %u time_used %lus\n", sche->name,
                                 sche->id, taskctx->id, taskctx->name, taskctx->state, time_used);
         } else if (unlikely(time_used > 1)) {
@@ -283,7 +283,7 @@ static void __sche_backtrace_exec(sche_t *sche, taskctx_t *taskctx,
                 func(opaque);
         }
 
-        LTG_ASSERT(gettime() -  taskctx->wait_begin < ltgconf.rpc_timeout * 6 * 1000 * 1000);
+        LTG_ASSERT(gettime() -  taskctx->wait_begin < ltgconf_global.rpc_timeout * 6 * 1000 * 1000);
 
         DINFO("%s[%u][%u] %s.%s wait %ds, total %lu s\n",
               sche->name, sche->id, taskctx->id,
@@ -292,7 +292,7 @@ static void __sche_backtrace_exec(sche_t *sche, taskctx_t *taskctx,
 
 #if ENABLE_SCHEDULE_LOCK_CHECK
         if ((taskctx->lock_count || taskctx->ref_count)
-            && used > ltgconf.rpc_timeout * 1 * 1000 * 1000) {
+            && used > ltgconf_global.rpc_timeout * 1 * 1000 * 1000) {
                 DERROR("%s[%u][%u] %s.%s wait %ds, total %lu s, "
                        "retval %u, lock %u, ref %u\n",
                        sche->name, sche->id, taskctx->id,
@@ -655,7 +655,7 @@ static int __sche_create(int *eventfd, const char *name, int idx,
 
         DINFO("create sche[%d] name %s\n", idx, name);
 
-        if (ltgconf.solomode) {
+        if (ltgconf_global.solomode) {
                 (void)private_mem;
                 ret = __sche_create__(&sche, name, idx, NULL, eventfd);
         } else {

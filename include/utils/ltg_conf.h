@@ -55,7 +55,7 @@ typedef struct {
 } ltg_netconf_t;
 
 /* global configure */
-struct ltgconf_t {
+typedef struct {
         char system_name[MAXSIZE];
         char service_name[MAXSIZE];
         char workdir[MAXSIZE];
@@ -81,10 +81,10 @@ struct ltgconf_t {
         int hb_timeout;
         int hb_retry;
         int tcp_discovery;
-};
+} ltgconf_t;
 
-extern struct ltgconf_t ltgconf;
-extern ltg_netconf_t ltg_netconf;
+extern ltgconf_t ltgconf_global;
+extern ltg_netconf_t ltg_netconf_global;
 
 #define SOCKID_NORMAL 10
 #define SOCKID_CORENET 20

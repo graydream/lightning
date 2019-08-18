@@ -233,7 +233,7 @@ static int __core_worker_init(core_t *core)
                 nodeid = core->main_core->node_id;
         }
 
-        if (ltgconf.daemon) {
+        if (ltgconf_global.daemon) {
                 void *hugepage = hugepage_private_init(core->hash, nodeid);
                 core_tls_set(VARIABLE_HUGEPAGE, hugepage);
         }
@@ -271,7 +271,7 @@ static int __core_worker_init(core_t *core)
         if (ret)
                 GOTO(err_ret, ret);
 
-        if (ltgconf.daemon) {
+        if (ltgconf_global.daemon) {
                 ret = mem_ring_private_init(core->hash);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
@@ -283,7 +283,7 @@ static int __core_worker_init(core_t *core)
 
         DINFO("%s[%u] mem inited\n", core->name, core->hash);
 
-        if (ltgconf.performance_analysis) {
+        if (ltgconf_global.performance_analysis) {
                 snprintf(name, sizeof(name), "%s[%u]", core->name, core->hash);
 
                 ret = analysis_private_create(name);
@@ -338,9 +338,9 @@ static int __core_create(core_t **_core, const char *name, int hash, int flag)
         memset(core, 0x0, sizeof(*core));
 
 #if POLLING_LOCK
-        lock = ltgconf.daemon && (flag & CORE_FLAG_POLLING);
+        lock = ltgconf_global.daemon && (flag & CORE_FLAG_POLLING);
 #else
-        lock = ltgconf.daemon;
+        lock = ltgconf_global.daemon;
 #endif
 
         if (lock) {
@@ -387,13 +387,13 @@ int core_init(uint64_t mask, int flag)
         core_t *core = NULL;
 
         if (mask == 0) {
-                LTG_ASSERT(ltgconf.polling_timeout || ltgconf.daemon);
+                LTG_ASSERT(ltgconf_global.polling_timeout || ltgconf_global.daemon);
                 flag = flag ^ CORE_FLAG_POLLING;
 
                 //mask = (LLU)1 << (CORE_MAX - 1);
                 mask = 1;
                 DINFO("set coremask default\n");
-                ltgconf.coremask = mask;
+                ltgconf_global.coremask = mask;
         }
 
         __core_mask__ = mask;
@@ -404,7 +404,7 @@ int core_init(uint64_t mask, int flag)
 
         //DINFO("core init begin %u %u flag %d\n", polling_core, cpuset_useable(), flag);
 
-        ret = hugepage_init(ltgconf.daemon, mask, ltgconf.use_huge);
+        ret = hugepage_init(ltgconf_global.daemon, mask, ltgconf_global.use_huge);
         if (ret)
                 GOTO(err_ret, ret);
 

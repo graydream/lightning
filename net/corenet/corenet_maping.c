@@ -115,7 +115,7 @@ STATIC void __corenet_maping_close_finally__(const nid_t *nid, const sockid_t *s
 {
         (void) nid;
         
-        if (ltgconf.rdma && sockid->rdma_handler != NULL)
+        if (ltgconf_global.rdma && sockid->rdma_handler != NULL)
                 corenet_rdma_close((rdma_conn_t *)sockid->rdma_handler);
         else
                 corenet_tcp_close(sockid);
@@ -133,7 +133,7 @@ STATIC int __corenet_maping_connect_core(const coreid_t *coreid,
         idx = _random() % addr->info_count;
         sock = &addr->info[idx];
 
-        if (ltgconf.rdma && ltgconf.daemon) {
+        if (ltgconf_global.rdma && ltgconf_global.daemon) {
                 ret = corenet_rdma_connect(sock->addr, sock->port, &sockid);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
@@ -226,7 +226,7 @@ STATIC int __corenet_maping_update(const nid_t *nid, const sockid_t *_sockid, ui
         entry->loading = 0;
         entry->coremask = coremask;
 
-        if (ltgconf.rdma) {
+        if (ltgconf_global.rdma) {
                 entry->send = corerpc_rdma_request;
                 entry->connected = corenet_rdma_connected;
         } else {
@@ -487,7 +487,7 @@ void corenet_maping_close(const nid_t *nid, const sockid_t *sockid)
 {
         arg_t arg;
 
-        if (ltgconf.daemon) {
+        if (ltgconf_global.daemon) {
                 if (sockid) {
                         arg.sockid = *sockid;
                 } else {

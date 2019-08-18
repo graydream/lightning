@@ -161,7 +161,7 @@ void core_worker_run(core_t *core);
         used##mark = _time_used(&t1##mark, &t2##mark);                  \
         core_latency_update(used##mark);                                \
         if (used##mark > (__usec)) {                                    \
-                if (used##mark > 1000 * 1000 * ltgconf.rpc_timeout) {   \
+                if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) {   \
                         DWARN_PERF("analysis used %f s %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                 } else {                                                \
                         DINFO_PERF("analysis used %f s %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
