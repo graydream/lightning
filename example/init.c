@@ -9,7 +9,7 @@
 #include <sys/types.h>
 
 #include "ltg_core.h"
-#include "ltg_utils.h"
+#include "ltg_lib.h"
 
 int main(int argc, char *argv[])
 {
@@ -46,11 +46,34 @@ int main(int argc, char *argv[])
         if (optind >= argc) {
                 exit(1);
         }
+        
+        ltgconf_t ltgconf;
+        ltg_netconf_t ltgnet_conf;
 
-        ret = core_init(0, 0);
+        ltg_conf_init(&ltgconf, &ltgnet_conf);
+
+        strcpy(ltgconf.system_name, "ltg_example");
+        strcpy(ltgconf.service_name, "create");
+        strcpy(ltgconf.workdir, "/tmp/example");
+
+        ltgconf.coremask = 0x10001;
+        ltgconf.rpc_timeout = 10;
+        ltgconf.backtrace = 0;
+        ltgconf.daemon = 1;
+        ltgconf.coreflag = CORE_FLAG_POLLING;
+
+#if 0
+        for (int i = 0; i < netconf.count; i++) {
+                ltgnet_conf.network[i].network = netconf.network[i].network;
+                ltgnet_conf.network[i].mask = netconf.network[i].mask;
+                ltgnet_conf.count++;
+        }
+#endif
+        
+        ret = ltg_init(&ltgconf, &ltgnet_conf);
         if (ret)
                 GOTO(err_ret, ret);
-        
+
         return 0;
 err_ret:
         return ret;
