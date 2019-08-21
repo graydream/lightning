@@ -238,7 +238,7 @@ int hugepage_init(int daemon, uint64_t coremask, int use_huge)
 
         mem = malloc(mem_size);
         if (mem == NULL) {
-                DINFO("malloc error\n");
+                DINFO("malloc %d error\n", mem_size);
                 ret = ENOMEM;
                 GOTO(err_ret, ret);
         }

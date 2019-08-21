@@ -130,7 +130,7 @@ static void IO_FUNC core_stat(core_t *core)
 #endif
                       core->name, core->hash,
                       (core->stat_nr2 - core->stat_nr1) * 1000000 / used,
-                      TASK_MAX, task_used, c_runtime / used, task_wait, task_runable,
+                      core->sche->task_count, task_used, c_runtime / used, task_wait, task_runable,
                       ring_count, core->sche->counter / (core->stat_nr2 - core->stat_nr1), (run_time * 100)/ used,
 #if ENABLE_PERF
                       io_lat, io_queue , get_io());
