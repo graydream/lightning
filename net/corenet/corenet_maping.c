@@ -216,7 +216,9 @@ STATIC int __corenet_maping_update(const nid_t *nid, const sockid_t *_sockid, ui
                                 continue;
                         
                         if (entry->connected(&entry->sockid[i])) {
-                                UNIMPLEMENTED(__DUMP__);
+                                DERROR("%s[%d] connected, restart for safe\n",
+                                        network_rname(nid), i);
+                                EXIT(EAGAIN);
                         }
                 }
         }
