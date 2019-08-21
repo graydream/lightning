@@ -13,10 +13,10 @@
 #define TIMER_TYPE_MISC 0
 #define TIMER_TYPE_SCHE 1
 
-#define ytime_t uint64_t /*time in microsecond*/
+#define __time_t uint64_t /*time in microsecond*/
 
 typedef struct {
-        ytime_t time;
+        __time_t time;
         func_t func;
         void *obj;
 } entry_t;
@@ -30,18 +30,18 @@ typedef struct {
 } group_t;
 
 typedef struct {
-        ytime_t max;
-        ytime_t min;
+        __time_t max;
+        __time_t min;
         int thread;
         int maxlevel;
         int chunksize;
         int private;
         group_t group;
-} ytimer_t;
+} ltimer_t;
 
-static ytimer_t *__timer__ = NULL;
+static ltimer_t *__timer__ = NULL;
 
-ytime_t ytime_gettime()
+static __time_t __timer_gettime()
 {
         int ret;
         struct timeval tv;
@@ -53,7 +53,7 @@ ytime_t ytime_gettime()
         return tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-int ytime_getntime(struct timespec *ntime)
+static int __timer_getntime(struct timespec *ntime)
 {
         int ret;
         struct timeval tv;
@@ -70,19 +70,19 @@ err_ret:
         return ret;
 }
 
-void ytime_2ntime(ytime_t ytime, struct timespec *ntime)
+static void __timer_2ntime(__time_t ytime, struct timespec *ntime)
 {
         ntime->tv_sec = ytime / 1000000;
         ntime->tv_nsec = (ytime % 1000000) * 1000;
 }
 
-int __timer_cmp(const void *key, const void *data)
+static int __timer_cmp(const void *key, const void *data)
 {
         int ret;
-        ytime_t *keyid, *dataid;
+        __time_t *keyid, *dataid;
 
-        keyid = (ytime_t *)key;
-        dataid = (ytime_t *)data;
+        keyid = (__time_t *)key;
+        dataid = (__time_t *)data;
 
         if (*keyid < *dataid)
                 ret = -1;
@@ -97,11 +97,11 @@ int __timer_cmp(const void *key, const void *data)
 static void __timer_expire__(group_t *group)
 {
         int ret;
-        ytime_t now;
+        __time_t now;
         void *first;
         entry_t *ent;
 
-        now = ytime_gettime();
+        now = __timer_gettime();
         while (1) {
                 ret = skiplist_get1st(group->list, (void **)&first);
                 if (unlikely(ret)) {
@@ -120,7 +120,7 @@ static void __timer_expire__(group_t *group)
                         ent->func(ent->obj);
                         ANALYSIS_END(0, 1000 * 100, NULL);
 
-                        huge_mem_free(ent);
+                        slab_stream_free(ent);
                 } else {
                         break;
                 }
@@ -133,13 +133,13 @@ static void *__timer_expire(void *_args)
         int ret;
         group_t *group;
         struct timespec ts;
-        ytime_t now;
+        __time_t now;
         void *first;
         entry_t *ent;
 
         group = _args;
 
-        ret = ytime_getntime(&ts);
+        ret = __timer_getntime(&ts);
         if (unlikely(ret)) {
                 LTG_ASSERT(0);
         }
@@ -176,7 +176,7 @@ static void *__timer_expire(void *_args)
                         if (unlikely(ret))
                                 LTG_ASSERT(0);
 
-                        now = ytime_gettime();
+                        now = __timer_gettime();
 
                         ent = first;
 
@@ -198,9 +198,9 @@ static void *__timer_expire(void *_args)
                                 ent->func(ent->obj);
                                 ANALYSIS_END(0, IO_WARN, NULL);
 
-                                huge_mem_free(ent);
+                                slab_stream_free(ent);
                         } else {
-                                ytime_2ntime(ent->time, &ts);
+                                __timer_2ntime(ent->time, &ts);
                                 break;
                         }
                 }
@@ -214,13 +214,13 @@ int timer_init(int private)
 {
         int ret, len;
         void *ptr;
-        ytimer_t *_timer;
+        ltimer_t *_timer;
         group_t *group;
         pthread_t th;
         pthread_attr_t ta;
 
         /* group [ sche , misc ] */
-        len = sizeof(ytimer_t);
+        len = sizeof(ltimer_t);
 
         ret = ltg_malloc(&ptr, len);
         if (unlikely(ret))
@@ -272,16 +272,15 @@ err_ret:
         return ret;
 }
 
-static int __timer_insert(group_t *group, suseconds_t usec, void *obj, func_t func)
+static void __timer_insert(entry_t *ent, group_t *group, suseconds_t usec,
+                           void *obj, func_t func)
 {
         int ret, retry = 0;
-        entry_t *ent;
         uint64_t tmo;
 
-        tmo = ytime_gettime();
+        tmo = __timer_gettime();
         tmo += usec;
 
-        ent = huge_mem_alloc(64);
         ent->time = tmo;
         ent->obj = obj;
         ent->func = func;
@@ -290,9 +289,7 @@ retry:
         ret = skiplist_put(group->list, (void *)&ent->time, (void *)ent);
         if (unlikely(ret)) {
                 if (ret == EEXIST) {
-                        if (retry > 1024) {
-                                LTG_ASSERT(0);
-                        }
+                        LTG_ASSERT(retry < 1024);
 
                         if (retry > 256)
                                 DINFO("retry %u, count %u\n", retry, group->count);
@@ -300,24 +297,22 @@ retry:
                         ent->time = ent->time + (group->seq ++) % 1024;
                         retry ++;
                         goto retry;
+                } else {
+                        UNIMPLEMENTED(__DUMP__);
                 }
-
-                GOTO(err_ret, ret);
         }
 
         group->count++;
 
-        return 0;
-err_ret:
-        huge_mem_free(ent);
-        return ret;
+        return;
 }
 
 int timer_insert(const char *name, void *ctx, func_t func, suseconds_t usec)
 {
         int ret;
         group_t *group;
-        ytimer_t *timer;
+        ltimer_t *timer;
+        entry_t *ent;
 
         timer = core_tls_get(NULL, VARIABLE_TIMER);
         if (likely(timer)) {
@@ -333,25 +328,21 @@ int timer_insert(const char *name, void *ctx, func_t func, suseconds_t usec)
                 ret = ltg_spin_lock(&group->lock);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
-        }
-        
-        ret = __timer_insert(group, usec, ctx, func);
-        if (unlikely(ret))
-                GOTO(err_lock, ret);
 
-        if (unlikely(!timer->private)) {
-                ltg_spin_unlock(&group->lock);
-        }
-
-        if (unlikely(!timer->private)) {
-                sem_post(&group->sem);
-        }
+                ent = slab_stream_alloc_glob(sizeof(*ent));
                 
-        return 0;
-err_lock:
-        if (unlikely(!timer->private)) {
+                __timer_insert(ent, group, usec, ctx, func);
+                
                 ltg_spin_unlock(&group->lock);
+
+                sem_post(&group->sem);
+        } else {
+                ent = slab_stream_alloc(sizeof(*ent));
+
+                __timer_insert(ent, group, usec, ctx, func);
         }
+
+        return 0;
 err_ret:
         return ret;
 }
@@ -365,7 +356,7 @@ static void __timer_expire_task(void *arg)
 
 void IO_FUNC timer_expire(void *ctx)
 {
-        ytimer_t *timer;
+        ltimer_t *timer;
         timer = core_tls_get(ctx, VARIABLE_TIMER);
 
         if (unlikely(timer == NULL))
