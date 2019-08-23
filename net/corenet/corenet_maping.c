@@ -163,7 +163,7 @@ STATIC int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
         char buf[MAX_BUF_LEN];
         uint64_t coremask;
         coreid_t coreid;
-
+        int i;
         ret = network_connect(nid, NULL, 0, 0);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
@@ -174,7 +174,7 @@ STATIC int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
 
         coreid.nid = *nid;
         addr = (void *)buf;
-        for (int i = 0; i < CORE_MAX; i++) {
+        for (i = 0; i < CORE_MAX; i++) {
                 if (!core_usedby(coremask, i))
                         continue;
                 
@@ -194,6 +194,9 @@ STATIC int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
 
         return 0;
 err_close:
+	DERROR("%s[%d] connected, restart for safe\n",
+			network_rname(nid), i);
+	EXIT(EAGAIN);
         UNIMPLEMENTED(__DUMP__);
 err_ret:
         return ret;
