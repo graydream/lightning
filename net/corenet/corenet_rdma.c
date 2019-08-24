@@ -123,16 +123,6 @@ static void __corenet_rdma_free_node(corenet_rdma_t *rdma_net, corenet_node_t *n
               node->sockid.sd, &node->handler, node);
         //  ltg_free((void **)&node->ctx);
 
-	struct ibv_send_wr *sr = node->head_sr.next;
-	rdma_req_t *req;
-	while (sr)
-	{
-		req = (rdma_req_t *)sr->wr_id;
-		if (req && req->msg_buf.len){
-			ltgbuf_free(&req->msg_buf);
-                }
-		sr = sr->next;
-	}
         INIT_LIST_HEAD(&node->send_list);
         node->ev = 0;
         node->ctx = NULL;
@@ -150,16 +140,28 @@ static void __corenet_rdma_free_node(corenet_rdma_t *rdma_net, corenet_node_t *n
 
 static void __corenet_rdma_free_node1(core_t *_core, sockid_t *sockid)
 {
-        corenet_node_t *node;
+        corenet_node_t *node = NULL;
         __corenet_t *_corenet = (__corenet_t *)_core->corenet;
         corenet_rdma_t *corenet = (corenet_rdma_t *)_corenet->rdma_net;
 
+	node = &corenet->array[sockid->sd];
+	if (node->send_count > 0) { 
+		struct ibv_send_wr *sr = node->head_sr.next;
+		rdma_req_t *req;
+		while (sr)
+		{
+			req = (rdma_req_t *)sr->wr_id;
+			if (req && req->msg_buf.len){
+				ltgbuf_free(&req->msg_buf);
+			}
+			sr = sr->next;
+		}
+	}
         LTG_ASSERT(corenet);
         LTG_ASSERT(sockid->addr);
         LTG_ASSERT(sockid->type == SOCKID_CORENET);
 
 
-        node = &corenet->array[sockid->sd];
         __corenet_rdma_free_node(corenet, node);
 }
 
@@ -257,15 +259,26 @@ static void __corenet_rdma_close(rdma_conn_t *rdma_handler)
         __corenet_t *corenet = (__corenet_t *)rdma_handler->core->corenet;
         corenet_rdma_t *__corenet_rdma__ = (corenet_rdma_t *)corenet->rdma_net;
         struct rdma_cm_id *cm_id;
-
+        node = &__corenet_rdma__->array[rdma_handler->node_loc];
+	struct ibv_send_wr *sr = node->head_sr.next;
+	if (node->send_count > 0) {
+		rdma_req_t *req;
+		while (sr)
+		{
+			req = (rdma_req_t *)sr->wr_id;
+			if (req && req->msg_buf.len){
+				ltgbuf_free(&req->msg_buf);
+			}
+			sr = sr->next;
+		}
+	}
         cm_id = rdma_handler->cm_id;
         cm_id->context = NULL;
+        DINFO("corenet rdma close %d, node:%p iov addr %p\n", rdma_handler->node_loc, rdma_handler, rdma_handler->iov_addr);
         ltg_free(&rdma_handler->iov_addr);
         rdma_destroy_qp(rdma_handler->cm_id);
         // rdma_destroy_id(rdma_handler->cm_id);
 
-        node = &__corenet_rdma__->array[rdma_handler->node_loc];
-        DINFO("corenet rdma close %d, node:%p\n", rdma_handler->node_loc, rdma_handler);
         if (node->reset)
                 node->reset(node->ctx);
 
@@ -337,7 +350,7 @@ int corenet_rdma_post_recv(void *ptr)
 
         rdma_handler = req->rdma_handler;
 
-        if (likely(rdma_handler && rdma_handler->is_closing == 0 && rdma_handler->qp)) {
+        if (likely(rdma_handler->is_closing == 0)){
 
                 if (req->mode == RDMA_READ)
                         __iovs_post_recv_init(req, ptr - RDMA_MESSAGE_SIZE);
@@ -348,11 +361,14 @@ int corenet_rdma_post_recv(void *ptr)
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
                 //DINFO("rdma post recv (%p %p) %d\n", req, rdma_handler, rdma_handler->ref);
-                corenet_rdma_get(rdma_handler, 1);
+                //corenet_rdma_get(rdma_handler, 1);
+        } else {
+                corenet_rdma_put(rdma_handler);
         }
 
         return 0;
 err_ret:
+        corenet_rdma_put(rdma_handler);
         return ret;
 }
 
@@ -525,6 +541,7 @@ inline static int IO_FUNC __corenet_rdma_handle_wc(struct ibv_wc *wc, __corenet_
                 req->ref--;
                 LTG_ASSERT(req->ref == 0);
                 ltgbuf_free(&req->msg_buf);
+                corenet_rdma_put(rdma_handler);
                 break;
         case RDMA_READ:
                 req->ref--;
@@ -539,6 +556,7 @@ inline static int IO_FUNC __corenet_rdma_handle_wc(struct ibv_wc *wc, __corenet_
                 if (req->ref == 0) {
                         ltgbuf_free(&req->msg_buf);
                 }
+                corenet_rdma_put(rdma_handler);
                 break; /*do nothing*/
         default:
                 DERROR("bad mode:%d\n", req->mode);
@@ -546,7 +564,6 @@ inline static int IO_FUNC __corenet_rdma_handle_wc(struct ibv_wc *wc, __corenet_
         }
 
         //DINFO("rdma poll(%p %p) ref %d\n", req, rdma_handler, rdma_handler->ref);
-        corenet_rdma_put(rdma_handler);
 
         return 0;
 }
@@ -1005,7 +1022,7 @@ static int __corenet_rdma_post_mem_handler(rdma_conn_t *handler, core_t *core)
         }
 
         handler->iov_addr = tmp;
-
+        DINFO("new rdma conn %p\n", handler->iov_addr);
         handler->iov_mr = (struct ibv_mr *)rdma_register_mgr(handler->pd,
                                                              tmp, size * DEFAULT_MH_NUM);
         if (handler->iov_mr == NULL)
@@ -1343,9 +1360,6 @@ static int __corenet_rdma_on_active_event(struct rdma_event_channel *evt_channel
                         DERROR("rdma_get_cm_event failed, err:%d\r\n", -errno);
                         return -errno;
                 }
-
-                DINFO("cm_id %p verbs %p device %p event %d\n", ev->id, ev->id->verbs, ev->id->verbs->device, ev->event);
-
 
                 ev_type = ev->event;
 

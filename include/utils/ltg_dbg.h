@@ -156,7 +156,7 @@ extern uint32_t utils_sub;
 #define EXIT(__ret__)                             \
         do {       					\
 		rdma_running = 0;                               \
-		sleep(2);					\
+		sleep(1);					\
                 DWARN("exit worker (%u) %s\n", __ret__, strerror(__ret__)); \
                 exit(__ret__);                                          \
         } while (0)
