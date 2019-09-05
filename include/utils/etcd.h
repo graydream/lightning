@@ -43,6 +43,7 @@ int etcd_readdir(const char *_key, char *buf, int *buflen);
 int etcd_list1(const char *prefix, const char *_key, etcd_node_t **_node);
 int etcd_list(const char *_key, etcd_node_t **_node);
 int etcd_del(const char *prefix, const char *_key);
+int etcd_del2(char *key);
 int etcd_del_dir(const char *prefix, const char *_key, int recursive);
 
 int etcd_create_text(const char *prefix, const char *_key, const char *_value, int ttl);

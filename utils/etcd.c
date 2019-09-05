@@ -1028,11 +1028,11 @@ int etcd_lock_health(etcd_lock_t *lock)
         }
 }
 
-int etcd_del(const char *prefix, const char *_key)
+int etcd_del2(char *key)
 {
         int ret;
         etcd_session  sess;
-        char key[MAX_PATH_LEN], *host;
+        char *host;
 
         // LTG_ASSERT(sche_self() == 0);
 
@@ -1041,8 +1041,6 @@ int etcd_del(const char *prefix, const char *_key)
         if (ret) {
                 GOTO(err_ret, ret);
         }
-
-        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
 
         DINFO("remove %s\n", key);
         ret = __etcd_del(sess, key);
@@ -1059,6 +1057,15 @@ err_close:
 err_ret:
         free(host);
         return ret;
+}
+
+int etcd_del(const char *prefix, const char *_key)
+{
+        char key[MAX_PATH_LEN];
+
+        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
+
+        return etcd_del2(key);
 }
 
 int etcd_del_dir(const char *prefix, const char *_key, int recursive)
