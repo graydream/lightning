@@ -713,6 +713,8 @@ static inline int __corenet_rdma_commit(corenet_node_t *node)
         struct ibv_send_wr *bad_wr;
         int ret;
         handler = &node->handler;
+        if (rdma_running == 0)
+                return 0;
         //DINFO("begin commit count %d req on %p\n", node->send_count, handler);
         ret = ibv_post_send(handler->qp, node->head_sr.next, &bad_wr);
         if (unlikely(ret)) {
