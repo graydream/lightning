@@ -39,8 +39,8 @@ core_t *core_self()
 
 int core_usedby(uint64_t mask, int idx)
 {
-        LTG_ASSERT(idx <= CORE_MAX);
-        return mask & ((LLU)1 << idx);
+        LTG_ASSERT(idx < CORE_MAX);
+        return (mask & (1UL << idx)) ? 1 : 0;
 }
 
 int core_used(int idx)
@@ -126,11 +126,11 @@ static void IO_FUNC core_stat(core_t *core)
 #if ENABLE_PERF
                       DINFO("%s[%d] pps:%jd task:%u/%u/%lu/%u/%u ring:%u, counter:%ju cpu_usage(%ju%), nvme_io_stat(%u/%u) perf %u\n",
 #else
-                      DINFO("%s[%d] pps:%jd task:%u/%u/%lu/%u/%u ring:%u counter:%ju cpu %ju io %u/%u\n",
+                      DINFO("%s[%d] pps:%jd task:%u/%u/%lu/%u/%u/%lu ring:%u counter:%ju cpu %ju io %u/%u\n",
 #endif
                       core->name, core->hash,
                       (core->stat_nr2 - core->stat_nr1) * 1000000 / used,
-                      TASK_MAX, task_used, c_runtime / used, task_wait, task_runable,
+                      TASK_MAX, task_used, c_runtime / used, task_wait, task_runable, c_runtime,
                       ring_count, core->sche->counter / (core->stat_nr2 - core->stat_nr1), (run_time * 100)/ used,
 #if ENABLE_PERF
                       io_lat, io_queue , get_io());
