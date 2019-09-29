@@ -235,14 +235,9 @@
 
 
 typedef void (*func_t)(void *arg);
-typedef void (*func1_t)(void *, void *);
+typedef int (*func1_t)(void *, void *);
 typedef void (*func2_t)(void *, void *, void *);
 typedef void (*func3_t)(void *, void *, void *, void *);
-
-typedef int (*func_int_t)(void *arg);
-typedef int (*func_int1_t)(void *, void *);
-typedef int (*func_int2_t)(void *, void *, void *);
-typedef int (*func_int3_t)(void *, void *, void *, void *);
 
 typedef int (*func_va_t)(va_list ap);
 

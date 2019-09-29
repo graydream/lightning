@@ -470,7 +470,7 @@ err_ret:
         return ret;
 }
 
-void __corenet_maping_close(void *_core, void *_opaque)
+int __corenet_maping_close(void *_core, void *_opaque)
 {
         int ret;
         core_t *core = _core;
@@ -486,6 +486,8 @@ void __corenet_maping_close(void *_core, void *_opaque)
                                arg, "corenet_close");
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
+
+        return 0;
 }
 
 void corenet_maping_close(const nid_t *nid, const sockid_t *sockid)

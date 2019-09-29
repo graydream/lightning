@@ -512,7 +512,7 @@ void core_iterator(func1_t func, const void *opaque)
         }
 }
 
-static void __core_dump_memory(void *_core, void *_arg)
+static int __core_dump_memory(void *_core, void *_arg)
 {
         core_t *core = _core;
         uint64_t *memory = _arg;
@@ -521,6 +521,8 @@ static void __core_dump_memory(void *_core, void *_arg)
         *memory += sizeof(core_t) +
                    sizeof(sche_t) +
                    (sizeof(taskctx_t) + DEFAULT_STACK_SIZE) * sche->size;
+
+        return 0;
 }
 
 /**
