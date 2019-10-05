@@ -256,6 +256,7 @@ int corenet_attach(void *_corenet, const sockid_t *sockid, void *ctx,
                    core_exec exec, func_t reset, func_t check, func_t recv,
                    const char *name);
 int corenet_send(void *ctx, const sockid_t *sockid, ltgbuf_t *buf);
+int corenet_register(uint64_t coremask);
 void corenet_close(const sockid_t *sockid);
 
 #endif

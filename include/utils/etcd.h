@@ -22,8 +22,7 @@
 #define ETCD_NODE       "node"
 #define ETCD_CONN       "network/addr"
 #define ETCD_NID        "network/nid"
-#define ETCD_CHAP       "chap"
-#define ETCD_INITIATOR  "initiator"
+#define ETCD_CORENET    "network/corenet"
 
 typedef struct{
         int running;
