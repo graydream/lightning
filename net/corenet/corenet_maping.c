@@ -155,7 +155,100 @@ err_ret:
         return ret;
 }
 
-STATIC int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
+int corenet_maping_register(uint64_t coremask)
+{
+        int ret;
+        nid_t nid = *net_getnid();
+        coreid_t coreid = {nid, 0};
+        corenet_addr_t *addr;
+        char buf[MAX_BUF_LEN], key[MAX_NAME_LEN];
+
+        addr = (void *)buf;
+        for (int i = 0; i < CORE_MAX; i++) {
+                if (!core_usedby(coremask, i))
+                        continue;
+
+                coreid.idx = i;
+                ret = corenet_getaddr(&coreid, addr);
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+
+                snprintf(key, MAX_NAME_LEN, "%d/%d", nid.id, i);
+                ret = etcd_create(ETCD_CORENET, key, addr, addr->len, -1);
+                if (unlikely(ret)) {
+                        ret = etcd_update(ETCD_CORENET, key, addr, addr->len,
+                                          NULL, -1);
+                        if (unlikely(ret))
+                                GOTO(err_ret, ret);
+                }
+        }
+
+        snprintf(key, MAX_NAME_LEN, "%d/coremask", nid.id);
+        ret = etcd_create(ETCD_CORENET, key, (void *)&coremask,
+                          sizeof(coremask), -1);
+        if (unlikely(ret)) {
+                ret = etcd_update(ETCD_CORENET, key, (void *)&coremask,
+                                  sizeof(coremask), NULL, -1);
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+        }
+
+        return 0;
+err_ret:
+        return ret;
+}
+
+#if 1
+
+static int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
+                                      uint64_t *_coremask)
+{
+        int ret, valuelen;
+        char buf[MAX_BUF_LEN], key[MAX_NAME_LEN];
+        corenet_addr_t *addr = (void *)buf;
+        uint64_t coremask;
+        coreid_t coreid = {*nid, 0};
+        int i;
+
+        snprintf(key, MAX_NAME_LEN, "%d/coremask", nid->id);
+        valuelen = sizeof(coremask);
+        ret = etcd_get_bin(ETCD_CORENET, key, (void *)&coremask, &valuelen, NULL);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
+        for (i = 0; i < CORE_MAX; i++) {
+                if (!core_usedby(coremask, i))
+                        continue;
+
+                valuelen = MAX_NAME_LEN;
+                snprintf(key, MAX_NAME_LEN, "%d/%d", nid->id, i);
+                ret = etcd_get_bin(ETCD_CORENET, key, (void *)addr, &valuelen, NULL);
+                if (unlikely(ret)) {
+                        GOTO(err_close, ret);
+                }
+
+                coreid.idx = i;
+                ret = __corenet_maping_connect_core(&coreid, addr, &_sockid[i]);
+                if (unlikely(ret)) {
+                        GOTO(err_close, ret);
+                }
+        }
+
+        *_coremask = coremask;
+
+        return 0;
+err_close:
+	DERROR("%s[%d] connected, restart for safe\n",
+			network_rname(nid), i);
+	EXIT(EAGAIN);
+        UNIMPLEMENTED(__DUMP__);
+err_ret:
+        return ret;
+}
+
+#else
+
+static int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
                                       uint64_t *_coremask)
 {
         int ret;
@@ -164,6 +257,7 @@ STATIC int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
         uint64_t coremask;
         coreid_t coreid;
         int i;
+
         ret = network_connect(nid, NULL, 0, 0);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
@@ -201,6 +295,8 @@ err_close:
 err_ret:
         return ret;
 }
+
+#endif
 
 STATIC int __corenet_maping_update(const nid_t *nid, const sockid_t *_sockid, uint64_t coremask)
 {

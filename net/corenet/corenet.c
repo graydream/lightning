@@ -285,3 +285,8 @@ void corenet_close(const sockid_t *sockid)
                 corenet_tcp_close(sockid);
         }
 }
+
+int corenet_register(uint64_t coremask)
+{
+        return corenet_maping_register(coremask);
+}

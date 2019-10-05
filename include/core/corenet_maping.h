@@ -26,5 +26,6 @@ int corenet_maping_loading(const nid_t *nid);
 void corenet_maping_close(const nid_t *nid, const sockid_t *sockid);
 void corenet_maping_check(const ltg_net_info_t *info);
 void corenet_maping_destroy(corenet_maping_t **maping);
+int corenet_maping_register(uint64_t coremask);
 
 #endif

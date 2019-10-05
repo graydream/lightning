@@ -107,7 +107,8 @@ typedef struct __core {
 } core_t;
 
 //typedef void (*poller_t)(core_t *core, void *ctx);
-#define CORE_FLAG_POLLING 0x0020
+#define CORE_FLAG_PASV 0x0001
+#define CORE_FLAG_POLLING 0x0002
 
 int core_init(uint64_t mask, int flag);
 int core_usedby(uint64_t mask, int idx);
