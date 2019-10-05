@@ -86,6 +86,6 @@ static inline void nid2str(char *str, const nid_t *nid)
 }
 
 #define COREID_FORMAT "%s/%d"
-#define COREID_ARG(__coreid__) network_rname(&(__coreid__)->nid), (__coreid__)->idx
+#define COREID_ARG(__coreid__) netable_rname(&(__coreid__)->nid), (__coreid__)->idx
 
 #endif

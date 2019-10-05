@@ -441,7 +441,7 @@ const char *__netable_rname(const nid_t *nid)
         return buf;
 }
 
-const char *netable_rname_nid(const nid_t *nid)
+const char *netable_rname(const nid_t *nid)
 {
         entry_t *ent;
 
@@ -594,11 +594,11 @@ void netable_sort(diskid_t *nids, int count)
                         net = __netable_nidfind(&sec->nid);
                         if (unlikely(net == NULL || net->status != NETABLE_CONN)) {
                                 DINFO("%s not online, no balance\n",
-                                      netable_rname_nid(&sec->nid));
+                                      netable_rname(&sec->nid));
                                 return;
                         }
 
-                        DBUG("%s latency %llu\n", netable_rname_nid(&sec->nid),
+                        DBUG("%s latency %llu\n", netable_rname(&sec->nid),
                              (LLU)net->load);
 
                         if (net->load < 0.1)
@@ -613,7 +613,7 @@ void netable_sort(diskid_t *nids, int count)
                 sec = &section[i];
                 nids[i] = sec->diskid;
 
-                DBUG("node[%u] %s latency %llu\n", i, netable_rname_nid(&sec->nid),
+                DBUG("node[%u] %s latency %llu\n", i, netable_rname(&sec->nid),
                      (LLU)section[i].load);
         }
 }
@@ -660,7 +660,7 @@ int netable_connectable(const nid_t *nid, int force)
                 tmo = gettime() - ent->last_retry;
                 if (tmo < wait) {
                         DBUG("conn %s will retry after %d sec\n",
-                             netable_rname_nid(nid), wait - tmo);
+                             netable_rname(nid), wait - tmo);
                         return 0;
                 } else {
                         return 1;
@@ -699,7 +699,7 @@ int netable_getsock(const nid_t *nid, sockid_t *sockid)
 
         ret = sdevent_check(sockid);
         if (unlikely(ret)) {
-                DWARN("%s lost\n", network_rname(nid));
+                DWARN("%s lost\n", netable_rname(nid));
                 netable_close(nid, "lost socket", NULL);
                 GOTO(err_ret, ret);
         }

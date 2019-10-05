@@ -43,7 +43,7 @@ int netable_connectable(const nid_t *nid, int force);
 
 void netable_close(const nid_t *nid, const char *resion, const time_t *ltime);
 
-const char *netable_rname_nid(const nid_t *nid);
+const char *netable_rname(const nid_t *nid);
 int netable_rname1(const nid_t *nid, char *name);
 
 int netable_getsock(const nid_t *nid, sockid_t *sockid);

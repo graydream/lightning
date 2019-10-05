@@ -473,7 +473,7 @@ static int __rpc_table_reset(rpc_table_t *rpc_table,
                 DINFO("table %s %s @ %s(%s) reset, id (%u, %x), used %u\n",
                       rpc_table->name, slot->name,
                       _inet_ntoa(slot->sockid.addr),
-                      nid ? network_rname(nid) : "NULL", slot->msgid.idx,
+                      nid ? netable_rname(nid) : "NULL", slot->msgid.idx,
                       slot->msgid.figerprint, (int)(gettime() - slot->begin));
                 uint64_t latency = -1;
                 slot->func(slot->arg, &retval, NULL, &latency);
@@ -499,7 +499,7 @@ void  rpc_table_reset(rpc_table_t *rpc_table, const sockid_t *sockid, const nid_
         }
 #if 0
         if (nid) {
-                DINFO("reset %s node %s\n", rpc_table->name, network_rname(nid));
+                DINFO("reset %s node %s\n", rpc_table->name, netable_rname(nid));
         } else {
                 //DINFO("reset %s node %s\n", rpc_table->name, _inet_ntoa(sockid->addr));
                 DINFO("reset %s\n", rpc_table->name);

@@ -195,10 +195,6 @@ static int __ltg_init_stage2(const char *name)
                         GOTO(err_ret, ret);
         }
 
-        ret = network_init();
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
         if (ltgconf_global.daemon) {
                 ret = conn_init();
                 if (ret)

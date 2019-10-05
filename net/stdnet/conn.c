@@ -121,17 +121,17 @@ static void *__conn_retry(void *arg)
 
         while (1) {
                 if (retry > ltgconf_global.rpc_timeout * 2 && !conn_online(nid, -1)) {
-                        DINFO("retry conn to %s fail, exit\n", network_rname(nid));
+                        DINFO("retry conn to %s fail, exit\n", netable_rname(nid));
                         break;
                 }
                 
                 __conn_add(nid);
                 if (netable_connected(nid)) {
-                        DINFO("retry conn to %s success\n", network_rname(nid));
+                        DINFO("retry conn to %s success\n", netable_rname(nid));
                         break;
                 }
 
-                DINFO("retry conn to %s, sleep %u\n", network_rname(nid), retry);
+                DINFO("retry conn to %s, sleep %u\n", netable_rname(nid), retry);
                 retry++;
 
                 sleep(1);

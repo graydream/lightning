@@ -88,7 +88,7 @@ int corenet_tcp_connect(const coreid_t *coreid, uint32_t addr, uint32_t port,
         ctx->sockid = *sockid;
         ctx->coreid = *coreid;
         ret = corenet_tcp_add(NULL, sockid, ctx, corerpc_recv, corerpc_close,
-                              NULL, NULL, network_rname(&coreid->nid));
+                              NULL, NULL, netable_rname(&coreid->nid));
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
@@ -144,7 +144,7 @@ STATIC void *__corenet_tcp_accept__(void *arg)
               core->maping, sockid->sd);
 
         ret = corenet_attach(core->corenet, sockid, ctx, corerpc_recv,
-                             corerpc_close, NULL, NULL, network_rname(&ctx->coreid.nid));
+                             corerpc_close, NULL, NULL, netable_rname(&ctx->coreid.nid));
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 

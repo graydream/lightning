@@ -227,7 +227,7 @@ int IO_FUNC __corerpc_postwait(const char *name, corerpc_op_t *op)
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        DBUG("send to %s/%d, sd %u\n", network_rname(&op->coreid.nid),
+        DBUG("send to %s/%d, sd %u\n", netable_rname(&op->coreid.nid),
              op->coreid.idx, op->sockid.sd);
 
         ret = corerpc_send_and_wait(core, name, op);

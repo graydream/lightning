@@ -145,7 +145,7 @@ STATIC int __corenet_maping_connect_core(const coreid_t *coreid,
                 sockid.rdma_handler = NULL;
         }
 
-        DINFO("connect to %s/%d sd %u, addr %d:%d\n", network_rname(&coreid->nid),
+        DINFO("connect to %s/%d sd %u, addr %d:%d\n", netable_rname(&coreid->nid),
               coreid->idx, sockid.sd, sock->addr, sock->port);
 
         *_sockid = sockid;
@@ -239,7 +239,7 @@ static int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
         return 0;
 err_close:
 	DERROR("%s[%d] connected, restart for safe\n",
-			network_rname(nid), i);
+			netable_rname(nid), i);
 	EXIT(EAGAIN);
         UNIMPLEMENTED(__DUMP__);
 err_ret:
@@ -289,7 +289,7 @@ static int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
         return 0;
 err_close:
 	DERROR("%s[%d] connected, restart for safe\n",
-			network_rname(nid), i);
+			netable_rname(nid), i);
 	EXIT(EAGAIN);
         UNIMPLEMENTED(__DUMP__);
 err_ret:
@@ -316,7 +316,7 @@ STATIC int __corenet_maping_update(const nid_t *nid, const sockid_t *_sockid, ui
                         
                         if (entry->connected(&entry->sockid[i])) {
                                 DERROR("%s[%d] connected, restart for safe\n",
-                                        network_rname(nid), i);
+                                        netable_rname(nid), i);
                                 EXIT(EAGAIN);
                         }
                 }
@@ -418,10 +418,10 @@ static void __corenet_maping_connect_task(void *arg)
         corenet_maping_t *entry = arg;
         const nid_t *nid = &entry->nid;
 
-        DINFO("connect to %s\n", network_rname(nid));
+        DINFO("connect to %s\n", netable_rname(nid));
         ret = __corenet_maping_connect(nid);
         if (ret) {
-                DWARN("connect to %s fail\n", network_rname(nid));
+                DWARN("connect to %s fail\n", netable_rname(nid));
         }
 }
 
@@ -443,7 +443,7 @@ static int IO_FUNC __corenet_maping_connect_wait(corenet_maping_t *entry)
 
                 ltg_spin_unlock(&entry->lock);
 
-                DINFO("connect to %s\n", network_rname(nid));
+                DINFO("connect to %s\n", netable_rname(nid));
 
                 sche_task_new("corenet_maping",
                               __corenet_maping_connect_task,
@@ -452,7 +452,7 @@ static int IO_FUNC __corenet_maping_connect_wait(corenet_maping_t *entry)
                 ltg_spin_unlock(&entry->lock);
         }
 
-        DINFO("connect to %s wait\n", network_rname(nid));
+        DINFO("connect to %s wait\n", netable_rname(nid));
         ret = sche_yield("maping_connect", NULL, NULL);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
@@ -516,14 +516,14 @@ static void __corenet_maping_close__(void *_arg)
                             && arg->sockid.seq == sockid->seq) {
 
                                 DINFO("close maping one sock %s nid[%u], sockid %u\n",
-                                      network_rname(&arg->nid), arg->nid.id, sockid->sd);
+                                      netable_rname(&arg->nid), arg->nid.id, sockid->sd);
 
                                 __corenet_maping_close_finally__(&arg->nid, sockid);
                                 sockid->sd = -1;
                                 break;
                         } else {
                                 DINFO("close maping all sock %s nid[%u], sockid %u\n",
-                                      network_rname(&arg->nid), arg->nid.id, sockid->sd);
+                                      netable_rname(&arg->nid), arg->nid.id, sockid->sd);
 
                                 __corenet_maping_close_finally__(&arg->nid, sockid);
                                 sockid->sd = -1;

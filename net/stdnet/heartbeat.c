@@ -90,7 +90,7 @@ static void __heartbeat(void *_ent)
         ltime = netable_conn_time(&hb_ent->parent);
         if (ltime != hb_ent->ltime) {
                 ret = EEXIST;
-                DINFO("%s maigc %u -> %u, heartbeat exit\n", netable_rname_nid(&hb_ent->parent),
+                DINFO("%s maigc %u -> %u, heartbeat exit\n", netable_rname(&hb_ent->parent),
                       hb_ent->ltime, ltime);
                 GOTO(err_ret, ret);
         }
@@ -106,9 +106,9 @@ static void __heartbeat(void *_ent)
 
         lost = sent - reply;
         if (lost > 1 && lost <= ltgconf_global.hb_retry) {
-                DINFO("heartbeat %s lost ack %u\n", netable_rname_nid(&hb_ent->parent), lost);
+                DINFO("heartbeat %s lost ack %u\n", netable_rname(&hb_ent->parent), lost);
         } else if (lost > ltgconf_global.hb_retry) {
-                DWARN("heartbeat %s fail, lost ack %u\n", netable_rname_nid(&hb_ent->parent), lost);
+                DWARN("heartbeat %s fail, lost ack %u\n", netable_rname(&hb_ent->parent), lost);
                 netable_close(&hb_ent->parent, "timeout at hb", &hb_ent->ltime);
                 ret = ETIME;
                 GOTO(err_ret, ret);

@@ -17,7 +17,7 @@ typedef enum {
         STATUS_FINISH,
 } SBUF_STATUS_T;
 
-const char *network_rname(const nid_t *nid);
+const char *netable_rname(const nid_t *nid);
 //extern mpool_t page_pool;
 
 #ifdef LTG_DEBUG

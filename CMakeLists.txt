@@ -58,7 +58,7 @@ add_library(lightning STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/mem/slab_stream.c
     ${CMAKE_CURRENT_SOURCE_DIR}/mem/slab_static.c
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/net/lib/network.c
+    #${CMAKE_CURRENT_SOURCE_DIR}/net/lib/network.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/lib/sock_passive.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/lib/sock_tcp.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/lib/sock_xmit.c

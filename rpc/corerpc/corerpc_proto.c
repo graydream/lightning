@@ -97,7 +97,7 @@ static int IO_FUNC __corerpc_request_handler(corerpc_ctx_t *ctx, const ltg_net_h
 
         if (unlikely(!ltgconf_global.rdma)) {
                 netable_load_update(&ctx->coreid.nid, head->load);
-                DBUG("update %s latency %ju\n", network_rname(&ctx->coreid.nid), head->load);
+                DBUG("update %s latency %ju\n", netable_rname(&ctx->coreid.nid), head->load);
         }
 
         return 0;

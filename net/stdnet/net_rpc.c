@@ -160,7 +160,7 @@ err_ret:
         return;
 }
 
-#if 1
+#if 0
 static int __net_srv_corenetinfo(const sockid_t *sockid, const msgid_t *msgid,
                                  ltgbuf_t *_buf)
 {
@@ -233,7 +233,7 @@ err_ret:
 }
 #endif
 
-#if 1
+#if 0
 static int __net_srv_cores(const sockid_t *sockid, const msgid_t *msgid,
                            ltgbuf_t *_buf)
 {
@@ -299,7 +299,7 @@ err_ret:
 int net_rpc_init()
 {
         __request_set_handler(NET_RPC_HEARTBEAT, __net_srv_heartbeat, "net_srv_heartbeat");
-#if 1
+#if 0
         __request_set_handler(NET_RPC_CORES, __net_srv_cores, "net_srv_cores");
         __request_set_handler(NET_RPC_COREADDR, __net_srv_corenetinfo, "net_srv_coreinfo");
 #endif

@@ -174,7 +174,7 @@ STATIC int __stdrpc_request_wait__(const net_handle_t *nh, const char *name, ltg
                 
         
         if (nh->type == NET_HANDLE_PERSISTENT) {
-                DBUG("%s latency %llu\n", netable_rname_nid(&nh->u.nid), (LLU)ctx->latency);
+                DBUG("%s latency %llu\n", netable_rname(&nh->u.nid), (LLU)ctx->latency);
                 netable_load_update(&nh->u.nid, ctx->latency);
         }
 
