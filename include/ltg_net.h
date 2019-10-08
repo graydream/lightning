@@ -2,7 +2,6 @@
 #define __LTG_NET_H__
 
 #include "net/net_lib.h"
-#include "net/network.h"
 #include "net/sock_buffer.h"
 #include "net/sdevent.h"
 #include "net/sock_tcp.h"
