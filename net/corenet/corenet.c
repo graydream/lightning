@@ -20,7 +20,7 @@ static void IO_FUNC  __corenet_routine(void *_core, void *var, void *_corenet)
         (void) _core;
         (void) _corenet;
 
-        if (likely(ltgconf.rdma)) {
+        if (likely(ltgconf_global.rdma)) {
                 corenet_rdma_commit(((__corenet_t *)_corenet)->rdma_net);
         } else {
                 corenet_tcp_check_add();
@@ -36,7 +36,7 @@ static void __corenet_scan(void *_core, void *var, void *_corenet)
         (void) _corenet;
         (void) var;
 
-        if (unlikely(!ltgconf.rdma || ltgconf.tcp_discovery)) {
+        if (unlikely(!ltgconf_global.rdma || ltgconf_global.tcp_discovery)) {
                 corenet_tcp_check();
         }
 
@@ -48,7 +48,7 @@ static void IO_FUNC __corenet_poller(void *_core, void *var, void *_corenet)
 {
         __corenet_t *corenet = _corenet;
 
-        if (likely(ltgconf.rdma && ltgconf.daemon)) {
+        if (likely(ltgconf_global.rdma && ltgconf_global.daemon)) {
                 corenet_rdma_poll(corenet);
         } else {
                 core_t *core = _core;
@@ -125,7 +125,7 @@ static int __corenet_rdma_init(__corenet_t *corenet, int flag)
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        if (ltgconf.daemon) {
+        if (ltgconf_global.daemon) {
                 ret = corenet_rdma_passive(&corenet->port, corenet->coreid.idx);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
@@ -149,13 +149,13 @@ static int __corenet_init(va_list ap)
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        if (ltgconf.daemon) {
+        if (ltgconf_global.daemon) {
                 ret = core_getid(&corenet->coreid);
                 if (unlikely(ret))
                         GOTO(err_free, ret);
         }
 
-        if (ltgconf.rdma && ltgconf.daemon) {
+        if (ltgconf_global.rdma && ltgconf_global.daemon) {
                 ret = __corenet_rdma_init(corenet, *flag);
                 if (unlikely(ret))
                         GOTO(err_free, ret);
@@ -221,7 +221,7 @@ static int __corenet_getaddr(va_list ap)
 
         va_end(ap);
 
-        if (ltgconf.rdma && ltgconf.daemon) {
+        if (ltgconf_global.rdma && ltgconf_global.daemon) {
                 ret = corenet_tcp_getaddr(corenet->port, addr);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
@@ -256,7 +256,7 @@ int corenet_attach(void *_corenet, const sockid_t *sockid, void *ctx,
 {
         __corenet_t *corenet = _corenet;
 
-        if (ltgconf.rdma) {
+        if (ltgconf_global.rdma) {
                 UNIMPLEMENTED(__DUMP__);
                 return 0;
         } else {
@@ -269,7 +269,7 @@ int corenet_attach(void *_corenet, const sockid_t *sockid, void *ctx,
 int corenet_send(void *ctx, const sockid_t *sockid, ltgbuf_t *buf)
 {
 
-        if (ltgconf.rdma) {
+        if (ltgconf_global.rdma) {
                 UNIMPLEMENTED(__DUMP__);
                 return 0;
         } else {
@@ -279,7 +279,7 @@ int corenet_send(void *ctx, const sockid_t *sockid, ltgbuf_t *buf)
 
 void corenet_close(const sockid_t *sockid)
 {
-        if (ltgconf.rdma && sockid->rdma_handler != NULL) {
+        if (ltgconf_global.rdma && sockid->rdma_handler != NULL) {
                 corenet_rdma_close((rdma_conn_t *)sockid->rdma_handler);
         } else {
                 corenet_tcp_close(sockid);

@@ -106,7 +106,7 @@ int net_rpc_heartbeat(const sockid_t *sockid, uint64_t seq)
         ret = stdrpc_request_wait_sock("net_rpc_hb", &nh,
                                     req, sizeof(*req) + count,
                                     NULL, NULL,
-                                    MSG_NET, 0, ltgconf.hb_timeout);
+                                    MSG_NET, 0, ltgconf_global.hb_timeout);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -218,7 +218,7 @@ int net_rpc_coreinfo(const coreid_t *coreid, corenet_addr_t *addr)
 
         ret = stdrpc_request_wait("net_rpc_corenetinfo", nid,
                                req, sizeof(*req) + count, (void *)addr, &buflen,
-                               MSG_NET, 0, ltgconf.rpc_timeout);
+                               MSG_NET, 0, ltgconf_global.rpc_timeout);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -281,7 +281,7 @@ int net_rpc_coremask(const nid_t *nid, uint64_t *mask)
         buflen = sizeof(*mask);
         ret = stdrpc_request_wait("net_rpc_corenetinfo", nid,
                                   req, sizeof(*req) + count, mask, &buflen,
-                                  MSG_NET, 0, ltgconf.rpc_timeout);
+                                  MSG_NET, 0, ltgconf_global.rpc_timeout);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 

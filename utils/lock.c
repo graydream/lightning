@@ -235,7 +235,7 @@ STATIC int __ltg_rwlock_wait(ltg_rwlock_t *rwlock, lock_wait_t *lock_wait, char 
 
                 ANALYSIS_END(0, IO_WARN, NULL);
         } else {
-                ret = _sem_timedwait1(&lock_wait->sem, tmo != -1 ? tmo : ltgconf.rpc_timeout * 6);
+                ret = _sem_timedwait1(&lock_wait->sem, tmo != -1 ? tmo : ltgconf_global.rpc_timeout * 6);
                 LTG_ASSERT(ret == 0);
         }
 
@@ -258,7 +258,7 @@ STATIC int __ltg_rwlock_lock(ltg_rwlock_t *rwlock, char type, int tmo)
         lock_wait_t lock_wait;
         //char *name = type == 'r' ? "rdlock" : "rwlock";
 
-        if (ltgconf.daemon) {
+        if (ltgconf_global.daemon) {
                 LTG_ASSERT(sche_status() != SCHEDULE_STATUS_IDLE);
         }
         

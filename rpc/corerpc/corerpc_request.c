@@ -80,7 +80,7 @@ STATIC int __corerpc_wait__(const char *name, ltgbuf_t *rbuf,
         DBUG("%s yield resume\n", name);
 
 #ifdef RPC_ASSERT
-        timeout = _max(timeout, ltgconf.rpc_timeout);
+        timeout = _max(timeout, ltgconf_global.rpc_timeout);
         ANALYSIS_ASSERT(0, 1000 * 1000 * (timeout * 3), name);
 #else
         ANALYSIS_QUEUE(0, IO_INFO, NULL);
@@ -89,7 +89,7 @@ STATIC int __corerpc_wait__(const char *name, ltgbuf_t *rbuf,
         return 0;
 err_ret:
 #ifdef RPC_ASSERT
-        timeout = _max(timeout, ltgconf.rpc_timeout);
+        timeout = _max(timeout, ltgconf_global.rpc_timeout);
         ANALYSIS_ASSERT(0, 1000 * 1000 * (timeout * 3), name);
 #else
         ANALYSIS_END(0, IO_INFO, name);
@@ -259,7 +259,7 @@ int IO_FUNC corerpc_postwait(const char *name, const coreid_t *coreid, const voi
         op.msg_size = msg_size;
         op.timeout = timeout;
         
-        if (likely(ltgconf.daemon)) {
+        if (likely(ltgconf_global.daemon)) {
                 ret = __corerpc_postwait(name, &op);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);

@@ -99,7 +99,7 @@ static int __sock_connect(net_handle_t *nh, const sock_info_t *info,
 
         }
 
-        if (ltgconf.daemon) {
+        if (ltgconf_global.daemon) {
                 ret = sock_poll_sd(nh->u.sd.sd, timeout * 1000 * 1000, POLLIN);
                 if (unlikely(ret))
                         GOTO(err_fd, ret);
@@ -195,7 +195,7 @@ int net_accept(net_handle_t *nh, ltg_net_info_t *info, const net_proto_t *proto)
         newsd = nh->u.sd.sd;
 
 retry:
-        ret = sock_poll_sd(newsd, (ltgconf.rpc_timeout / 2) * 1000 * 1000, POLLIN );
+        ret = sock_poll_sd(newsd, (ltgconf_global.rpc_timeout / 2) * 1000 * 1000, POLLIN );
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 

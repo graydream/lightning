@@ -30,7 +30,7 @@ void dbg_sub_init()
 void dbg_info(int i)
 {
 #if 1
-        if (ltgconf.testing) {
+        if (ltgconf_global.testing) {
                 __d_info__ = __D_INFO;
         } else {
                 __d_info__ = i;
@@ -82,7 +82,7 @@ int dmsg_init_sub(const char *name, const char *value,
         int ret;
         char path[MAX_PATH_LEN];
 
-        snprintf(path, MAX_PATH_LEN, "/dev/shm/%s/%s", ltgconf.system_name, name);
+        snprintf(path, MAX_PATH_LEN, "/dev/shm/%s/%s", ltgconf_global.system_name, name);
         
         ret = fnotify_create(path, value, callback, flag);
         if (ret) {
@@ -156,9 +156,9 @@ int dmsg_init()
 {
         int ret;
 
-        DINFO("dmsg init %d\n", ltgconf.backtrace);
+        DINFO("dmsg init %d\n", ltgconf_global.backtrace);
 
-        if (ltgconf.backtrace) {
+        if (ltgconf_global.backtrace) {
                 ret = dmsg_init_sub(DGOTO_PATH, "1", __dmsg_goto, 0);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);

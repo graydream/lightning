@@ -68,7 +68,7 @@ static int __nodectl_set(const char *key, const char *value)
         int ret;
         char path[MAX_PATH_LEN];
 
-        snprintf(path, MAX_PATH_LEN, "/dev/shm/%s/latency/%s", ltgconf.system_name, key);
+        snprintf(path, MAX_PATH_LEN, "/dev/shm/%s/latency/%s", ltgconf_global.system_name, key);
 
         ret = _set_value(path, value, strlen(value) + 1, O_CREAT | O_TRUNC);
         if (ret)

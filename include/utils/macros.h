@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-#define IO_WARN ((ltgconf.rpc_timeout / 2) * 1000 * 1000)
+#define IO_WARN ((ltgconf_global.rpc_timeout / 2) * 1000 * 1000)
 #define IO_INFO ((500) * 1000)
 
 #if 1
@@ -81,7 +81,7 @@
         static time_t __warn__##mark;           \
         (void ) __warn__##mark;                 \
                                                 \
-        if (unlikely(ltgconf.performance_analysis)) {\
+        if (unlikely(ltgconf_global.performance_analysis)) {\
                 _gettimeofday(&t1##mark, NULL);      \
         }
 
@@ -89,32 +89,32 @@
         struct timeval t1##mark, t2##mark;      \
         int used##mark;                         \
                                                 \
-        if (ltgconf.performance_analysis) {\
+        if (ltgconf_global.performance_analysis) {\
                 DWARN_PERF("analysis %s start\n", (__str) ? (__str) : ""); \
                 _gettimeofday(&t1##mark, NULL); \
         }                                       \
 
 #define ANALYSIS_RESET(mark)                    \
-        if (ltgconf.performance_analysis) {\
+        if (ltgconf_global.performance_analysis) {\
                 _gettimeofday(&t1##mark, NULL); \
         }
 
 #define ANALYSIS_TIMED_END(mark, __str)                                                \
-        if (ltgconf.performance_analysis) {                                                   \
+        if (ltgconf_global.performance_analysis) {                                                   \
                 _gettimeofday(&t2##mark, NULL);                                               \
                 used##mark = _time_used(&t1##mark, &t2##mark);                                \
                 DERROR(""#mark" time %ju us %s\n", used##mark, (__str) ? (__str) : "");  \
         }
 
 #define ANALYSIS_END(mark, __usec, __str)                               \
-        if (unlikely(ltgconf.performance_analysis)) {                             \
+        if (unlikely(ltgconf_global.performance_analysis)) {                             \
                 _gettimeofday(&t2##mark, NULL);                         \
                 used##mark = _time_used(&t1##mark, &t2##mark);          \
                 if (used##mark > (__usec)) {                            \
                         time_t __now__##mark = gettime();                         \
                         if (__now__##mark - __warn__##mark > 5) {       \
                                 __warn__##mark = __now__##mark;         \
-                                if (used##mark > 1000 * 1000 * ltgconf.rpc_timeout) { \
+                                if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) { \
                                         DWARN_PERF("analysis used %f s %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                                 } else {                                \
                                         DINFO_PERF("analysis used %f s %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
@@ -124,14 +124,14 @@
         }
 
 #define ANALYSIS_ASSERT(mark, __usec, __str)                               \
-        if (ltgconf.performance_analysis) {                             \
+        if (ltgconf_global.performance_analysis) {                             \
                 _gettimeofday(&t2##mark, NULL);                         \
                 used##mark = _time_used(&t1##mark, &t2##mark);          \
                 LTG_ASSERT(used##mark < (__usec));                         \
         }                                                             \
         
 #define ANALYSIS_QUEUE(mark, __usec, __str)                               \
-        if (unlikely(ltgconf.performance_analysis)) {                     \
+        if (unlikely(ltgconf_global.performance_analysis)) {                     \
                 _gettimeofday(&t2##mark, NULL);                         \
                 used##mark = _time_used(&t1##mark, &t2##mark);          \
                 if (used##mark) {                                       \
@@ -140,7 +140,7 @@
                 if (used##mark > (__usec)) {                            \
                         time_t __now__##mark = gettime();               \
                         __warn__##mark = __now__##mark;                 \
-                        if (used##mark > 1000 * 1000 * ltgconf.rpc_timeout) { \
+                        if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) { \
                                 DWARN_PERF("analysis used %f s %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         } else {                                        \
                                 DINFO_PERF("analysis used %f s %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
@@ -151,12 +151,12 @@
         }
 
 #define ANALYSIS_UPDATE(mark, __usec, __str)                               \
-        if (ltgconf.performance_analysis) {                             \
+        if (ltgconf_global.performance_analysis) {                             \
                 _gettimeofday(&t2##mark, NULL);                         \
                 used##mark = _time_used(&t1##mark, &t2##mark);          \
                 core_latency_update(used##mark);                        \
                 if (used##mark > (__usec)) {                            \
-                        if (used##mark > 1000 * 1000 * ltgconf.rpc_timeout) { \
+                        if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) { \
                                 DWARN_PERF("analysis used %f s %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         } else {                                        \
                                 DINFO_PERF("analysis used %f s %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \

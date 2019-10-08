@@ -27,7 +27,7 @@ int net_init()
         net_proto.pack_handler = net_proto.pack_handler ? net_proto.pack_handler
                 : rpc_pack_handler;
 
-        ret = netable_init(ltgconf.daemon);
+        ret = netable_init(ltgconf_global.daemon);
         if (ret)
                 GOTO(err_ret, ret);
 

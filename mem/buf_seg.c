@@ -51,7 +51,7 @@ static seg_t *__seg_alloc_head(ltgbuf_t *buf, uint32_t size, int sys)
                 if (likely(!sys)) {
                         seg = slab_stream_alloc(sizeof(seg_t));
                         LTG_ASSERT(seg);
-                        if (ltgconf.rdma) {
+                        if (ltgconf_global.rdma) {
                                 DINFO("%p alloc %p, len %u\n", buf, seg, size);
                         }
                 } else {

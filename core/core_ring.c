@@ -185,7 +185,7 @@ inline static void __core_request_run__(void *_ctx)
 
         libringbuf_sp_enqueue(ring_ctx->reply, (void *)ring_ctx);
 
-        if (unlikely(ltgconf.polling_timeout)) {
+        if (unlikely(ltgconf_global.polling_timeout)) {
                 core_t *rcore = core_get(reply_coreid);
                 sche_post(rcore->sche);
         }
@@ -226,7 +226,7 @@ inline void core_ring_queue(int coreid, ring_ctx_t *ctx,
         
         libringbuf_sp_enqueue(ctx->request, (void *)ctx);
 
-        if (unlikely(ltgconf.polling_timeout)) {
+        if (unlikely(ltgconf_global.polling_timeout)) {
                 core_t *rcore = core_get(coreid);
                 sche_post(rcore->sche);
         }
@@ -278,7 +278,7 @@ inline int core_ring_wait(int coreid, int group, const char *name, func_va_t exe
         
         libringbuf_sp_enqueue(ctx->request, (void *)ctx);
 
-        if (unlikely(ltgconf.polling_timeout)) {
+        if (unlikely(ltgconf_global.polling_timeout)) {
                 core_t *rcore = core_get(coreid);
                 sche_post(rcore->sche);
         }

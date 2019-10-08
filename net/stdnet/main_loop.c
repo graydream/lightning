@@ -148,7 +148,7 @@ STATIC void *__main_loop_worker(void *_args)
                 //sche_scan(NULL);
 
 #if 0
-                if (ltgconf.daemon) {
+                if (ltgconf_global.daemon) {
                         aio_submit();
                 }
 #endif

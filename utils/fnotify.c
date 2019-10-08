@@ -343,7 +343,7 @@ int fnotify_create(const char *path, const char *value,
         args_t *args;
 
         //ret = path_validate(path, 0, LLIB_DIRCREATE);
-        ret = path_validate(path, 0, ltgconf.daemon ? LLIB_DIRCREATE : 0);
+        ret = path_validate(path, 0, ltgconf_global.daemon ? LLIB_DIRCREATE : 0);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -365,7 +365,7 @@ int fnotify_create(const char *path, const char *value,
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        if (!ltgconf.daemon)
+        if (!ltgconf_global.daemon)
                 goto out;
 
         ret = ltg_malloc((void **)&args, sizeof(*args));

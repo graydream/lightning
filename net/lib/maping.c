@@ -109,9 +109,9 @@ int maping_init()
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        snprintf(maping.prefix, MAX_PATH_LEN, "/dev/shm/%s/maping", ltgconf.system_name);
+        snprintf(maping.prefix, MAX_PATH_LEN, "/dev/shm/%s/maping", ltgconf_global.system_name);
 
-        if (ltgconf.daemon) {
+        if (ltgconf_global.daemon) {
                 ret = path_validate(maping.prefix, LLIB_ISDIR, LLIB_DIRCREATE);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
@@ -349,7 +349,7 @@ int maping_nid2netinfo(const nid_t *nid, ltg_net_info_t *info)
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
         } else {
-                if (gettime() -  ctime > ltgconf.rpc_timeout / 2) {
+                if (gettime() -  ctime > ltgconf_global.rpc_timeout / 2) {
                         DBUG("drop %s\n", nidstr);
                         goto retry;
                 }

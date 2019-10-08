@@ -109,10 +109,10 @@ void  __attribute__((noinline)) dbg_log_write(const int logtype, const int size,
         do {                                                            \
                 if (unlikely(!(exp))) {                                 \
                         DERROR("!!!!!!!!!!assert fail!!!!!!!!!!!!!!!\n"); \
-                        if (ltgconf.coredump) {                         \
+                        if (ltgconf_global.coredump) {                         \
                                 abort();                                \
                         } else {                                        \
-                                if (ltgconf.restart) {                  \
+                                if (ltgconf_global.restart) {                  \
                                         EXIT(EAGAIN);                   \
                                 } else {                                \
                                         EXIT(100);                      \

@@ -179,7 +179,7 @@ STATIC int __stdrpc_request_wait__(const net_handle_t *nh, const char *name, ltg
         }
 
 #ifdef RPC_ASSERT
-        timeout = _max(timeout, ltgconf.rpc_timeout);
+        timeout = _max(timeout, ltgconf_global.rpc_timeout);
         ANALYSIS_ASSERT(0, 1000 * 1000 * (timeout * 3), name);
 #else
         ANALYSIS_END(0, IO_INFO, NULL);
@@ -188,7 +188,7 @@ STATIC int __stdrpc_request_wait__(const net_handle_t *nh, const char *name, ltg
         return 0;
 err_ret:
 #ifdef RPC_ASSERT
-        timeout = _max(timeout, ltgconf.rpc_timeout);
+        timeout = _max(timeout, ltgconf_global.rpc_timeout);
         ANALYSIS_ASSERT(0, 1000 * 1000 * (timeout * 3), name);
 #else
         ANALYSIS_END(0, IO_INFO, NULL);

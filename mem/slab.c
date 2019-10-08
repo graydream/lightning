@@ -17,7 +17,7 @@
 #if 0
 static void *__slab_lowlevel_calloc(int private)
 {
-        if (private && ltgconf.daemon) {
+        if (private && ltgconf_global.daemon) {
                 hugepage_t *hpage;
                 hpage = private_hugepage_alloc(NULL, SLAB_SEG);
                 return hpage->vaddr;
