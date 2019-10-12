@@ -137,8 +137,9 @@ static void IO_FUNC core_stat(core_t *core)
 #else
                       io_lat, io_queue);
 #endif
-                core->stat_t1 = core->stat_t2;
-                core->stat_nr1 = core->stat_nr2;
+                      core->stat_t1 = core->stat_t2;
+                      core->stat_nr1 = core->stat_nr2;
+                      core->sche->counter = 0;
         }
 }
 

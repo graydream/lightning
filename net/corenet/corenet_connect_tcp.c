@@ -14,7 +14,10 @@
 #include "ltg_rpc.h"
 #include "ltg_core.h"
 
+#define CORENET_MAGIC 0x347a8447
+
 typedef struct {
+        uint32_t magic;
         coreid_t from;
         coreid_t to;
 } corenet_msg_t;
@@ -64,6 +67,7 @@ int corenet_tcp_connect(const coreid_t *coreid, uint32_t addr, uint32_t port,
         }
 
         msg.to = *coreid;
+        msg.magic = CORENET_MAGIC;
 
         ret = send(nh.u.sd.sd, &msg, sizeof(msg), 0);
         if (ret < 0) {
@@ -129,6 +133,12 @@ STATIC void *__corenet_tcp_accept__(void *arg)
         }
 
         msg = (void*)buf;
+
+        if (msg->magic != CORENET_MAGIC) {
+                ret = EINVAL;
+                DERROR("got bad magic %x\n", msg->magic);
+                GOTO(err_ret, ret);
+        }
 
         LTG_ASSERT(sizeof(*msg) == ret);
         LTG_ASSERT(coreid_cmp(&msg->to, &ctx->local) == 0);
