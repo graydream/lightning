@@ -16,7 +16,6 @@
 
 int maping_init(void);
 int maping_nid2netinfo(const nid_t *nid, ltg_net_info_t *info);
-int maping_host2nid(const char *hostname, nid_t *nid);
 int maping_addr2nid(const char *addr, nid_t *nid);
 int maping_nid2host(const nid_t *nid, char *hostname);
 int maping_getmaster(nid_t *nid, int force);

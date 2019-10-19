@@ -283,32 +283,6 @@ err_ret:
         return ret;
 }
 
-int maping_host2nid(const char *hostname, nid_t *nid)
-{
-        int ret;
-        char nidstr[MAX_NAME_LEN];
-
-        ret = maping_get(HOST2NID, hostname, nidstr, NULL);
-        if (unlikely(ret)) {
-                LTG_ASSERT(ret == ENOENT);
-
-                ret = etcd_get_text(ETCD_NODE, hostname, nidstr, NULL);
-                if (unlikely(ret)) {
-                        GOTO(err_ret, ret);
-                }
-
-                ret = maping_set(HOST2NID, hostname, nidstr);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
-        }
-
-        str2nid(nid, nidstr);
-        
-        return 0;
-err_ret:
-        return ret;
-}
-
 int maping_nid2host(const nid_t *nid, char *hostname)
 {
         int ret;

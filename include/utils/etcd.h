@@ -19,10 +19,10 @@
 #include "macros.h"
 #include "ltg_id.h"
 
-#define ETCD_NODE       "node"
-#define ETCD_CONN       "network/addr"
-#define ETCD_NID        "network/nid"
-#define ETCD_CORENET    "network/corenet"
+#define ETCD_NETWORK "network"
+#define ETCD_CONN ETCD_NETWORK"/backend"
+#define ETCD_NID ETCD_NETWORK"/nid"
+#define ETCD_CORENET ETCD_NETWORK"/corenet"
 
 typedef struct{
         int running;
