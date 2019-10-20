@@ -20,7 +20,7 @@
 #include "ltg_id.h"
 
 #define ETCD_NETWORK "network"
-#define ETCD_CONN ETCD_NETWORK"/backend"
+#define ETCD_BANET ETCD_NETWORK"/backend"
 #define ETCD_NID ETCD_NETWORK"/nid"
 #define ETCD_CORENET ETCD_NETWORK"/corenet"
 

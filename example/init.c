@@ -63,9 +63,9 @@ int main(int argc, char *argv[])
         ltgconf.coreflag = CORE_FLAG_POLLING;
 
 #if 0
-        for (int i = 0; i < netconf.count; i++) {
-                ltgnet_conf.network[i].network = netconf.network[i].network;
-                ltgnet_conf.network[i].mask = netconf.network[i].mask;
+        for (int i = 0; i < netconf_backend.count; i++) {
+                ltgnet_conf.network[i].network = netconf_backend.network[i].network;
+                ltgnet_conf.network[i].mask = netconf_backend.network[i].mask;
                 ltgnet_conf.count++;
         }
 #endif
