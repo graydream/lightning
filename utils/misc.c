@@ -633,6 +633,8 @@ int _set_text(const char *path, const char *value, int size, int flag)
         char buf[MAX_BUF_LEN], path_tmp[MAX_BUF_LEN] = {}, _uuid[MAX_NAME_LEN];
         uuid_t uuid;
 
+        (void) buf;
+        
         uuid_generate(uuid);
         uuid_unparse(uuid, _uuid);
 
@@ -655,6 +657,14 @@ retry:
                         GOTO(err_ret, ret);
         }
 
+#if 1
+        (void) size;
+        ret = _write(fd, value, strlen(value));
+        if (ret < 0) {
+                ret = -ret;
+                GOTO(err_ret, ret);
+        }
+#else
         if (value) {
                 if (value[size - 1] != '\n') {
                         strcpy(buf, value);
@@ -672,6 +682,7 @@ retry:
                         }
                 }
         }
+#endif
 
         ret = fsync(fd);
         if (ret < 0) {
