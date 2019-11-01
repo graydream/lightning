@@ -657,32 +657,13 @@ retry:
                         GOTO(err_ret, ret);
         }
 
-#if 1
-        (void) size;
-        ret = _write(fd, value, strlen(value));
+        LTG_ASSERT(size == (int)strlen(value) + 1);
+        
+        ret = _write(fd, value, strlen(value) + 1);
         if (ret < 0) {
                 ret = -ret;
                 GOTO(err_ret, ret);
         }
-#else
-        if (value) {
-                if (value[size - 1] != '\n') {
-                        strcpy(buf, value);
-                        buf[size] = '\n';
-                        ret = _write(fd, buf, size + 1);
-                        if (ret < 0) {
-                                ret = -ret;
-                                GOTO(err_ret, ret);
-                        }
-                } else {
-                        ret = _write(fd, value, size);
-                        if (ret < 0) {
-                                ret = -ret;
-                                GOTO(err_ret, ret);
-                        }
-                }
-        }
-#endif
 
         ret = fsync(fd);
         if (ret < 0) {
@@ -784,28 +765,17 @@ int _get_text(const char *path, char *value, int buflen)
         ret = _read(fd, value, buflen);
         if (ret < 0) {
                 ret = -ret;
+                close(fd);
                 GOTO(err_ret, ret);
         }
 
         close(fd);
+        
+        if (ret > 0 && value[ret] != '\0') {
+                value[ret] = '\0';
+        }
 
-        if (ret > 0) {
-                int i;
-                for (i=ret-1; i>=0; i--) {
-                        if (value[i] != '\0' && value[i] != '\n') {
-                                break;
-                        } else if (value[i] == '\n') {
-                                value[i] = '\0';
-                        }
-                }
-
-                if (i < 0) {
-                        ret = EINVAL;
-                        GOTO(err_ret, ret);
-                }
-                return i + 1;
-        } else
-                return 0;
+        return ret;
 err_ret:
         return -ret;
 }

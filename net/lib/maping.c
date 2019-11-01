@@ -25,12 +25,12 @@ static inline int str2netinfo(ltg_net_info_t *info, const char *buf)
         memset(info, 0x0, sizeof(*info));
 
         ret = sscanf(buf,
-                     "len:%d\n"
-                     "uptime:%u\n"
-                     "nid:%hu\n"
-                     "hostname:%[^\n]\n"
-                     "magic:%d\n"
-                     "info_count:%"SCNd16"\n"
+                     "len:%d;"
+                     "uptime:%u;"
+                     "nid:%hu;"
+                     "hostname:%[^;];"
+                     "magic:%d;"
+                     "info_count:%"SCNd16";"
                      "info:",
                      &info->len,
                      &info->uptime,
@@ -65,12 +65,12 @@ static inline void netinfo2str(char *buf, const ltg_net_info_t *info)
         const sock_info_t *sock;
 
         snprintf(buf, MAX_NAME_LEN,
-                 "len:%d\n"
-                 "uptime:%u\n"
-                 "nid:"NID_FORMAT"\n"
-                 "hostname:%s\n"
-                 "magic:%d\n"
-                 "info_count:%u\n"
+                 "len:%d;"
+                 "uptime:%u;"
+                 "nid:"NID_FORMAT";"
+                 "hostname:%s;"
+                 "magic:%d;"
+                 "info_count:%u;"
                  "info:",
                  info->len,
                  info->uptime,
@@ -124,8 +124,9 @@ err_ret:
 
 int maping_get(const char *type, const char *_key, char *value, time_t *ctime)
 {
-        int ret, retry = 0;
-        char path[MAX_PATH_LEN], tmp[MAX_PATH_LEN], crc_value[MAX_PATH_LEN];
+        int ret;
+        char path[MAX_PATH_LEN], tmp[MAX_PATH_LEN],
+                crc_value[MAX_BUF_LEN], buf[MAX_BUF_LEN];
         const char *key;
         uint32_t crc, _crc;
         struct stat stbuf;
@@ -147,7 +148,8 @@ int maping_get(const char *type, const char *_key, char *value, time_t *ctime)
         ret = _get_text(path, crc_value, MAX_BUF_LEN);
         if (ret < 0) {
                 ret = -ret;
-                goto err_lock;
+                LTG_ASSERT(ret == ENOENT);
+                GOTO(err_lock, ret);
         }
 
         if (ctime) {
@@ -160,24 +162,24 @@ int maping_get(const char *type, const char *_key, char *value, time_t *ctime)
                 *ctime = stbuf.st_ctime;
         }
         
-retry:
-        if (!strcmp(NAME2NID, type)) {
-                sscanf(crc_value, "%x %s", &crc, value);
-                _crc = crc32_sum(value, strlen(value));
-                if (_crc != crc) {
-                        USLEEP_RETRY(err_unlink, ENOENT, retry, retry, 2, (100 * 1000));
-                }
+        ret = sscanf(crc_value, "%x %s", &crc, buf);
+        LTG_ASSERT(ret == 2);
+        _crc = crc32_sum(buf, strlen(buf));
+        if (_crc != crc) {
+                DINFO("%s %s\n", path, buf);
+                DWARN("remove %s\n", path);
+                unlink(path);
+                ret = ENOENT;
+                GOTO(err_lock, ret);
         } else {
-                strcpy(value, crc_value);
+                DINFO("%s %s\n", path, buf);
         }
-        //DWARN("path %s\n", path);
 
         ltg_spin_unlock(&maping.lock);
 
+        strcpy(value, buf);
+        
         return 0;
-err_unlink:
-        DWARN("remove %s\n", path);
-        unlink(path);
 err_lock:
         ltg_spin_unlock(&maping.lock);
 err_ret:
@@ -204,17 +206,13 @@ int maping_set(const char *type, const char *_key, const char *value)
         snprintf(path, MAX_NAME_LEN, "%s/%s/%s", maping.prefix, type, key);
 
         crc = crc32_sum(value, strlen(value));
-        if (!strcmp(NAME2NID, type)) {
-                sprintf(crc_value, "%x %s", crc, value);
-        } else {
-                strcpy(crc_value, value);
-        }
-
+        sprintf(crc_value, "%x %s", crc, value);
+        
         ret = ltg_spin_lock(&maping.lock);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
-        
-        ret = _set_text(path, crc_value, strlen(crc_value), O_CREAT | O_TRUNC | O_SYNC);
+
+        ret = _set_text(path, crc_value, strlen(crc_value) + 1, O_CREAT | O_TRUNC | O_SYNC);
         if (unlikely(ret))
                 GOTO(err_lock, ret);
 

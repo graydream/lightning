@@ -245,8 +245,6 @@ static int __network_connect2(entry_t *ent, const ltg_net_info_t *info)
                 GOTO(err_lock, ret);
         }
 
-        ANALYSIS_END(0, IO_WARN, NULL);
-        
         ret = __netable_connect__(ent, &sock, info, 1);
         if (unlikely(ret)) {
                 GOTO(err_lock, ret);
@@ -256,10 +254,13 @@ static int __network_connect2(entry_t *ent, const ltg_net_info_t *info)
               ent->lname, _inet_ntoa(ent->sock.u.sd.addr), ent->sock.u.sd.sd);
 
 out:
+        ANALYSIS_END(0, IO_INFO, NULL);
+
         netable_unlock(&nid);
 
         return 0;
 err_lock:
+        ANALYSIS_END(0, IO_INFO, NULL);
         LTIME_DROP(&ent->ltime);
         ent->status = NETABLE_DEAD;
         ent->last_retry = gettime();
@@ -363,7 +364,7 @@ retry:
         }
 
         id2nh(nh, &info->id);
-
+        
         return 0;
 err_ret:
         return ret;
@@ -551,7 +552,7 @@ int netable_connected(const nid_t *nid)
         ent = __netable_nidfind(nid);
         if (ent == NULL)
                 return 0;
-
+        
         if (ent->status == NETABLE_CONN && ent->ltime.now != 0 ) {
                 return 1;
         } else {

@@ -7,7 +7,7 @@
 
 #define ENABLE_HUGEPAGE 1
 
-#define ENABLE_ANALYSIS 0
+#define ENABLE_ANALYSIS 1
 
 
 

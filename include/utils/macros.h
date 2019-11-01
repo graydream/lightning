@@ -112,13 +112,11 @@
                 used##mark = _time_used(&t1##mark, &t2##mark);          \
                 if (used##mark > (__usec)) {                            \
                         time_t __now__##mark = gettime();                         \
-                        if (__now__##mark - __warn__##mark > 5) {       \
-                                __warn__##mark = __now__##mark;         \
-                                if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) { \
-                                        DWARN_PERF("analysis used %f s %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
-                                } else {                                \
-                                        DINFO_PERF("analysis used %f s %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
-                                }                                       \
+                        __warn__##mark = __now__##mark;                 \
+                        if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) { \
+                                DWARN_PERF("analysis used %f s %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
+                        } else {                                        \
+                                DINFO_PERF("analysis used %f s %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         }                                               \
                 } \
         }
