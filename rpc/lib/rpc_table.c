@@ -228,11 +228,11 @@ void rpc_table_scan(rpc_table_t *rpc_table, int interval, int newtask)
         if (now - rpc_table->last_scan > interval) {
                 DBUG("scan %s now:%ld, interval %d\n", rpc_table->name, now, interval);
                 tmo = (now - rpc_table->last_scan) - interval;
-                rpc_table->last_scan = now;
                 if (tmo > 3 && rpc_table->last_scan) {
                         DINFO("scan %s delay %ds\n", rpc_table->name, tmo);
                 }
 
+                rpc_table->last_scan = now;
 #if 0
                 if (newtask) {
                         sche_task_new("rpc_table_scan", __rpc_table_scan_task, rpc_table, -1);
