@@ -122,22 +122,14 @@ err_ret:
         return ret;
 }
 
-int maping_get(const char *type, const char *_key, char *value, time_t *ctime)
+int maping_get(const char *type, const char *key, char *value, time_t *ctime)
 {
         int ret;
-        char path[MAX_PATH_LEN], tmp[MAX_PATH_LEN],
-                crc_value[MAX_BUF_LEN], buf[MAX_BUF_LEN];
-        const char *key;
+        char path[MAX_NAME_LEN], crc_value[MAX_BUF_LEN / 2], buf[MAX_BUF_LEN / 2];
         uint32_t crc, _crc;
         struct stat stbuf;
 
-        if (strchr(_key, '/')) {
-                __replace(tmp, _key, '/', ':');
-                LTG_ASSERT(strchr(tmp, '/') == 0);
-                key = tmp;
-        } else {
-                key = _key;
-        }
+        LTG_ASSERT(strchr(key, '/') == NULL);
 
         snprintf(path, MAX_NAME_LEN, "%s/%s/%s", maping.prefix, type, key);
 
@@ -145,7 +137,7 @@ int maping_get(const char *type, const char *_key, char *value, time_t *ctime)
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        ret = _get_text(path, crc_value, MAX_BUF_LEN);
+        ret = _get_text(path, crc_value, MAX_BUF_LEN / 2);
         if (ret < 0) {
                 ret = -ret;
                 LTG_ASSERT(ret == ENOENT);
@@ -161,9 +153,12 @@ int maping_get(const char *type, const char *_key, char *value, time_t *ctime)
 
                 *ctime = stbuf.st_ctime;
         }
+
+        LTG_ASSERT(strlen(crc_value) + 1 <= MAX_BUF_LEN / 2);
         
         ret = sscanf(crc_value, "%x %s", &crc, buf);
         LTG_ASSERT(ret == 2);
+        LTG_ASSERT(strlen(buf) + 1 <= MAX_BUF_LEN / 2);
         _crc = crc32_sum(buf, strlen(buf));
         if (_crc != crc) {
                 DINFO("%s %s\n", path, buf);
@@ -186,28 +181,23 @@ err_ret:
         return ret;
 }
 
-int maping_set(const char *type, const char *_key, const char *value)
+int maping_set(const char *type, const char *key, const char *value)
 {
         int ret;
-        char path[MAX_PATH_LEN], tmp[MAX_PATH_LEN], crc_value[MAX_PATH_LEN] = {0};
-        const char *key;
+        char path[MAX_PATH_LEN], crc_value[MAX_BUF_LEN / 2] = {0};
         uint32_t crc;
 
-        DBUG("set %s %s\n", type, _key);
+        DBUG("set %s %s\n", type, key);
 
-        if (strchr(_key, '/')) {
-                __replace(tmp, _key, '/', ':');
-                LTG_ASSERT(strchr(tmp, '/') == 0);
-                key = tmp;
-        } else {
-                key = _key;
-        }
+        LTG_ASSERT(strchr(key, '/') == NULL);
+        LTG_ASSERT(strlen(value) + 1 <= MAX_BUF_LEN / 2);
 
         snprintf(path, MAX_NAME_LEN, "%s/%s/%s", maping.prefix, type, key);
 
         crc = crc32_sum(value, strlen(value));
         sprintf(crc_value, "%x %s", crc, value);
-        
+
+        LTG_ASSERT(strlen(crc_value) + 1 <= MAX_BUF_LEN / 2);
         ret = ltg_spin_lock(&maping.lock);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
@@ -303,7 +293,7 @@ err_ret:
 int maping_nid2netinfo(const nid_t *nid, ltg_net_info_t *info)
 {
         int ret;
-        char buf[MAX_BUF_LEN], nidstr[MAX_NAME_LEN];
+        char buf[MAX_BUF_LEN / 2], nidstr[MAX_NAME_LEN];
         time_t ctime;
 
         nid2str(nidstr, nid);
