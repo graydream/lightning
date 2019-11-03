@@ -157,7 +157,7 @@ int nodeid_init(nodeid_t *_id, const char *name)
         nid.id = id;
         nid2str(value, &nid);
         
-        ret = _set_text(key, value, strlen(value) + 1, O_EXCL | O_CREAT);
+        ret = _set_text(key, value, strlen(value), O_EXCL | O_CREAT);
         if (ret)
                 GOTO(err_ret, ret);
 

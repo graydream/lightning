@@ -202,7 +202,7 @@ int maping_set(const char *type, const char *key, const char *value)
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        ret = _set_text(path, crc_value, strlen(crc_value) + 1, O_CREAT | O_TRUNC | O_SYNC);
+        ret = _set_text(path, crc_value, strlen(crc_value), O_CREAT | O_TRUNC | O_SYNC);
         if (unlikely(ret))
                 GOTO(err_lock, ret);
 

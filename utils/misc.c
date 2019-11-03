@@ -657,9 +657,9 @@ retry:
                         GOTO(err_ret, ret);
         }
 
-        LTG_ASSERT(size == (int)strlen(value) + 1);
+        LTG_ASSERT(size == (int)strlen(value));
         
-        ret = _write(fd, value, strlen(value) + 1);
+        ret = _write(fd, value, strlen(value));
         if (ret < 0) {
                 ret = -ret;
                 GOTO(err_ret, ret);
@@ -770,7 +770,7 @@ int _get_text(const char *path, char *value, int buflen)
         }
 
         close(fd);
-        
+
         if (ret > 0 && value[ret] != '\0') {
                 value[ret] = '\0';
         }
