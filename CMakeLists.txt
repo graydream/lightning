@@ -63,7 +63,6 @@ add_library(lightning STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/net/lib/sock_tcp.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/lib/sock_xmit.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/lib/net_crc.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/net/lib/maping.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/lib/net_passive.c
         
     ${CMAKE_CURRENT_SOURCE_DIR}/net/stdnet/net_rpc.c

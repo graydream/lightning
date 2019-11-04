@@ -121,7 +121,6 @@ static int __entry_create(entry_t **_ent, const nid_t *nid)
         ent->nh.u.nid = *nid;
         ent->status = NETABLE_NULL;
         ent->update = gettime();
-        ent->last_retry = 0;
         LTIME_INIT(&ent->ltime);
 
         *_ent = ent;
@@ -209,8 +208,6 @@ static int __netable_connect__(entry_t *ent, const net_handle_t *sock,
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
-        ent->last_retry = 0;
-
 out:
         return 0;
 err_free:
@@ -263,7 +260,6 @@ err_lock:
         ANALYSIS_END(0, IO_INFO, NULL);
         LTIME_DROP(&ent->ltime);
         ent->status = NETABLE_DEAD;
-        ent->last_retry = gettime();
         netable_unlock(&nid);
 err_ret:
         return ret;
@@ -423,22 +419,28 @@ err_lock:
 const char *__netable_rname(const nid_t *nid)
 {
         int ret;
-        char name[MAX_NAME_LEN];
+        char tmp[MAX_BUF_LEN];
         static __thread char buf[MAX_MSG_SIZE];
+        ltg_net_info_t *info;
 
         if (__net_table__ == NULL || net_isnull(nid)) {
                 snprintf(buf, MAX_NAME_LEN, ""LNET_NAME_UNKNOWN"("NID_FORMAT")",
                          NID_ARG(nid));
-        } else {
-                ret = maping_nid2host(nid, name);
-                if (unlikely(ret)) {
-                        snprintf(buf, MAX_NAME_LEN, ""LNET_NAME_UNKNOWN"("NID_FORMAT")",
-                                 NID_ARG(nid));
-                } else {
-                        sprintf(buf, "%s", name);
-                }
+
+                goto out;
         }
 
+        info = (void *)tmp;
+        ret = conn_getinfo(nid, info);
+        if (unlikely(ret)) {
+                snprintf(buf, MAX_NAME_LEN, ""LNET_NAME_UNKNOWN"("NID_FORMAT")",
+                         NID_ARG(nid));
+                goto out;
+        }
+
+        strcpy(buf, info->name);
+
+out:
         return buf;
 }
 
@@ -620,55 +622,6 @@ void netable_sort(diskid_t *nids, int count)
 }
 #endif
 
-int netable_update_retry(const nid_t *nid)
-{
-        int ret;
-        entry_t *ent = NULL;
-
-retry:
-        ent = __netable_nidfind(nid);
-        if (ent == NULL) {
-                DBUG("add null ent for %u\n", nid->id);
-                ret = __netable_new(nid, &ent);
-                if (unlikely(ret)) {
-                        if (ret == EEXIST) {
-                                goto retry;
-                        } else
-                                GOTO(err_ret, ret);
-                }
-        }
-
-        ent->last_retry = gettime();
-
-        return 0;
-err_ret:
-        return ret;
-}
-
-int netable_connectable(const nid_t *nid, int force)
-{
-        int tmo, wait;
-        entry_t *ent;
-
-        if (force)
-                return 1;
-
-        wait = ltgconf_global.lease_timeout / 2;
-        ent = __netable_nidfind(nid);
-        if (ent == NULL)
-                return 1;
-        else {
-                tmo = gettime() - ent->last_retry;
-                if (tmo < wait) {
-                        DBUG("conn %s will retry after %d sec\n",
-                             netable_rname(nid), wait - tmo);
-                        return 0;
-                } else {
-                        return 1;
-                }
-        }
-}
-
 int netable_getsock(const nid_t *nid, sockid_t *sockid)
 {
         int ret;
@@ -791,32 +744,6 @@ err_ret:
         return ret;
 }
 
-int netable_rname1(const nid_t *nid, char *name)
-{
-        int ret;
-        entry_t *ent;
-
-        if (__net_table__ == NULL || net_isnull(nid)) {
-                ret = ENONET;
-                GOTO(err_ret, ret);
-        }
-        
-        ent = __netable_nidfind(nid);
-                
-        if (ent && strlen(ent->lname)) {
-                strcpy(name, ent->lname);
-        } else {
-                ret = ENONET;
-                GOTO(err_ret, ret);
-        }
-
-        DBUG("%u %s\n", nid->id, name);
-        
-        return 0;
-err_ret:
-        return ret;
-}
-
 void netable_update(const nid_t *nid)
 {
         entry_t *ent;
@@ -829,15 +756,4 @@ void netable_update(const nid_t *nid)
                 ent->update = gettime();
                 DBUG("update %s\n", ent->lname);
         }
-}
-
-time_t netable_last_update(const nid_t *nid)
-{
-        entry_t *ent;
-
-        ent = __netable_nidfind(nid);
-        if (ent == NULL)
-                return 0;
-
-        return ent->update;
 }

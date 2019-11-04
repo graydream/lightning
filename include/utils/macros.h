@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <stdarg.h>
 
+#include "ltg_def.h"
+
 #define IO_WARN ((ltgconf_global.rpc_timeout / 2) * 1000 * 1000)
 #define IO_INFO ((500) * 1000)
 

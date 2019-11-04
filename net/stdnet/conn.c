@@ -114,53 +114,6 @@ err_ret:
         return ret;
 }
 
-static void *__conn_retry(void *arg)
-{
-        int retry = 0;
-        const nid_t *nid = arg;
-
-        while (1) {
-                if (retry > ltgconf_global.rpc_timeout * 2 && !conn_online(nid, -1)) {
-                        DINFO("retry conn to %s fail, exit\n", netable_rname(nid));
-                        break;
-                }
-                
-                __conn_add(nid);
-                if (netable_connected(nid)) {
-                        DINFO("retry conn to %s success\n", netable_rname(nid));
-                        break;
-                }
-
-                DINFO("retry conn to %s, sleep %u\n", netable_rname(nid), retry);
-                retry++;
-
-                sleep(1);
-        }
-
-        ltg_free((void **)&arg);
-        pthread_exit(NULL);
-}
-
-int conn_retry(const nid_t *_nid)
-{
-        int ret;
-        nid_t *nid;
-
-        ret = ltg_malloc((void**)&nid, sizeof(*nid));
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        *nid = *_nid;
-
-        ret = ltg_thread_create(__conn_retry, nid, "__conn_scan");
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        return 0;
-err_ret:
-        return ret;
-}
-
 static int __conn_init_info(nid_t *_nid)
 {
         int ret, retry = 0;
@@ -238,59 +191,4 @@ int conn_getinfo(const nid_t *nid, ltg_net_info_t *info)
         return 0;
 err_ret:
         return ret;
-}
-
-
-int conn_setinfo()
-{
-        int ret;
-        char key[MAX_NAME_LEN], buf[MAX_BUF_LEN], tmp[MAX_BUF_LEN];
-        ltg_net_info_t *info;
-        uint32_t buflen;
-        size_t size;
-
-        info = (void *)buf;
-        buflen = MAX_BUF_LEN;
-        ret = rpc_getinfo(buf, &buflen);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        LTG_ASSERT(info->len);
-        LTG_ASSERT(info->info_count);
-        size = MAX_BUF_LEN;
-        ret = urlsafe_b64_encode((void *)info, info->len, tmp, &size);
-        LTG_ASSERT(ret == 0);
-        
-        snprintf(key, MAX_NAME_LEN, "%u.info", info->id.id);
-
-        DINFO("register %s value %s\n", key, tmp);
-        ret = etcd_create_text(ETCD_BANET, key, tmp, 0);
-        if (unlikely(ret)) {
-                ret = etcd_update_text(ETCD_BANET, key, tmp, NULL, 0);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
-        }
-        
-        return 0;
-err_ret:
-        return ret;
-}
-
-int conn_online(const nid_t *nid, int _tmo)
-{
-        int tmo;
-
-        DBUG("conn_online not implimented\n");
-
-        if (netable_connected(nid))
-                return 1;
-
-        tmo = _tmo == -1 ? ltgconf_global.rpc_timeout : _tmo;
-        time_t last_update = netable_last_update(nid);
-
-        if (gettime() - last_update < tmo) {
-                return 1;
-        }
-
-        return 0;
 }

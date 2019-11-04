@@ -11,7 +11,6 @@
 #include "net/main_loop.h"
 #include "net/net_events.h"
 #include "net/conn.h"
-#include "net/maping.h"
 #include "net/heartbeat.h"
 
 #endif

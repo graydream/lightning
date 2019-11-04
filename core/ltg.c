@@ -165,10 +165,6 @@ static int __ltg_init_stage1(const char *name)
         if (ret)
                 GOTO(err_ret, ret);
 
-        ret = maping_init();
-        if (ret)
-                GOTO(err_ret, ret);
-        
         DINFO("stage1 inited\n");
         
         return 0;
