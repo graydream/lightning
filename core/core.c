@@ -18,9 +18,6 @@
 #include "ltg_net.h"
 
 #define CORE_CHECK_KEEPALIVE_INTERVAL 1
-#define CORE_CHECK_CALLBACK_INTERVAL 5
-#define CORE_CHECK_HEALTH_INTERVAL 30
-#define CORE_CHECK_HEALTH_TIMEOUT 180
 
 static core_t *__core_array__[256];
 static uint64_t __core_mask__;
@@ -55,13 +52,14 @@ uint64_t core_mask()
 
 STATIC void *__core_check_health__(void *_arg)
 {
-        int ret;
         core_t *core = NULL;
         time_t now;
-        (void)_arg;
+        int tmo = 5;
 
+        (void)_arg;
+        
         while (1) {
-                sleep(CORE_CHECK_HEALTH_INTERVAL);
+                sleep(1);
 
                 now = gettime();
                 for (int i = 0; i < CORE_MAX; i++) {
@@ -72,37 +70,24 @@ STATIC void *__core_check_health__(void *_arg)
                         if (unlikely(core == NULL))
                                 continue;
 
-                        ret = ltg_spin_lock(&core->keepalive_lock);
-                        if (unlikely(ret))
-                                continue;
-
-                        if (unlikely(now - core->keepalive > CORE_CHECK_HEALTH_TIMEOUT)) {
-                                ltg_spin_unlock(&core->keepalive_lock);
+                        if (unlikely(now - core->keepalive > tmo)) {
                                 DERROR("polling core[%d] block !!!!!\n", core->hash);
                                 LTG_ASSERT(0);
                                 EXIT(EAGAIN);
                         }
-
-                        ltg_spin_unlock(&core->keepalive_lock);
                 }
         }
 }
 
-static void __core_check_keepalive(core_t *core, time_t now)
+static void __core_check_keepalive(core_t *core)
 {
-        int ret;
+        time_t now = gettime();        
 
         if (likely(now - core->keepalive < CORE_CHECK_KEEPALIVE_INTERVAL)) {
                 return;
         }
 
-        ret = ltg_spin_lock(&core->keepalive_lock);
-        if (unlikely(ret))
-                return;
-
         core->keepalive = now;
-
-        ltg_spin_unlock(&core->keepalive_lock);
 }
 
 static void IO_FUNC core_stat(core_t *core)
@@ -182,14 +167,13 @@ void IO_FUNC core_worker_run(core_t *core)
                         routine->func(core, core, routine->ctx);
                 }
 
-
-                __core_check_keepalive(core, gettime());
-
                 sche_scan(core->sche);
 
                 core_stat(core);
         }
 
+        __core_check_keepalive(core);
+        
         gettime_refresh(core);
         timer_expire(core);
 
@@ -358,10 +342,6 @@ static int __core_create(core_t **_core, const char *name, int hash, int flag)
         core->flag = flag;
         core->keepalive = gettime();
         core->last_scan = gettime();
-
-        ret = ltg_spin_init(&core->keepalive_lock);
-        if (unlikely(ret))
-                UNIMPLEMENTED(__DUMP__);
 
         ret = sem_init(&core->sem, 0, 0);
         if (unlikely(ret))

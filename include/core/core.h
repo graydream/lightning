@@ -88,7 +88,6 @@ typedef struct __core {
 
         sche_t *sche;
 
-        ltg_spinlock_t keepalive_lock; // for keepalive
         time_t keepalive;
 
         sem_t sem;

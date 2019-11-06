@@ -261,7 +261,7 @@ static void  *__rpc_table_scan_worker(void *arg)
                         sleep(1);
                 }
 
-                interval = _min(ltgconf_global.rpc_timeout, 10);
+                interval = _min(ltgconf_global.rpc_timeout, 3);
                 rpc_table_scan(rpc_table, interval, 0);
         }
 

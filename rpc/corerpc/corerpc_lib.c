@@ -42,10 +42,10 @@ void corerpc_scan(void *ctx)
 
         if (likely(__rpc_table_private__)) {
 #if 1
-                rpc_table_scan(__rpc_table_private__, _min(ltgconf_global.rpc_timeout, 10), 1);
+                rpc_table_scan(__rpc_table_private__, _min(ltgconf_global.rpc_timeout, 3), 1);
                 sche_run(core_tls_get(ctx, VARIABLE_SCHEDULE));
 #else
-                rpc_table_scan(__rpc_table_private__, _min(ltgconf_global.rpc_timeout, 10), 0);
+                rpc_table_scan(__rpc_table_private__, _min(ltgconf_global.rpc_timeout, 3), 0);
 #endif
         }
 }
