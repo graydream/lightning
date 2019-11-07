@@ -54,7 +54,6 @@ STATIC void *__core_check_health__(void *_arg)
 {
         core_t *core = NULL;
         time_t now;
-        int tmo = 5;
 
         (void)_arg;
         
@@ -69,6 +68,8 @@ STATIC void *__core_check_health__(void *_arg)
                         core = core_get(i);
                         if (unlikely(core == NULL))
                                 continue;
+
+                        int tmo = core->flag & CORE_FLAG_POLLING ? 3 : 10;
 
                         if (unlikely(now - core->keepalive > tmo)) {
                                 DERROR("polling core[%d] block !!!!!\n", core->hash);
