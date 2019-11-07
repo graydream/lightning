@@ -221,6 +221,8 @@ static int __network_connect2(entry_t *ent, const ltg_net_info_t *info)
         int ret;
         net_handle_t sock;
 
+        ANALYSIS_BEGIN(0);
+        
         nid_t nid = info->id;
         ret = netable_wrlock(&nid);
         if (unlikely(ret))
@@ -233,7 +235,6 @@ static int __network_connect2(entry_t *ent, const ltg_net_info_t *info)
                 goto out;
         }
         
-        ANALYSIS_BEGIN(0);
         ret = net_connect(&sock, info, 2);
         if (unlikely(ret)) {
                 DWARN("connect to %s fail ret %u %s\n", info->name, ret, strerror(ret));
