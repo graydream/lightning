@@ -17,8 +17,6 @@
 #include "ltg_core.h"
 #include "ltg_net.h"
 
-#define CORE_CHECK_KEEPALIVE_INTERVAL 1
-
 static core_t *__core_array__[256];
 static uint64_t __core_mask__;
 static __thread core_t *__core__;
@@ -78,17 +76,6 @@ STATIC void *__core_check_health__(void *_arg)
                         }
                 }
         }
-}
-
-static void __core_check_keepalive(core_t *core)
-{
-        time_t now = gettime();        
-
-        if (likely(now - core->keepalive < CORE_CHECK_KEEPALIVE_INTERVAL)) {
-                return;
-        }
-
-        core->keepalive = now;
 }
 
 static void IO_FUNC core_stat(core_t *core)
@@ -159,6 +146,7 @@ void IO_FUNC core_worker_run(core_t *core)
         }
 
         time_t now = gettime();
+        core->keepalive = now;
 
         if (unlikely(now - core->last_scan > 3)) {
                 core->last_scan = now;
@@ -173,8 +161,6 @@ void IO_FUNC core_worker_run(core_t *core)
                 core_stat(core);
         }
 
-        __core_check_keepalive(core);
-        
         gettime_refresh(core);
         timer_expire(core);
 
@@ -427,9 +413,11 @@ int core_init(uint64_t mask, int flag)
                 }
         }
 
-        ret = ltg_thread_create(__core_check_health__, NULL, "core_check_health");
-        if (unlikely(ret))
-                UNIMPLEMENTED(__DUMP__);
+        if (ltgconf_global.daemon) {
+                ret = ltg_thread_create(__core_check_health__, NULL, "core_check_health");
+                if (unlikely(ret))
+                        UNIMPLEMENTED(__DUMP__);
+        }
 
         ret = corenet_init(flag);
         if (unlikely(ret))
