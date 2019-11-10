@@ -115,10 +115,12 @@
                 if (used##mark > (__usec)) {                            \
                         time_t __now__##mark = gettime();                         \
                         __warn__##mark = __now__##mark;                 \
-                        if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) { \
-                                DWARN_PERF("analysis used %fs %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
+                        if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout * 2) { \
+                                DERROR("analysis used %fs %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
+                        } else if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) { \
+                                DWARN("analysis used %fs %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         } else {                                        \
-                                DINFO_PERF("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
+                                DINFO("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         }                                               \
                 } \
         }
@@ -140,8 +142,10 @@
                 if (used##mark > (__usec)) {                            \
                         time_t __now__##mark = gettime();               \
                         __warn__##mark = __now__##mark;                 \
-                        if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) { \
-                                DWARN_PERF("analysis used %fs %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
+                        if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout * 2) { \
+                                DERROR("analysis used %fs %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
+                        } else if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) { \
+                                DWARN("analysis used %fs %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         } else {                                        \
                                 DINFO_PERF("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         }                                               \
