@@ -20,6 +20,7 @@
 
 ltgconf_t ltgconf_global;
 ltg_netconf_t ltg_netconf_global;
+ltg_netconf_t ltg_netconf_manage;
 ltg_global_t ltg_global;
 int ltg_nofile_max = 0;
 
@@ -70,7 +71,7 @@ int ltg_conf_init(const char *sysname, const char *srv_name, const char *workdir
                   int backtrace, int daemon, int coreflag)
 */
 
-int ltg_conf_init(ltgconf_t *ltgconf, ltg_netconf_t *ltgnet_conf)
+int ltg_conf_init(ltgconf_t *ltgconf)
 {
         int ret;
 
@@ -81,18 +82,6 @@ int ltg_conf_init(ltgconf_t *ltgconf, ltg_netconf_t *ltgnet_conf)
                 GOTO(err_ret, ret);
 
         memset(ltgconf, 0x0, sizeof(*ltgconf));
-        memset(ltgnet_conf, 0x0, sizeof(*ltgnet_conf));
-
-#if 0
-        strcpy(ltgconf->system_name, sysname);
-        strcpy(ltgconf->service_name, srv_name);
-        if (workdir) {
-                strcpy(ltgconf->workdir, workdir);
-        } else {
-                LTG_ASSERT(!daemon);
-                ltgconf->workdir[0] = '\0';
-        }
-#endif
 
         ltgconf->maxcore = 1;
         ltgconf->hb_retry = 2;
@@ -101,6 +90,7 @@ int ltg_conf_init(ltgconf_t *ltgconf, ltg_netconf_t *ltgnet_conf)
         ltgconf->rmem_max = XMITBUF;
 
         memset(&ltg_netconf_global, 0x0, sizeof(ltg_netconf_global));
+        memset(&ltg_netconf_manage, 0x0, sizeof(ltg_netconf_manage));
 
         return 0;
 err_ret:
@@ -206,7 +196,8 @@ err_ret:
         return ret;
 }
 
-int ltg_init(const ltgconf_t *ltgconf, const ltg_netconf_t *ltgnet_conf)
+int ltg_init(const ltgconf_t *ltgconf, const ltg_netconf_t *ltgnet_manage,
+             const ltg_netconf_t *ltgnet_conf)
 {
         int ret;
 
@@ -224,6 +215,16 @@ int ltg_init(const ltgconf_t *ltgconf, const ltg_netconf_t *ltgnet_conf)
                         = ltgnet_conf->network[i].mask;
                 ltg_netconf_global.count++;
         }
+
+        ltg_netconf_manage.count = 0;
+        for (int i = 0; i < ltgnet_manage->count; i++) {
+                ltg_netconf_manage.network[i].network
+                        = ltgnet_manage->network[i].network;
+                ltg_netconf_manage.network[i].mask
+                        = ltgnet_manage->network[i].mask;
+                ltg_netconf_manage.count++;
+        }
+        
         
         ret = __ltg_init_stage1(ltgconf_global.service_name);
         if (ret)

@@ -280,9 +280,7 @@ int tcp_sock_bind(int *srv_sd, struct sockaddr *sin, int nonblock, int tuning)
         sd = socket(sin->sa_family, SOCK_STREAM, ppe.p_proto);
         if (sd == -1) {
                 ret = errno;
-
                 DERROR("proto %d name %s\n", ppe.p_proto, ppe.p_name);
-
                 GOTO(err_ret, ret);
         }
 
@@ -511,10 +509,8 @@ static int __tcp_sock_getaddr(uint32_t network, uint32_t mask, uint32_t *_addr)
                 sin = (struct sockaddr_in *)&ifcreq->ifr_addr;
                 addr = sin->sin_addr.s_addr;
                 DBUG("ifname %s, %s\n", ifcreq->ifr_name, _inet_ntoa(addr));
-                //DBUG("got sock info %s %u %s\n", _inet_ntoa(addr), i, ifcreq->ifr_name);
                 if ((addr & mask) == (network & mask)) {
                         DBUG("ifname %s, %s\n", ifcreq->ifr_name, _inet_ntoa(addr));
-                        //DINFO("got sock info %u & %u  %u & %u\n", addr, mask, network, mask);
                         done = 1;
                         break;
                 }
@@ -537,16 +533,17 @@ err_ret:
 }
                 
 int tcp_sock_getaddr(uint32_t *info_count, sock_info_t *info,
-                     uint32_t info_count_max, uint32_t port)
+                     uint32_t info_count_max, uint32_t port,
+                     const ltg_netconf_t *filter)
 {
         int ret, i;
         uint32_t addr, count;
 
         count = 0;
-        for (i = 0; i < ltg_netconf_global.count; i++) {
+        for (i = 0; i < filter->count; i++) {
                 LTG_ASSERT(count < info_count_max);
-                ret = __tcp_sock_getaddr(ltg_netconf_global.network[i].network,
-                                         ltg_netconf_global.network[i].mask, &addr);
+                ret = __tcp_sock_getaddr(filter->network[i].network,
+                                         filter->network[i].mask, &addr);
                 if (unlikely(ret)) {
                         continue;
                 }

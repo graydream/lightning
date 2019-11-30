@@ -95,7 +95,8 @@ int net_init();
 int net_destroy(void);
 
 /* net_passive.c */
-int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port);
+int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port,
+                const ltg_netconf_t *filter);
 
 
 #endif

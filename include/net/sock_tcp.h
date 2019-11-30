@@ -16,7 +16,8 @@ extern int tcp_sock_connect(net_handle_t *nh, struct sockaddr_in *, int nonblock
                             int timeout, int tuning);
 extern int tcp_sock_close(int sd);
 int tcp_sock_getaddr(uint32_t *info_count, sock_info_t *info,
-                     uint32_t info_count_max, uint32_t port);
+                     uint32_t info_count_max, uint32_t port,
+                     const ltg_netconf_t *filter);
 int tcp_sock_tuning(int sd, int tuning, int nonblock);
 int tcp_sock_getdevice(uint32_t _addr, char *name);
 

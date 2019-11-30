@@ -85,6 +85,7 @@ typedef struct {
 
 extern ltgconf_t ltgconf_global;
 extern ltg_netconf_t ltg_netconf_global;
+extern ltg_netconf_t ltg_netconf_manage;
 
 #define SOCKID_NORMAL 10
 #define SOCKID_CORENET 20

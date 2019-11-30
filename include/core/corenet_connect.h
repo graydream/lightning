@@ -5,7 +5,6 @@
 
 int corenet_tcp_connect(const coreid_t *coreid, uint32_t addr, uint32_t port, sockid_t *sockid);
 int corenet_tcp_passive(const coreid_t *coreid, uint32_t *_port, int *_sd);
-int corenet_tcp_getaddr(uint32_t port, corenet_addr_t *addr);
 
 #if 0
 int corenet_rdma_connect(uint32_t addr, uint32_t port, sockid_t *sockid);

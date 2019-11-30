@@ -38,7 +38,8 @@ typedef struct {
 /* sock_passive.c */
 extern int sock_accept(net_handle_t *, int srv_sd, int tuning, int nonblock);
 extern int sock_getinfo(uint32_t *info_count, sock_info_t *,
-                        uint32_t info_count_max, uint32_t port);
+                        uint32_t info_count_max, uint32_t port,
+                        const ltg_netconf_t *filter);
 extern int sock_setblock(int sd);
 extern int sock_setnonblock(int sd);
 

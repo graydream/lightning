@@ -36,8 +36,8 @@ int rpc_getinfo(char *infobuf, uint32_t *infobuflen)
                 DWARN("wait nid inited\n");
                 sleep(1);
         }
-        
-        ret = net_getinfo(infobuf, infobuflen, __pasv_port__);
+
+        ret = net_getinfo(infobuf, infobuflen, __pasv_port__, &ltg_netconf_manage);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 

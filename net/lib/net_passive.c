@@ -32,8 +32,8 @@ static void __net_checkinfo(const sock_info_t *sock, int count)
                 __net_checkinfo(&sock[1], count - 1);
 }
 
-//static int __net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port)
-int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port)
+int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port,
+                const ltg_netconf_t *filter)
 {
         int ret;
         ltg_net_info_t *info;
@@ -49,7 +49,7 @@ int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port)
                         / sizeof(sock_info_t);
 
                 ret = sock_getinfo(&count, info->info,
-                                    info_count_max, port);
+                                   info_count_max, port, filter);
                 if (unlikely(ret)) {
                         GOTO(err_ret, ret);
                 }
@@ -76,7 +76,8 @@ int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port)
                 GOTO(err_ret, ret);
         }
                 
-        snprintf(info->name, MAX_NAME_LEN, "%s:%s", hostname, ltgconf_global.service_name);
+        snprintf(info->name, MAX_NAME_LEN, "%s:%s", hostname,
+                 ltgconf_global.service_name);
 
         DBUG("info.name %s\n", info->name);
 
@@ -102,32 +103,3 @@ int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port)
 err_ret:
         return ret;
 }
-
-#if 0
-static char __info__[MAX_BUF_LEN];
-static time_t __last_update__ = 0;
-
-int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port)
-{
-        int ret;
-        time_t now = gettime();
-        ltg_net_info_t *info = __info__;
-
-        if (now - __last_update__ > 10) {
-                uint32_t buflen = MAX_BUF_LEN
-                ret = __net_getinfo(__info__, &buflen, port);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
-        }
-
-                memcpy(infobuf, info, info->len);
-                goto out;
-        }
-        
-        
-out:
-        return 0;
-err_ret:
-        return ret;
-}
-#endif

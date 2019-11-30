@@ -15,9 +15,10 @@ inline int sock_accept(net_handle_t *nh, int srv_sd, int tuning,
 }
 
 inline int sock_getinfo(uint32_t *info_count, sock_info_t *info,
-                 uint32_t info_count_max, uint32_t port)
+                        uint32_t info_count_max, uint32_t port,
+                        const ltg_netconf_t *filter)
 {
-        return tcp_sock_getaddr(info_count, info, info_count_max, port);
+        return tcp_sock_getaddr(info_count, info, info_count_max, port, filter);
 }
 
 inline int sock_setblock(int sd)

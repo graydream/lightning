@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
         ltgconf_t ltgconf;
         ltg_netconf_t ltgnet_conf;
 
-        ltg_conf_init(&ltgconf, &ltgnet_conf);
+        ltg_conf_init(&ltgconf);
 
         strcpy(ltgconf.system_name, "ltg_example");
         strcpy(ltgconf.service_name, "create");
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
         }
 #endif
         
-        ret = ltg_init(&ltgconf, &ltgnet_conf);
+        ret = ltg_init(&ltgconf, &ltgnet_conf, &ltgnet_conf);
         if (ret)
                 GOTO(err_ret, ret);
 
