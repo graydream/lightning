@@ -67,12 +67,13 @@ STATIC void *__core_check_health__(void *_arg)
                         if (unlikely(core == NULL))
                                 continue;
 
-                        int tmo = core->flag & CORE_FLAG_POLLING ? 3 : 10;
+                        //int tmo = core->flag & CORE_FLAG_POLLING ? 3 : 10;
+                        int tmo = 10;
 
                         if (unlikely(now - core->keepalive > tmo)) {
                                 DERROR("polling core[%d] block !!!!!\n", core->hash);
-                                LTG_ASSERT(0);
                                 EXIT(EAGAIN);
+                                LTG_ASSERT(0);
                         }
                 }
         }
@@ -97,22 +98,23 @@ static void IO_FUNC core_stat(core_t *core)
                 io_lat = io_time / queue_count;
             }
 #if ENABLE_PERF
-                      DINFO("%s[%d] pps:%jd task:%u/%u/%lu/%u/%u ring:%u, counter:%ju cpu_usage(%ju%), nvme_io_stat(%u/%u) perf %u\n",
+            DINFO("%s[%d] pps:%jd task:%u/%u/%lu/%u/%u ring:%u, counter:%ju cpu_usage(%ju%), nvme_io_stat(%u/%u) perf %u\n",
+                  core->name, core->hash,
+                  (core->stat_nr2 - core->stat_nr1) * 1000000 / used,
+                  core->sche->task_count, task_used, c_runtime / used, task_wait, task_runable, c_runtime,
+                  ring_count, core->sche->counter / (core->stat_nr2 - core->stat_nr1), (run_time * 100)/ used,
+                  io_lat, io_queue , get_io());
 #else
-                      DINFO("%s[%d] pps:%jd task:%u/%u/%lu/%u/%u/%lu ring:%u counter:%ju cpu %ju io %u/%u\n",
+            DINFO("%s[%d] pps:%jd task:%u/%u/%lu/%u/%u/%lu ring:%u counter:%ju cpu %ju io %u/%u\n",
+                  core->name, core->hash,
+                  (core->stat_nr2 - core->stat_nr1) * 1000000 / used,
+                  core->sche->task_count, task_used, c_runtime / used, task_wait, task_runable, c_runtime,
+                  ring_count, core->sche->counter / (core->stat_nr2 - core->stat_nr1), (run_time * 100)/ used,
+                  io_lat, io_queue);
 #endif
-                      core->name, core->hash,
-                      (core->stat_nr2 - core->stat_nr1) * 1000000 / used,
-                      core->sche->task_count, task_used, c_runtime / used, task_wait, task_runable, c_runtime,
-                      ring_count, core->sche->counter / (core->stat_nr2 - core->stat_nr1), (run_time * 100)/ used,
-#if ENABLE_PERF
-                      io_lat, io_queue , get_io());
-#else
-                      io_lat, io_queue);
-#endif
-                      core->stat_t1 = core->stat_t2;
-                      core->stat_nr1 = core->stat_nr2;
-                      core->sche->counter = 0;
+            core->stat_t1 = core->stat_t2;
+            core->stat_nr1 = core->stat_nr2;
+            core->sche->counter = 0;
         }
 }
 
@@ -148,7 +150,7 @@ void IO_FUNC core_worker_run(core_t *core)
         time_t now = gettime();
         core->keepalive = now;
 
-        if (unlikely(now - core->last_scan > 3)) {
+        if (unlikely(now - core->last_scan > 2)) {
                 core->last_scan = now;
 
                 list_for_each(pos, &core->scan_list) {

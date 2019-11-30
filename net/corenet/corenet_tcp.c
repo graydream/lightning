@@ -133,7 +133,7 @@ static void __corenet_check_interval()
         corenet_tcp_t *__corenet__ = __corenet_get();
 
         now = gettime();
-        if (likely(now - __corenet__->corenet.last_check < 30)) {
+        if (likely(now - __corenet__->corenet.last_check < 3)) {
                 return;
         }
 
