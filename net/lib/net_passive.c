@@ -103,3 +103,29 @@ int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port,
 err_ret:
         return ret;
 }
+
+int net_getaddr(const ltg_netconf_t *filter, uint32_t *addr, int *_count)
+{
+        int ret, max = 32;
+        sock_info_t info[max];
+        uint32_t count;
+
+        count = *_count;
+        LTG_ASSERT(count > 0 && count <= 32);
+        
+        ret = sock_getinfo(&count, info,
+                           max, -1, filter);
+        if (unlikely(ret)) {
+                GOTO(err_ret, ret);
+        }
+
+        for (uint32_t i = 0; i < count; i++) {
+                addr[i] = info[i].addr;
+        }
+
+        *_count = count;
+        
+        return 0;
+err_ret:
+        return ret;
+}

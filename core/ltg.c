@@ -64,19 +64,12 @@ static void __ltg_global_init()
 }
 
 
-/*
-int ltg_conf_init(const char *sysname, const char *srv_name, const char *workdir,
-                  uint64_t coremask, int rpc_timeout, int polling_timeout, int rdma,
-                  int performance_analysis, int use_huge,
-                  int backtrace, int daemon, int coreflag)
-*/
-
 int ltg_conf_init(ltgconf_t *ltgconf)
 {
         int ret;
 
         __ltg_global_init();
-        
+
         ret = __get_nofailmax(&ltg_nofile_max);
         if (ret)
                 GOTO(err_ret, ret);
@@ -224,7 +217,6 @@ int ltg_init(const ltgconf_t *ltgconf, const ltg_netconf_t *ltgnet_manage,
                         = ltgnet_manage->network[i].mask;
                 ltg_netconf_manage.count++;
         }
-        
         
         ret = __ltg_init_stage1(ltgconf_global.service_name);
         if (ret)
