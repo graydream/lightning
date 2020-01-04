@@ -154,7 +154,7 @@ static int __rpc_table_check(rpc_table_t *rpc_table, slot_t *slot, uint32_t now)
 #if 0
                         UNIMPLEMENTED(__DUMP__);
 #else
-                        DERROR("skip corenet close\n");
+                        DBUG("skip corenet close\n");
                         //corenet_close(closed);
 #endif
                 } else {

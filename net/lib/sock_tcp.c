@@ -236,8 +236,8 @@ int tcp_sock_tuning(int sd, int tuning, int nonblock)
         }
 
         if (xmit_buf != ltgconf_global.wmem_max * 2) {
-                DERROR("Can't set tcp send buf to %d (got %d)\n",
-                       ltgconf_global.wmem_max, xmit_buf);
+                DINFO("Can't set tcp send buf to %d (got %d)\n",
+                      ltgconf_global.wmem_max, xmit_buf);
         }
 
         DBUG("sock %u, send buf %u\n", sd, xmit_buf);
@@ -253,8 +253,8 @@ int tcp_sock_tuning(int sd, int tuning, int nonblock)
         }
 
         if (xmit_buf != ltgconf_global.rmem_max * 2) {
-                DERROR("Can't set tcp recv buf to %d (got %d)\n",
-                       ltgconf_global.rmem_max, xmit_buf);
+                DINFO("Can't set tcp recv buf to %d (got %d)\n",
+                      ltgconf_global.rmem_max, xmit_buf);
         }
 
         DBUG("sock %u, recv buf %u\n", sd, xmit_buf);

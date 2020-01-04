@@ -303,8 +303,6 @@ static int __core_create(core_t **_core, const char *name, int hash, int flag)
         int ret, lock;
         core_t *core;
 
-        UNIMPLEMENTED(__WARN__);//slab_stream_alloc
-
         ret = ltg_malloc((void **)&core, sizeof(*core));
         if (unlikely(ret))
                 GOTO(err_ret, ret);

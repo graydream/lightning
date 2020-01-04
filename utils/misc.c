@@ -534,7 +534,7 @@ void IO_FUNC *_opaque_encode(void *buf, uint32_t *len, ...)
                 value = va_arg(ap, char *);
                 valuelen = va_arg(ap, uint32_t);
 
-                DBUG("encode %s len %u\n", (char *)value, valuelen);
+                //DBUG("encode %s len %u\n", (char *)value, valuelen);
 
                 if (value == NULL)
                         break;

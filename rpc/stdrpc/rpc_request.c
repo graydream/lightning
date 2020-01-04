@@ -182,7 +182,7 @@ STATIC int __stdrpc_request_wait__(const net_handle_t *nh, const char *name, ltg
         timeout = _max(timeout, ltgconf_global.rpc_timeout);
         ANALYSIS_ASSERT(0, 1000 * 1000 * (timeout * 3), name);
 #else
-        ANALYSIS_END(0, IO_INFO, NULL);
+        ANALYSIS_END(0, IO_INFO, name);
 #endif
 
         return 0;

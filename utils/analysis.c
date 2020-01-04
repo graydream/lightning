@@ -127,7 +127,7 @@ int analysis_queue(analysis_t *ana, const char *_name, const char *type, uint64_
         ana->queue->array[ana->queue->count].time = _time;
         ana->queue->count++;
 
-        DBUG("ana %p %s count %u event %s\n", ana->name, ana->queue->count, _name);
+        DBUG("ana %s count %u event %s\n", ana->name, ana->queue->count, _name);
         
         if (unlikely(!ana->private)) {
                 ltg_spin_unlock(&ana->queue_lock);
