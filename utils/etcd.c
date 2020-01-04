@@ -507,6 +507,7 @@ int etcd_update_text(const char *prefix, const char *_key, const char *_value,
                 GOTO(err_ret, ret);
         }
 
+#if 0
         if (idx) {
                 ret = etcd_get_text(prefix, _key, tmp, idx);
                 if (ret)
@@ -514,6 +515,7 @@ int etcd_update_text(const char *prefix, const char *_key, const char *_value,
 
                 LTG_ASSERT(strcmp(_value, tmp) == 0);
         }
+#endif
         
         return 0;
 err_ret:
