@@ -210,7 +210,7 @@ static void __cpuset_getcpu(coreinfo_t **master)
 }
 #endif
 
-int cpuset_init()
+int cpuset_init(uint64_t mask)
 {
         int i, ret, max = 0;
         char buf[MAX_BUF_LEN], path[MAX_PATH_LEN];
@@ -283,6 +283,12 @@ int cpuset_init()
 
         cpuinfo.threading_max = max;
 
+        if (max < core_count(mask)) {
+                ret = EINVAL;
+                DERROR("bad coremask config, need %u got %u\n", core_count(mask), max);
+                GOTO(err_ret, ret);
+        }
+        
         DINFO("core max %u polling %u\n", max, cpuinfo.polling_core);
 
         __cpuset_init__ = __CPUSET_INIT__;

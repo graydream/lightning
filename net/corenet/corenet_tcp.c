@@ -61,7 +61,7 @@ static void __corenet_set_out(corenet_node_t *node)
         ev.events = event;
         ev.data.fd = node->sockid.sd;
 
-        DBUG("set sd %u epollfd %u\n", node->sockid.sd, __corenet__->corenet.epoll_fd);
+        DINFO("set sd %u epollfd %u\n", node->sockid.sd, __corenet__->corenet.epoll_fd);
 
         ret = epoll_ctl(__corenet__->corenet.epoll_fd, EPOLL_CTL_MOD, node->sockid.sd, &ev);
         if (ret == -1) {
@@ -399,6 +399,8 @@ static int __corenet_tcp_local(int fd, ltgbuf_t *buf, int op)
         struct msghdr msg;
         corenet_tcp_t *__corenet__ = __corenet_get();
 
+        ANALYSIS_BEGIN(0);
+        
         iov_count = CORE_IOV_MAX;
         ret = ltgbuf_trans(__corenet__->iov, &iov_count,  buf);
         //LTG_ASSERT(ret == (int)buf->len);
@@ -425,8 +427,11 @@ static int __corenet_tcp_local(int fd, ltgbuf_t *buf, int op)
                 GOTO(err_ret, ret);
         }
 
+        ANALYSIS_QUEUE(0, IO_INFO, NULL);
+        
         return ret;
 err_ret:
+        ANALYSIS_QUEUE(0, IO_INFO, NULL);
         return -ret;
 }
 #endif

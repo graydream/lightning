@@ -43,6 +43,18 @@ int core_used(int idx)
         return core_usedby(__core_mask__, idx);
 }
 
+int core_count(uint64_t mask)
+{
+        int count = 0;
+        for (int i = 0; i < CORE_MAX; i++) {
+                if (core_usedby(mask, i)) {
+                        count++;
+                }
+        }
+
+        return count;
+}
+
 uint64_t core_mask()
 {
         return __core_mask__;
@@ -366,7 +378,7 @@ int core_init(uint64_t mask, int flag)
 
         __core_mask__ = mask;
 
-        ret = cpuset_init();
+        ret = cpuset_init(mask);
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 

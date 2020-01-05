@@ -13,7 +13,7 @@ typedef struct {
 } coreinfo_t;
 
 
-int cpuset_init();
+int cpuset_init(uint64_t mask);
 int cpuset_set(const char *name, int cpu);
 int cpuset_lock(int idx, coreinfo_t **_coreinfo);
 

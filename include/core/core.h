@@ -112,6 +112,7 @@ typedef struct __core {
 int core_init(uint64_t mask, int flag);
 int core_usedby(uint64_t mask, int idx);
 int core_used(int idx);
+int core_count(uint64_t mask);
 uint64_t core_mask();
 int core_attach(int hash, const sockid_t *sockid, const char *name, void *ctx,
                 core_exec func, func_t reset, func_t check);
