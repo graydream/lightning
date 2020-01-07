@@ -84,7 +84,6 @@ STATIC void *__core_check_health__(void *_arg)
 
                         if (unlikely(now - core->keepalive > tmo)) {
                                 DERROR("polling core[%d] block !!!!!\n", core->hash);
-                                EXIT(EAGAIN);
                                 LTG_ASSERT(0);
                         }
                 }
