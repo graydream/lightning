@@ -110,25 +110,35 @@ STATIC int __corenet_maping_connect_core(const coreid_t *coreid,
                                          const corenet_addr_t *addr,
                                          sockid_t *_sockid)
 {
-        int ret, idx;
+        int ret, idx, i;
         sockid_t sockid;
         const sock_info_t *sock;
 
         idx = _random() % addr->info_count;
-        sock = &addr->info[idx];
 
-        if (ltgconf_global.rdma && ltgconf_global.daemon) {
-                ret = corenet_rdma_connect(sock->addr, sock->port, &sockid);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
-        } else {
-                ret = corenet_tcp_connect(coreid, sock->addr, sock->port, &sockid);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
+        for (i = 0; i < addr->info_count; i++) {
+                sock = &addr->info[(i + idx) % addr->info_count];
 
-                sockid.rdma_handler = NULL;
+                if (ltgconf_global.rdma && ltgconf_global.daemon) {
+                        ret = corenet_rdma_connect(sock->addr, sock->port, &sockid);
+                        if (unlikely(ret))
+                                continue;
+                } else {
+                        ret = corenet_tcp_connect(coreid, sock->addr, sock->port, &sockid);
+                        if (unlikely(ret))
+                                continue;
+
+                        sockid.rdma_handler = NULL;
+                }
+
+                break;
         }
 
+        if (i == addr->info_count) {
+                ret = ENONET;
+                GOTO(err_ret, ret);
+        }
+        
         DINFO("connect to %s/%d sd %u, addr %d:%d\n", netable_rname(&coreid->nid),
               coreid->idx, sockid.sd, sock->addr, sock->port);
 
