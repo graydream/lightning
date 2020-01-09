@@ -15,7 +15,6 @@
 #include "ltg_net.h"
 #include "ltg_utils.h"
 #include "ltg_core.h"
-#include "utils/nodeid.h"
 #include "ltg_lib.h"
 
 ltgconf_t ltgconf_global;
@@ -64,7 +63,7 @@ static void __ltg_global_init()
 }
 
 
-int ltg_conf_init(ltgconf_t *ltgconf)
+int ltg_conf_init(ltgconf_t *ltgconf, const char *system_name)
 {
         int ret;
 
@@ -85,47 +84,25 @@ int ltg_conf_init(ltgconf_t *ltgconf)
         memset(&ltg_netconf_global, 0x0, sizeof(ltg_netconf_global));
         memset(&ltg_netconf_manage, 0x0, sizeof(ltg_netconf_manage));
 
-        return 0;
-err_ret:
-        return ret;
-}
-
-static int __nodeid_init(const char *name)
-{
-        int ret;
-        nodeid_t id;
-
-        ret = nodeid_load(&id);
-        if (ret) {
-                if (ret == ENOENT) {
-                        ret = nodeid_init(&id, name);
-                        if (ret)
-                                GOTO(err_ret, ret);
-
-                } else
-                        GOTO(err_ret, ret);
-        }
-
-        nid_t nid;
-        nid.id = id;
-        net_setnid(&nid);
+        strcpy(ltgconf->system_name, system_name);
+        strcpy(ltgconf_global.system_name, system_name);
         
         return 0;
 err_ret:
         return ret;
 }
 
-static int __ltg_init_stage1(const char *name)
+static int __ltg_init_stage1(const nid_t *nid, const char *name)
 {
         int ret;
 
+        (void) name;
+        
         fnotify_init();
         dmsg_init(ltgconf_global.system_name);
 
         if (ltgconf_global.daemon) {
-                ret = __nodeid_init(name);
-                if (ret)
-                        GOTO(err_ret, ret);
+                net_setnid(nid);
         }
 
         ret = sche_init();
@@ -147,7 +124,7 @@ static int __ltg_init_stage1(const char *name)
         ret = etcd_init();
         if (ret)
                 GOTO(err_ret, ret);
-
+        
         DINFO("stage1 inited\n");
         
         return 0;
@@ -218,7 +195,7 @@ int ltg_init(const ltgconf_t *ltgconf, const ltg_netconf_t *ltgnet_manage,
                 ltg_netconf_manage.count++;
         }
         
-        ret = __ltg_init_stage1(ltgconf_global.service_name);
+        ret = __ltg_init_stage1(&ltgconf->nid, ltgconf_global.service_name);
         if (ret)
                 GOTO(err_ret, ret);
 

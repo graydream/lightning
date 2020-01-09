@@ -16,7 +16,6 @@
 #include "utils/skiplist.h"
 #include "utils/timer.h"
 #include "utils/analysis.h"
-#include "utils/nodeid.h"
 #include "utils/fnotify.h"
 #include "utils/etcd.h"
 #include "utils/ltg_global.h"

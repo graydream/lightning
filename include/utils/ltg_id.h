@@ -11,7 +11,7 @@
 #include <stdarg.h>
 #include <assert.h>
 
-#include "ltg_conf.h"
+#include "ltg_def.h"
 
 extern int srv_running;
 

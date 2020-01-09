@@ -47,7 +47,6 @@ add_library(lightning STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/utils/etcd.c
     ${CMAKE_CURRENT_SOURCE_DIR}/utils/gettime.c
     ${CMAKE_CURRENT_SOURCE_DIR}/utils/fnotify.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/utils/nodeid.c
 
     ${CMAKE_CURRENT_SOURCE_DIR}/mem/malloc.c
     ${CMAKE_CURRENT_SOURCE_DIR}/mem/mem_ring.c

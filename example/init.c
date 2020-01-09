@@ -50,9 +50,8 @@ int main(int argc, char *argv[])
         ltgconf_t ltgconf;
         ltg_netconf_t ltgnet_conf;
 
-        ltg_conf_init(&ltgconf);
+        ltg_conf_init(&ltgconf, "test");
 
-        strcpy(ltgconf.system_name, "ltg_example");
         strcpy(ltgconf.service_name, "create");
         strcpy(ltgconf.workdir, "/tmp/example");
 
