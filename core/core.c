@@ -865,11 +865,12 @@ void core_tls_set(int type, void *ptr)
         core->tls[type] = ptr;
 }
 
-void coremask_trans(coremask_t *coremask, uint64_t mask)
+void coremask_trans(coremask_t *_coremask, uint64_t mask)
 {
         char tmp[MAX_NAME_LEN];
+        coremask_t coremask;
 
-        memset(coremask, 0x0, sizeof(*coremask));
+        memset(&coremask, 0x0, sizeof(coremask));
 
         tmp[0] = '\0';
         for (int i = 0; i < CORE_MAX; i++) {
@@ -877,14 +878,16 @@ void coremask_trans(coremask_t *coremask, uint64_t mask)
                         continue;
                 }
 
-                coremask->coreid[coremask->count] = i;
-                coremask->count++;
+                coremask.coreid[coremask.count] = i;
+                coremask.count++;
 
                 snprintf(tmp + strlen(tmp), MAX_NAME_LEN, "%d,", i);
         }
 
-        LTG_ASSERT(coremask->count);
+        LTG_ASSERT(coremask.count);
 
+        memcpy(_coremask, &coremask, sizeof(coremask));
+        
         DINFO("mask 0x%x %s\n", mask, tmp);
 }
 
