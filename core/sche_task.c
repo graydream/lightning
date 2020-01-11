@@ -63,22 +63,6 @@ __asm__ (
  *
  * @return
  */
-inline void sche_task_inc(task_t *task)
-{
-        sche_t *sche = sche_self();
-
-	if (likely(sche)){
-		sche->queue_count++;
-		gettimeofday(&task->tv, NULL);
-	}
-}
-
-inline void sche_update_iotime(uint64_t used)
-{
-        sche_t *sche = sche_self();
-        if (likely(sche))
-                sche->io_time += used;       
-}
 
 inline task_t sche_task_get()
 {

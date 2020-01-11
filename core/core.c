@@ -93,39 +93,31 @@ STATIC void *__core_check_health__(void *_arg)
 static void IO_FUNC core_stat(core_t *core)
 {
         int sid, taskid, task_wait, task_used, task_runable, ring_count;
-        uint64_t run_time, io_time, c_runtime;
-        uint32_t queue_count, io_queue = 0, io_lat = 0;
+        uint64_t run_time, c_runtime;
 
-        sche_stat(&sid, &taskid, &task_runable, &task_wait, &task_used, &run_time, &queue_count, &io_time, &c_runtime);
+        sche_stat(&sid, &taskid, &task_runable, &task_wait, &task_used,
+                  &run_time, &c_runtime);
         ring_count = core_ring_count(core);
 
         _gettimeofday(&core->stat_t2, NULL);
         uint64_t used = _time_used(&core->stat_t1, &core->stat_t2);
         if (used > 0) {
-            if (queue_count == 0)
-                io_queue = 0;
-            else {
-                io_queue = io_time / used;
-                io_lat = io_time / queue_count;
-            }
-#if ENABLE_PERF
-            DINFO("%s[%d] pps:%jd task:%u/%u/%lu/%u/%u ring:%u, counter:%ju cpu_usage(%ju%), nvme_io_stat(%u/%u) perf %u\n",
-                  core->name, core->hash,
-                  (core->stat_nr2 - core->stat_nr1) * 1000000 / used,
-                  core->sche->task_count, task_used, c_runtime / used, task_wait, task_runable, c_runtime,
-                  ring_count, core->sche->counter / (core->stat_nr2 - core->stat_nr1), (run_time * 100)/ used,
-                  io_lat, io_queue , get_io());
-#else
-            DINFO("%s[%d] pps:%jd task:%u/%u/%lu/%u/%u/%lu ring:%u counter:%ju cpu %ju io %u/%u\n",
-                  core->name, core->hash,
-                  (core->stat_nr2 - core->stat_nr1) * 1000000 / used,
-                  core->sche->task_count, task_used, c_runtime / used, task_wait, task_runable, c_runtime,
-                  ring_count, core->sche->counter / (core->stat_nr2 - core->stat_nr1), (run_time * 100)/ used,
-                  io_lat, io_queue);
-#endif
-            core->stat_t1 = core->stat_t2;
-            core->stat_nr1 = core->stat_nr2;
-            core->sche->counter = 0;
+                DINFO("%s[%d] "
+                      "pps:%jd "
+                      "task:%u/%u/%u/%u "
+                      "ring:%u "
+                      "counter:%ju "
+                      "cpu %ju \n",
+                      core->name, core->hash,
+                      (core->stat_nr2 - core->stat_nr1) * 1000000 / used,
+                      core->sche->task_count, task_used, task_wait, task_runable,
+                      ring_count,
+                      core->sche->counter / (core->stat_nr2 - core->stat_nr1),
+                      (run_time * 100)/ used);
+
+                core->stat_t1 = core->stat_t2;
+                core->stat_nr1 = core->stat_nr2;
+                core->sche->counter = 0;
         }
 }
 

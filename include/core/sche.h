@@ -247,9 +247,7 @@ typedef struct sche_t {
         int backtrace;
         uint64_t counter;
         uint64_t run_time;
-        uint64_t io_time;
         uint64_t c_runtime;
-        uint32_t queue_count;
 } sche_t;
 
 // API
@@ -268,8 +266,7 @@ sche_t *sche_self();
 int sche_running();
 int sche_suspend();
 int sche_stat(int *sid, int *taskid, int *runable, int *wait_task,
-              int *task_count, uint64_t *run_time, uint32_t *queue_cout,
-              uint64_t *io_time, uint64_t *c_runtime);
+              int *task_count, uint64_t *run_time, uint64_t *c_runtime);
 
 
 int sche_request(sche_t *sche, int group, func_t exec, void *buf, const char *name);
@@ -341,8 +338,6 @@ void sche_value_get(int key, uint32_t *value);
 void sche_fingerprint_new(sche_t *sche, taskctx_t *taskctx);
 
 int sche_task_run(int group, func_va_t exec, ...);
-void sche_task_inc(task_t *task);
-void sche_update_iotime(uint64_t used);
 int sche_getid();
 
 #if 1

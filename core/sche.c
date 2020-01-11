@@ -473,7 +473,8 @@ static int __sche_task_wait(sche_t *sche)
         return count;
 }
 
-inline int sche_stat(int *sid, int *taskid, int *runable, int *wait, int *count, uint64_t *run_time, uint32_t *queue_count, uint64_t *io_time, uint64_t *c_runtime)
+inline int sche_stat(int *sid, int *taskid, int *runable, int *wait, int *count,
+                     uint64_t *run_time, uint64_t *c_runtime)
 {
         sche_t *sche = sche_self();
 
@@ -485,15 +486,11 @@ inline int sche_stat(int *sid, int *taskid, int *runable, int *wait, int *count,
                 *count = sche->task_count;
                 *run_time = sche->run_time;
                 *c_runtime = sche->c_runtime;
-                *queue_count = sche->queue_count;
-                *io_time = sche->io_time;
 #if SCHEDULE_TASKCTX_RUNTIME
                 sche->task_count = 0;
                 sche->run_time = 0;
                 sche->c_runtime = 0;
 #endif
-                sche->io_time = 0;
-                sche->queue_count = 0;
         } else {
                 *sid = -1;
                 *taskid = -1;
