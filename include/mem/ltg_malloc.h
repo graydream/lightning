@@ -2,6 +2,7 @@
 #define __MALLOC_H__
 
 void *ltg_malloc1(size_t size);
+void ltg_free1(void *ptr);
 int ltg_malloc(void **ptr, size_t size);
 int ltg_malign(void **_ptr, size_t align, size_t size);
 int ltg_realloc(void **_ptr, size_t size, size_t newsize);

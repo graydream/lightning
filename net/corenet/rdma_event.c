@@ -100,7 +100,7 @@ void rdma_event_del(int fd)
                 DERROR("fail to remove epoll event, %s\n", strerror(errno));
 
         list_del(&tev->e_list);
-        free(tev);
+        ltg_free1(tev);
 }
 
 int rdma_event_modify(int fd, int events)

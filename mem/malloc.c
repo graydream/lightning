@@ -214,6 +214,11 @@ int ltg_free(void **ptr)
         return 0;
 }
 
+void ltg_free1(void *ptr)
+{
+        free(ptr);
+}
+
 int huge_mem_alloc1(void **_ptr, size_t size)
 {
         return ltg_malloc(_ptr, size);
@@ -246,4 +251,3 @@ void huge_mem_free(void *ptr)
 {
         ltg_free(&ptr);
 }
-
