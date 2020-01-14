@@ -1196,9 +1196,9 @@ int ltgbuf_nvme_init2(nvmeio_t *io, uint32_t size, uint64_t offset, ltgbuf_t *bu
 {
         seg_t *seg;
 
-        DINFO("begin size %u offset %lu \n", size, offset);
+        DBUG("begin size %u offset %lu \n", size, offset);
         __get_new_size(size, &io->size, offset, &io->offset);
-        DINFO("after size %u offset %lu\n", io->size, io->offset);
+        DBUG("after size %u offset %lu\n", io->size, io->offset);
         ltgbuf_init(buf, io->size);
         seg = (seg_t *)buf->list.next;
         io->addr = seg->handler.ptr;

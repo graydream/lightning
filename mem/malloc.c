@@ -184,7 +184,7 @@ inline int ltg_realloc(void **_ptr, size_t size, size_t newsize)
         for (i = 0; i < 3; i++) {
                 ptr = realloc(*_ptr, newsize);
                 if (ptr != NULL) {
-                        __ltg_malloc_bind(ptr, size);
+                        __ltg_malloc_bind(ptr, newsize);
                         goto out;
                 }
         }
