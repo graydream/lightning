@@ -19,6 +19,7 @@ typedef struct {
         __time_t time;
         func_t func;
         void *obj;
+        int coreid;
 } entry_t;
 
 typedef struct {
@@ -100,6 +101,10 @@ static void __timer_expire__(group_t *group)
         __time_t now;
         void *first;
         entry_t *ent;
+        coreid_t coreid;
+
+        ret = core_getid(&coreid);
+        LTG_ASSERT(ret == 0);
 
         now = __timer_gettime();
         while (1) {
@@ -116,6 +121,8 @@ static void __timer_expire__(group_t *group)
 
                         DBUG("func %p\n", ent->obj);
 
+                        LTG_ASSERT(ent->coreid == coreid.idx);
+                        
                         ANALYSIS_BEGIN(0);
                         ent->func(ent->obj);
                         ANALYSIS_END(0, 1000 * 100, NULL);
@@ -127,6 +134,16 @@ static void __timer_expire__(group_t *group)
         }
 }
 
+static int __core_request(va_list ap)
+{
+        entry_t *ent = va_arg(ap, entry_t *);
+
+        va_end(ap);
+
+        ent->func(ent->obj);
+
+        return 0;
+}
 
 static void *__timer_expire(void *_args)
 {
@@ -195,7 +212,12 @@ static void *__timer_expire(void *_args)
                                 DBUG("func %p\n", ent->obj);
 
                                 ANALYSIS_BEGIN(0);
-                                ent->func(ent->obj);
+                                if (ent->coreid == -1) {
+                                        ent->func(ent->obj);
+                                } else {
+                                        core_request(ent->coreid, -1, "timer", __core_request, ent);
+                                }
+
                                 ANALYSIS_END(0, IO_WARN, NULL);
 
                                 slab_stream_free(ent);
@@ -277,6 +299,7 @@ static void __timer_insert(entry_t *ent, group_t *group, suseconds_t usec,
 {
         int ret, retry = 0;
         uint64_t tmo;
+        coreid_t coreid;
 
         tmo = __timer_gettime();
         tmo += usec;
@@ -285,6 +308,13 @@ static void __timer_insert(entry_t *ent, group_t *group, suseconds_t usec,
         ent->obj = obj;
         ent->func = func;
 
+        ret = core_getid(&coreid);
+        if (ret == 0) {
+                ent->coreid = coreid.idx;
+        } else {
+                ent->coreid = -1;
+        }
+        
 retry:
         ret = skiplist_put(group->list, (void *)&ent->time, (void *)ent);
         if (unlikely(ret)) {
