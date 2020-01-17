@@ -99,16 +99,16 @@ err_ret:
 
 static int __dmsg_goto(const char *buf, uint32_t extra)
 {
+        int on = atoi(buf);
+
         (void) extra;
 
-        if ((strcmp(buf, "0") == 0) || (strcmp(buf, "0\n") == 0 )) {
-                DINFO("set goto %s\n", buf);
-                dbg_goto(0);
-        } else if ((strcmp(buf, "1") == 0) || (strcmp(buf, "1\n") == 0)) {
-                DINFO("set goto %s\n", buf);
+        DINFO("set goto %d\n", on);
+
+        if (on) {
                 dbg_goto(1);
         } else {
-                DERROR("invalid argument %s\n", buf);
+                dbg_goto(0);
         }
 
         return 0;

@@ -633,8 +633,13 @@ int core_getid(coreid_t *coreid)
                 GOTO(err_ret, ret);
         }
 
-        coreid->nid = *net_getnid();
-        LTG_ASSERT(coreid->nid.id > 0);
+        if (likely(ltgconf_global.daemon)) {
+                coreid->nid = *net_getnid();
+                LTG_ASSERT(coreid->nid.id > 0);
+        } else {
+                coreid->nid.id = 0;
+        }
+
         coreid->idx = core->hash;
 
         return 0;
