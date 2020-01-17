@@ -29,15 +29,7 @@ void dbg_sub_init()
 
 void dbg_info(int i)
 {
-#if 1
-        if (ltgconf_global.testing) {
-                __d_info__ = __D_INFO;
-        } else {
-                __d_info__ = i;
-        }
-#else
-        __d_info__ = i;
-#endif
+        __d_info__ = i ? __D_INFO : 0;
 }
 
 void dbg_goto(int i)

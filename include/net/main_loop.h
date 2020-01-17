@@ -23,7 +23,7 @@ int main_loop_event(int sd, int event, int op);
 #define main_loop_hold()                            \
         do {                                        \
             int __i__ = 0;                          \
-            while (__main_loop_hold__) {                        \
+            while (__main_loop_hold__ && ltgconf_global.daemon) {       \
                     sleep(1);                                   \
                     DINFO("main_loop_hold %u\n", __i__++);      \
             }                                                   \
