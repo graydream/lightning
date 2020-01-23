@@ -80,7 +80,7 @@ STATIC void *__core_check_health__(void *_arg)
                                 continue;
 
                         //int tmo = core->flag & CORE_FLAG_POLLING ? 3 : 10;
-                        int tmo = 10;
+                        int tmo = 60;
 
                         if (unlikely(now - core->keepalive > tmo)) {
                                 DERROR("polling core[%d] block !!!!!\n", core->hash);
@@ -630,7 +630,7 @@ int core_getid(coreid_t *coreid)
 
         if (unlikely(core == NULL)) {
                 ret = ENOSYS;
-                GOTO(err_ret, ret);
+                goto err_ret;
         }
 
         if (likely(ltgconf_global.daemon)) {
