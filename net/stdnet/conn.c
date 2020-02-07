@@ -94,7 +94,7 @@ static void *__conn_scan(void *arg)
         (void) arg;
         
         while (1) {
-                sleep(ltgconf_global.rpc_timeout / 2);
+                sleep(10);
                 __conn_scan__();
         }
 
