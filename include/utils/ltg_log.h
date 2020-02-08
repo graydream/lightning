@@ -15,10 +15,13 @@ typedef enum {
 
 typedef struct {
         int logfd;
-        int count;
         time_t time;
         ltg_rwlock_t lock;
+        ltg_spinlock_t spin;
         logmode_t logmode;
+        char file[MAX_PATH_LEN];
+        uint64_t file_size;
+        uint64_t log_max_bytes;
 } log_t;
 
 typedef enum {
@@ -30,6 +33,7 @@ typedef enum {
 } logtype_t;
 
 extern int log_init(logmode_t, const char *file);
+extern int log_init2(logmode_t, const char *file, int log_max_mbytes);
 extern int log_destroy(void);
 extern int log_write(logtype_t type, const char *msg);
 extern int log_getfd();

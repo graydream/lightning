@@ -86,7 +86,7 @@ static long parse_http_code(long http_code)
 		case 412:
 			ret = ETCD_PREVCONT;
 			break;
-			
+
 		default:
 			ret = ETCD_PROTOCOL_ERROR;
 			break;
@@ -115,6 +115,12 @@ static char *str_replace(char *str, char old, char new){
         return ptr;
 }
 
+static inline void etcd_auth_enable(CURL *curl)
+{
+        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        curl_easy_setopt(curl, CURLOPT_USERPWD, "root:ddww");
+        // DINFO("httpauth root:ddww\n");
+}
 
 static etcd_node_t *get_etcd_node_val(cJSON *obj){
         cJSON *tmpobj = obj;
@@ -344,23 +350,23 @@ etcd_get_one(_etcd_session *session, const char *key, etcd_server *srv, const ch
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, (long)1);
 
+        etcd_auth_enable(curl);
+
         curl_res = curl_easy_perform(curl);
         if (curl_res != CURLE_OK) {
-                print_curl_error("perform",curl_res);
-#ifdef DBUG_LTG_ETCD
-                DWARN("get error, http ret code: %d\n", curl_res);
-#endif
+                // print_curl_error("perform",curl_res);
+                DWARN("http code: %d\n", curl_res);
                 if (curl_res == CURLE_OPERATION_TIMEDOUT) {
                         res = ETCD_TIMEOUT;
                 }
-                
+
                 goto *err_label;
         }
-        
+
 	curl_res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &retcode);
 	if(CURLE_OK == curl_res )
 	{
-		res = parse_http_code(retcode);	
+		res = parse_http_code(retcode);
 #ifdef DBUG_LTG_ETCD
                 if (res != ETCD_OK)
                 {
@@ -399,13 +405,13 @@ etcd_result etcd_get(etcd_session session_as_void, char *key, long timeout,
         LTG_ASSERT(session->servers[num_servers].host == NULL);
         LTG_ASSERT(session->servers[num_servers].port == 0);
 #endif
-	
+
 	if (consistent) {
         	if (asprintf(&path, "%s?quorum=true",
                 	     key) < 0) {
             		return res;
         	}
-	}	
+	}
 
         for (srv = session->servers; srv->host; ++srv) {
 		if (consistent)
@@ -421,7 +427,7 @@ etcd_result etcd_get(etcd_session session_as_void, char *key, long timeout,
                         return res;
                 }
         }
-	
+
 	free(path);
         return res;
 }
@@ -641,9 +647,12 @@ etcd_delete_dir (_etcd_session *session, const char *key, int recursive, etcd_se
 
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, (long)1);
 
+        etcd_auth_enable(curl);
+
         curl_res = curl_easy_perform(curl);
         if (curl_res != CURLE_OK) {
-                print_curl_error("perform",curl_res);
+                // print_curl_error("perform",curl_res);
+                DWARN("http code: %d\n", curl_res);
                 goto *err_label;
         }
 
@@ -726,7 +735,7 @@ etcd_set_one (_etcd_session *session, const char *key, const char *value,
                                         precond->value) < 0) {
                         goto *err_label;
                 }
-                
+
                 free(contents);
                 contents = c2;
                 err_label = &&free_contents;
@@ -766,12 +775,12 @@ etcd_set_one (_etcd_session *session, const char *key, const char *value,
         //need set it for multi-thread safe
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, (long)1);
 
+        etcd_auth_enable(curl);
+
         curl_res = curl_easy_perform(curl);
         if (curl_res != CURLE_OK) {
                 //print_curl_error("perform",curl_res);
-#ifdef DBUG_LTG_ETCD
-                DWARN("set error, http ret code: %d\n", curl_res);
-#endif
+                DWARN("http code: %d\n", curl_res);
                 goto *err_label;
         }
 
@@ -1275,9 +1284,12 @@ etcd_update_ttl_one (_etcd_session *session, const char *key,unsigned int ttl, e
                 curl_easy_setopt(curl,CURLOPT_POSTFIELDS,contents);
         }
 
+        etcd_auth_enable(curl);
+
         curl_res = curl_easy_perform(curl);
         if (curl_res != CURLE_OK) {
-                print_curl_error("perform",curl_res);
+                // print_curl_error("perform",curl_res);
+                DWARN("http code: %d\n", curl_res);
                 goto *err_label;
         }
 
