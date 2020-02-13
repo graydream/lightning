@@ -94,7 +94,7 @@ static void *__conn_scan(void *arg)
         (void) arg;
         
         while (1) {
-                sleep(10);
+                sleep(5);
                 __conn_scan__();
         }
 
