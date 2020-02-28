@@ -392,7 +392,43 @@ void corenet_close(const sockid_t *sockid)
         }
 }
 
+static uint64_t __mask__ = 0;
+
+static void *__corenet_register(void *_mask)
+{
+        (void) _mask;
+        
+        while (srv_running) {
+                sleep(2);
+                corenet_maping_register(__mask__);
+        }
+
+        pthread_exit(NULL);
+}
+
 int corenet_register(uint64_t coremask)
 {
-        return corenet_maping_register(coremask);
+        int ret;
+        nid_t nid = *net_getnid();
+        char key[MAX_PATH_LEN];
+
+        snprintf(key, MAX_NAME_LEN, "%d/coremask", nid.id);
+        ret = etcd_create(ETCD_CORENET, key, (void *)&coremask,
+                          sizeof(coremask), -1);
+        if (unlikely(ret)) {
+                ret = etcd_update(ETCD_CORENET, key, (void *)&coremask,
+                                  sizeof(coremask), NULL, -1);
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+        }
+        
+        __mask__ = coremask;
+
+        ret = ltg_thread_create(__corenet_register, NULL, "corenet register");
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
+        return 0;
+err_ret:
+        return ret;
 }

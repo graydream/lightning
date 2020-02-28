@@ -29,7 +29,7 @@ static int __conn_add(const nid_t *nid)
 
         snprintf(key, MAX_NAME_LEN, "%u.info", nid->id);
 
-        ret = etcd_get_text(ETCD_BANET, key, tmp, NULL);
+        ret = etcd_get_text(ETCD_MANAGE, key, tmp, NULL);
         if (ret) {
                 goto out;
         }
@@ -60,7 +60,7 @@ static int __conn_scan__()
         etcd_node_t *list = NULL, *node;
         nid_t nid;
 
-        ret = etcd_list(ETCD_BANET, &list);
+        ret = etcd_list(ETCD_MANAGE, &list);
         if (unlikely(ret)) {
                 if (ret == ENOKEY) {
                         DINFO("conn table empty\n");
@@ -141,9 +141,9 @@ static int __conn_init_info(nid_t *_nid)
 
 retry:
         DBUG("register %s value %s\n", key, tmp);
-        ret = etcd_create_text(ETCD_BANET, key, tmp, 0);
+        ret = etcd_create_text(ETCD_MANAGE, key, tmp, 0);
         if (unlikely(ret)) {
-                ret = etcd_update_text(ETCD_BANET, key, tmp, NULL, 0);
+                ret = etcd_update_text(ETCD_MANAGE, key, tmp, NULL, 0);
                 if (unlikely(ret)) {
                         USLEEP_RETRY(err_ret, ret, retry, retry, 30, (1000 * 1000));
                 }
@@ -177,7 +177,7 @@ int conn_getinfo(const nid_t *nid, ltg_net_info_t *info)
         size_t  len;
 
         snprintf(key, MAX_NAME_LEN, "%u.info", nid->id);
-        ret = etcd_get_text(ETCD_BANET, key, tmp, NULL);
+        ret = etcd_get_text(ETCD_MANAGE, key, tmp, NULL);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
