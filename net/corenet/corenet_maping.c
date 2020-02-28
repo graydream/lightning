@@ -156,7 +156,7 @@ int corenet_maping_register(uint64_t coremask)
         coreid_t coreid = {nid, 0};
         corenet_addr_t *addr;
         char buf[MAX_BUF_LEN], key[MAX_NAME_LEN];
-        static int addr_count = 0;
+        static int addr_count[CORE_MAX] = {0};
         
         addr = (void *)buf;
         for (int i = 0; i < CORE_MAX; i++) {
@@ -168,7 +168,7 @@ int corenet_maping_register(uint64_t coremask)
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
 
-                if (addr->info_count != addr_count) {
+                if (addr->info_count != addr_count[i]) {
                         snprintf(key, MAX_NAME_LEN, "%d/%d", nid.id, i);
                         ret = etcd_create(ETCD_CORENET, key, addr, addr->len, -1);
                         if (unlikely(ret)) {
@@ -178,10 +178,11 @@ int corenet_maping_register(uint64_t coremask)
                                         GOTO(err_ret, ret);
                         }
 
-                        DINFO("update corenet %u -> %u\n", addr_count, addr->info_count);
-                        addr_count = addr->info_count;
+                        DINFO("update core[%d] corenet %u -> %u\n", i, addr_count[i],
+                              addr->info_count);
+                        addr_count[i] = addr->info_count;
                 } else {
-                        DBUG("skip update %u\n", addr_count);
+                        DBUG("skip core[%d] %u\n", i, addr_count[i]);
                 }
         }
 
