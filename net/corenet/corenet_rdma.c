@@ -304,7 +304,7 @@ void corenet_rdma_close(rdma_conn_t *rdma_handler)
 {
         corenet_node_t *node = container_of(rdma_handler, corenet_node_t, handler);
 
-        if (node->sockid.sd == -1)
+        if (node->sockid.sd == -1 || srv_running == 0 || rdma_running == 0)
                 return;
 
         if (rdma_handler->is_closing == 0) {
@@ -345,7 +345,7 @@ int corenet_rdma_post_recv(void *ptr)
         struct ibv_recv_wr *bad_wr;
 
         // check flag, 0 post recv, other close
-        if (unlikely(req == NULL))
+        if (unlikely(req == NULL || rdma_running == 0 || srv_running == 0))
                 return 0;
 
         rdma_handler = req->rdma_handler;
@@ -615,7 +615,7 @@ int IO_FUNC corenet_rdma_poll(__corenet_t *corenet)
         struct ibv_wc wc[MAX_POLLING];
         //rdma_info_t *dev = corenet->active_dev;
 
-        if (unlikely(corenet->dev_count == 0 || rdma_running == 0)) {
+        if (unlikely(corenet->dev_count == 0 || srv_running == 0 ||rdma_running == 0)) {
                 return 0;
         }
 
@@ -734,7 +734,7 @@ void corenet_rdma_commit(void *rdma_net)
         corenet_rdma_t *__corenet_rdma__ = rdma_net;
         corenet_node_t *node;
 
-        if (unlikely(rdma_net == NULL)) {
+        if (unlikely(rdma_net == NULL || srv_running == 0 || rdma_running == 0)) {
                 return;
         }
 
@@ -990,6 +990,9 @@ static int __corenet_rdma_create_qp__(struct rdma_cm_id *cm_id, core_t *core, rd
         qp_init_attr.qp_type = IBV_QPT_RC;
         /* only generate completion queue entries if requested */
         qp_init_attr.sq_sig_all = 0;
+
+        if (rdma_running == 0 || srv_running == 0)
+                return EIO;
 
         ret = rdma_create_qp(cm_id, cm_id->pd, &qp_init_attr);
         if (ret) {

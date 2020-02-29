@@ -67,6 +67,18 @@ void dbg_level(int i)
 }
 
 #if 1
+void closecoredump()
+{
+       int ret = 0;
+       struct rlimit rlim_new;
+
+       rlim_new.rlim_cur = rlim_new.rlim_max = 0;
+       ret = setrlimit(RLIMIT_CORE, &rlim_new);
+       if (ret) {
+                abort();
+       }
+}
+
 int dmsg_init_sub(const char *name, const char *value,
                   int (*callback)(const char *buf, uint32_t flag),
                   uint32_t flag)
