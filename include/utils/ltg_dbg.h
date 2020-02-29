@@ -13,6 +13,8 @@
 #include <syslog.h>
 #include <errno.h>
 #include <unistd.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 #include "ltg_log.h"
 #include "dbg_proto.h"
@@ -151,12 +153,13 @@ extern uint32_t utils_loglevel;
 extern uint32_t utils_dbg;
 extern uint32_t utils_sub;
 
+void closecoredump();
 #define FATAL_RETVAL 255
 
 #define EXIT(__ret__)                             \
         do {       					\
 		rdma_running = 0;                               \
-		sleep(1);					\
+                closecoredump();                                \
                 DWARN("exit worker (%u) %s\n", __ret__, strerror(__ret__)); \
                 exit(__ret__);                                          \
         } while (0)
