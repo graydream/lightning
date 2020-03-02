@@ -885,7 +885,7 @@ void coremask_trans(coremask_t *_coremask, uint64_t mask)
 
         memcpy(_coremask, &coremask, sizeof(coremask));
         
-        DINFO("mask 0x%x %s\n", mask, tmp);
+        DBUG("mask 0x%x %s\n", mask, tmp);
 }
 
 int coremask_hash(const coremask_t *coremask, uint64_t id)
