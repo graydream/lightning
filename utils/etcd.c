@@ -140,12 +140,12 @@ static int __etcd_set(const char *key, const char *value,
                 }
         }
 
-        ANALYSIS_END(0, IO_WARN, NULL);
+        ANALYSIS_END(0, IO_INFO, NULL);
         //ANALYSIS_ASSERT(0, 1000 * 1000 * (ltgconf_global.rpc_timeout), NULL);
 
         return 0;
 err_ret:
-        ANALYSIS_END(0, IO_WARN, NULL);
+        ANALYSIS_END(0, IO_INFO, NULL);
         //ANALYSIS_ASSERT(0, 1000 * 1000 * (ltgconf_global.rpc_timeout), NULL);
         return ret;
 }
@@ -204,12 +204,12 @@ static int __etcd_get(const char *key, etcd_node_t **result, int consistent)
                 *result = node;
         }
 
-        ANALYSIS_END(0, IO_WARN, NULL);
+        ANALYSIS_END(0, IO_INFO, NULL);
         //ANALYSIS_ASSERT(0, 1000 * 1000 * (ltgconf_global.rpc_timeout), NULL);
 
         return 0;
 err_ret:
-        ANALYSIS_END(0, IO_WARN, NULL);
+        ANALYSIS_END(0, IO_INFO, NULL);
         //ANALYSIS_ASSERT(0, 1000 * 1000 * (ltgconf_global.rpc_timeout), NULL);
         return ret;
 }
@@ -277,11 +277,11 @@ static int __etcd_del(etcd_session sess, char *key)
                 }
         }
 
-        ANALYSIS_END(0, IO_WARN, NULL);
+        ANALYSIS_END(0, IO_INFO, NULL);
 
         return 0;
 err_ret:
-        ANALYSIS_END(0, IO_WARN, NULL);
+        ANALYSIS_END(0, IO_INFO, NULL);
         return ret;
 }
 
@@ -351,11 +351,11 @@ static int __etcd_del_dir(etcd_session sess, char *key, int recursive)
                 }
         }
 
-        ANALYSIS_END(0, IO_WARN, NULL);
+        ANALYSIS_END(0, IO_INFO, NULL);
 
         return 0;
 err_ret:
-        ANALYSIS_END(0, IO_WARN, NULL);
+        ANALYSIS_END(0, IO_INFO, NULL);
         return ret;
 }
 
@@ -1111,7 +1111,7 @@ struct sche_thread_ops etcd_ops = {
 
 static int __etcd_ops_register()
 {
-        return sche_thread_ops_register(&etcd_ops, etcd_ops.type, 3);
+        return sche_thread_ops_register(&etcd_ops, etcd_ops.type, 7);
 }
 
 int etcd_init()

@@ -634,9 +634,9 @@ int tcp_sock_getdevice(uint32_t _addr, char *name)
 
                 sin = (struct sockaddr_in *)&ifcreq->ifr_addr;
                 addr = sin->sin_addr.s_addr;
-                DINFO("ifname %s, %s\n", ifcreq->ifr_name, _inet_ntoa(addr));
+                DBUG("ifname %s, %s\n", ifcreq->ifr_name, _inet_ntoa(addr));
                 if (addr == _addr) {
-                        DINFO("ifname %s, %s\n", ifcreq->ifr_name, _inet_ntoa(addr));
+                        DBUG("ifname %s, %s\n", ifcreq->ifr_name, _inet_ntoa(addr));
                         strcpy(name, ifcreq->ifr_name);
                         done = 1;
                         break;

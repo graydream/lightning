@@ -182,8 +182,6 @@ void closecoredump();
 #endif
 
 int dmsg_init();
-int dmsg_init_sub(const char *path, const char *value,
-                  int (*callback)(const char *buf, uint32_t flag),
-                  uint32_t flag);
+int dmsg_init_sub(const char *name, uint32_t flag);
 
 #endif

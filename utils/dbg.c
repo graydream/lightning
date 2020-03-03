@@ -79,7 +79,7 @@ void closecoredump()
        }
 }
 
-int dmsg_init_sub(const char *name, const char *value,
+int __dmsg_init_sub(const char *name, const char *value,
                   int (*callback)(const char *buf, uint32_t flag),
                   uint32_t flag)
 {
@@ -166,13 +166,13 @@ int dmsg_init()
         DINFO("dmsg init %d\n", ltgconf_global.backtrace);
 
         if (ltgconf_global.backtrace) {
-                ret = dmsg_init_sub(DGOTO_PATH, "1", __dmsg_goto, 0);
+                ret = __dmsg_init_sub(DGOTO_PATH, "1", __dmsg_goto, 0);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
 
                 //dbg_goto(1);
         } else {
-                ret = dmsg_init_sub(DGOTO_PATH, "0", __dmsg_goto, 0);
+                ret = __dmsg_init_sub(DGOTO_PATH, "0", __dmsg_goto, 0);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
 
@@ -180,31 +180,46 @@ int dmsg_init()
         }
 
 #if 1
-        ret = dmsg_init_sub(DLEVEL_PATH, "1", __dmsg_level, 1);
+        ret = __dmsg_init_sub(DLEVEL_PATH, "1", __dmsg_level, 1);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        ret = dmsg_init_sub(DBUG_UTILS_PATH, "0", __dmsg_sub, S_LTG_UTILS);
+        ret = __dmsg_init_sub(DBUG_UTILS_PATH, "0", __dmsg_sub, S_LTG_UTILS);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        ret = dmsg_init_sub(DBUG_CORE_PATH, "0", __dmsg_sub, S_LTG_CORE);
+        ret = __dmsg_init_sub(DBUG_CORE_PATH, "0", __dmsg_sub, S_LTG_CORE);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
         
-        ret = dmsg_init_sub(DBUG_NET_PATH, "0", __dmsg_sub, S_LTG_NET);
+        ret = __dmsg_init_sub(DBUG_NET_PATH, "0", __dmsg_sub, S_LTG_NET);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        ret = dmsg_init_sub(DBUG_RPC_PATH, "0", __dmsg_sub, S_LTG_RPC);
+        ret = __dmsg_init_sub(DBUG_RPC_PATH, "0", __dmsg_sub, S_LTG_RPC);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        ret = dmsg_init_sub(DBUG_MEM_PATH, "0", __dmsg_sub, S_LTG_MEM);
+        ret = __dmsg_init_sub(DBUG_MEM_PATH, "0", __dmsg_sub, S_LTG_MEM);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 #endif
         
+        return 0;
+err_ret:
+        return ret;
+}
+
+int dmsg_init_sub(const char *name, uint32_t flag)
+{
+        int ret;
+        char path[MAX_PATH_LEN];
+
+        snprintf(path, MAX_PATH_LEN, "/msgctl/sub/%s", name);
+        ret = __dmsg_init_sub(path, "0", __dmsg_sub, flag);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
         return 0;
 err_ret:
         return ret;
