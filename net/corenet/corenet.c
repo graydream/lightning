@@ -400,7 +400,11 @@ static void *__corenet_register(void *_mask)
         
         while (srv_running) {
                 sleep(2);
+#if 1
+                corenet_maping_offline(__mask__);
+#else
                 corenet_maping_register(__mask__);
+#endif
         }
 
         pthread_exit(NULL);
@@ -424,6 +428,10 @@ int corenet_register(uint64_t coremask)
         
         __mask__ = coremask;
 
+        ret = corenet_maping_register(__mask__);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+        
         ret = ltg_thread_create(__corenet_register, NULL, "corenet register");
         if (unlikely(ret))
                 GOTO(err_ret, ret);

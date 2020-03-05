@@ -606,6 +606,11 @@ void _str_split(char *from, char split, char *to[], int *_count)
         int max, i;
         char *pos;
 
+        if (strlen(from) == 0) {
+                *_count = 0;
+                return;
+        }
+        
         if (from[strlen(from) - 1] == ',')
                 from[strlen(from) - 1] = '\0';
 

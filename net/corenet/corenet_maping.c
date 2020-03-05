@@ -191,6 +191,40 @@ err_ret:
         return ret;
 }
 
+int corenet_maping_offline(uint64_t coremask)
+{
+        int ret;
+        nid_t nid = *net_getnid();
+        coreid_t coreid = {nid, 0};
+        corenet_addr_t *addr;
+        char buf[MAX_BUF_LEN];
+        static int addr_count[CORE_MAX] = {0};
+        
+        addr = (void *)buf;
+        for (int i = 0; i < CORE_MAX; i++) {
+                if (!core_usedby(coremask, i))
+                        continue;
+
+                coreid.idx = i;
+                ret = corenet_getaddr(&coreid, addr);
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+
+                if (addr->info_count < addr_count[i]) {
+                        DERROR("core[%d] corenet %u -> %u\n", i, addr_count[i],
+                               addr->info_count);
+                        EXIT(EAGAIN);
+                }
+
+                addr_count[i] = addr->info_count;
+        }
+
+        return 0;
+err_ret:
+        return ret;
+}
+
+
 #if 1
 
 static int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
