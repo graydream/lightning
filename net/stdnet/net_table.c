@@ -346,7 +346,7 @@ retry:
                 ret = __netable_new(&info->id, &ent);
                 if (unlikely(ret)) {
                         if (ret == EEXIST) {
-                                DWARN("connect exist\n");
+                                DBUG("connect exist\n");
                                 goto retry;
                         } else
                                 GOTO(err_ret, ret);

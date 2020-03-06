@@ -504,6 +504,37 @@ inline int ltgbuf_init(ltgbuf_t *buf, int size)
         return 0;
 }
 
+inline int ltgbuf_init1(ltgbuf_t *buf, int size)
+{
+        seg_t *seg;
+
+        LTG_ASSERT(size >= 0 && size < (1024 * 1024 * 100));
+
+        buf->len = 0;
+        buf->used = 0;
+        INIT_LIST_HEAD(&buf->list);
+        if (size == 0)
+                return 0;
+
+        ANALYSIS_BEGIN(0);
+
+        int left, min;
+        //int coreid = __coreid();
+        left = size;
+        do {
+                min = _min(left, BUFFER_SEG_SIZE);
+                seg = seg_sys_create(buf, min);
+                seg_add_tail(buf, seg);
+                left -= min;
+        } while (unlikely(left > 0));
+
+        BUFFER_CHECK(buf);
+
+        ANALYSIS_END(0, 1000 * 100, NULL);
+
+        return 0;
+}
+
 void IO_FUNC ltgbuf_free(ltgbuf_t *buf)
 {
         BUFFER_CHECK(buf);

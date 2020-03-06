@@ -86,6 +86,7 @@ typedef struct {
 typedef int (*buf_itor_func)(void *, void *addr, uint64_t phyaddr, size_t len);
 
 int ltgbuf_init(ltgbuf_t *pack, int size);
+int ltgbuf_init1(ltgbuf_t *buf, int size);
 void ltgbuf_free(ltgbuf_t *pack);
 
 int ltgbuf_appendmem(ltgbuf_t *buf, const void *src, uint32_t len);
