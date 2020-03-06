@@ -31,6 +31,7 @@ typedef struct {
 static hugepage_head_t *__hugepage__;
 static __thread hugepage_head_t *__private_huge__ = NULL;
 static int __use_huge__ = 0;
+static int PRIVATE_HP_COUNT = 0;
 
 static uint64_t __virt2phy(const void *virtaddr)
 {
@@ -151,9 +152,14 @@ void *hugepage_private_init(int hash, int sockid)
 {
         hugepage_head_t *head;
         hugepage_t      *hpage;
-        void *addr = __hugepage__->private_hp_head[hash];
         int i ;
 
+        if (__use_huge__ == 0) {
+                return NULL;
+        }
+        
+        void *addr = __hugepage__->private_hp_head[hash];
+        
         LTG_ASSERT(addr);
         
         DINFO("hash %d beigin init private hugepage%p\n", hash, addr);
@@ -211,7 +217,7 @@ static void __hugepage_init_private(hugepage_head_t *head, void *private)
         }
 }
 
-int hugepage_init(int daemon, uint64_t coremask, int use_huge)
+int hugepage_init(int daemon, uint64_t coremask, int nr_hugepage)
 { 
         int ret, hp_count, poll_num = 0;
         size_t mem_size;
@@ -219,7 +225,13 @@ int hugepage_init(int daemon, uint64_t coremask, int use_huge)
         size_t align;
         hugepage_head_t *head;
 
+        if (nr_hugepage == 0) {
+                __use_huge__ = 0;
+                return 0;
+        }
+        
         static_assert(sizeof(*head) <= HUGEPAGE_SIZE, "hugepage");
+        PRIVATE_HP_COUNT = nr_hugepage;
         
         for (int i = 0; i < CORE_MAX; i++) {
                 if (core_usedby(coremask, i))
@@ -249,7 +261,7 @@ int hugepage_init(int daemon, uint64_t coremask, int use_huge)
         } else
                 addr = mem;
 
-        ret = __map_hugepages(addr, daemon & use_huge, hp_count);
+        ret = __map_hugepages(addr, daemon & nr_hugepage, hp_count);
         if (ret)
                 GOTO(err_ret, ret);
 
@@ -259,7 +271,7 @@ int hugepage_init(int daemon, uint64_t coremask, int use_huge)
 
         __hugepage_head_init(head, mem, addr, hp_count - 1, -1);
 
-        __hugepage_init_public(head, public, daemon, use_huge);
+        __hugepage_init_public(head, public, daemon, nr_hugepage);
 
         if (daemon) {
                 __hugepage_init_private(head, private);
@@ -299,12 +311,35 @@ static hugepage_t *__get_free_hugepage(hugepage_head_t *head)
         return hpage;       
 }
 
+static int __hugepage_non_getfree(void **_addr, uint64_t *phyaddr)
+{
+        int ret;
+        void *addr;
+
+        DINFO("fake hugepage_getfree\n");
+        
+        ret = ltg_malign((void **)&addr, PAGE_SIZE, HUGEPAGE_SIZE);
+        if (ret)
+                UNIMPLEMENTED(__DUMP__);
+
+        *_addr = addr;
+        if (phyaddr) {
+                *phyaddr = __virt2phy(addr);
+        }
+        
+        return 0;
+}
+
 int hugepage_getfree(void **_addr, uint64_t *phyaddr)
 {
         int ret;
         hugepage_t *hpage;
         hugepage_head_t *head = __private_huge__ ? __private_huge__ : __hugepage__;
 
+        if (unlikely(__use_huge__ == 0)) {
+                return __hugepage_non_getfree(_addr, phyaddr);
+        }
+        
         if (unlikely(list_empty(&head->hugepage_free_list))) {
                 UNIMPLEMENTED(__DUMP__);
                 ret = ENOMEM;

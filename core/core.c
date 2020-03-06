@@ -375,7 +375,7 @@ int core_init(uint64_t mask, int flag)
 
         //DINFO("core init begin %u %u flag %d\n", polling_core, cpuset_useable(), flag);
 
-        ret = hugepage_init(ltgconf_global.daemon, mask, ltgconf_global.use_huge);
+        ret = hugepage_init(ltgconf_global.daemon, mask, ltgconf_global.nr_hugepage);
         if (ret)
                 GOTO(err_ret, ret);
 

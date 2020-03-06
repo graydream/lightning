@@ -31,7 +31,7 @@ typedef struct {
 
         int polling_timeout;
         uint64_t coremask;
-        int use_huge;
+        int nr_hugepage;
         int daemon;
         
         int wmem_max;

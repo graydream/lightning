@@ -116,9 +116,9 @@
                         time_t __now__##mark = gettime();                         \
                         __warn__##mark = __now__##mark;                 \
                         if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout * 2) { \
-                                DERROR("analysis used %fs %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
+                                DERROR("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         } else if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) { \
-                                DWARN("analysis used %fs %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
+                                DWARN("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         } else {                                        \
                                 DINFO("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         }                                               \
