@@ -39,11 +39,11 @@ static int __conn_add(const nid_t *nid)
         ret = urlsafe_b64_decode(tmp, strlen(tmp), (void *)info, &len);
         LTG_ASSERT(ret == 0);        
 
-        DINFO("connect to %u %s\n", nid->id, info->name);
+        DBUG("connect to %u %s\n", nid->id, info->name);
 
         ret = netable_connect_info(&nh, info, 1);
         if (ret) {
-                DINFO("connect to %u %s fail\n", nid->id, info->name);
+                DBUG("connect to %u %s fail\n", nid->id, info->name);
                 GOTO(err_ret, ret);
         }
 
