@@ -7,8 +7,8 @@
 
 #include "ltg_def.h"
 
-#define IO_WARN ((ltgconf_global.rpc_timeout / 2) * 1000 * 1000)
-#define IO_INFO ((500) * 1000)
+#define IO_WARN ((ltgconf_global.rpc_timeout) * 1000 * 1000)
+#define IO_INFO (1000 * 1000)
 
 #if 1
 #define IO_FUNC  __attribute__((section(".xiop")))
@@ -143,9 +143,9 @@
                         time_t __now__##mark = gettime();               \
                         __warn__##mark = __now__##mark;                 \
                         if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout * 2) { \
-                                DERROR("analysis used %fs %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
+                                DERROR("analysis used %fs %s, \n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         } else if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) { \
-                                DWARN("analysis used %fs %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
+                                DWARN("analysis used %fs %s, \n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         } else {                                        \
                                 DINFO_PERF("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         }                                               \
@@ -161,7 +161,7 @@
                 core_latency_update(used##mark);                        \
                 if (used##mark > (__usec)) {                            \
                         if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) { \
-                                DWARN_PERF("analysis used %fs %s, timeout\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
+                                DWARN_PERF("analysis used %fs %s, \n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         } else {                                        \
                                 DINFO_PERF("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         }                                               \

@@ -9,7 +9,7 @@
 #include "ltg_utils.h"
 #include "ltg_core.h"
 
-#define TIMER_IDLE 1024 * 1024
+#define TIMER_IDLE 1000 * 100
 #define TIMER_TYPE_MISC 0
 #define TIMER_TYPE_SCHE 1
 

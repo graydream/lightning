@@ -232,9 +232,9 @@ static int __core_worker_init(core_t *core)
                 ret = timer_init(1);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
-        }
 
-        DINFO("%s[%u] timer inited\n", core->name, core->hash);
+                DINFO("%s[%u] timer inited\n", core->name, core->hash);
+        }
 
         ret = gettime_private_init();
         if (unlikely(ret))

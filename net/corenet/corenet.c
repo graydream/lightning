@@ -230,7 +230,7 @@ static int __corenet_get_numaid(uint32_t addr, int *numaid)
                 GOTO(err_ret, ret);
         }
 
-        DINFO("addr %s device %s numa node %s\n", _inet_ntoa(addr), name, value);
+        DBUG("addr %s device %s numa node %s", _inet_ntoa(addr), name, value);
 
         *numaid = atoi(value);
         
@@ -260,9 +260,9 @@ static int __corenet_getaddr____(const core_t *core, uint32_t port,
         int count = 0;
         for (int i = 0; i < info->info_count; i++) {
                 if (force) {
-                        DWARN("%s[%u] use cross core addr %s:%u\n", core->name,
-                              addr->coreid.idx, _inet_ntoa(info->info[i].addr),
-                              info->info[i].port);
+                        DINFO("%s[%u] use cross core addr %s:%u\n", core->name,
+                             addr->coreid.idx, _inet_ntoa(info->info[i].addr),
+                             info->info[i].port);
 
                         addr->info[count] = info->info[i];
                         count++;
@@ -273,11 +273,11 @@ static int __corenet_getaddr____(const core_t *core, uint32_t port,
 
                         if (force == 0 && core->main_core
                             && numaid != core->main_core->node_id) {
-                                DINFO("%s[%u] skip addr %s:%u\n", core->name,
+                                DBUG("%s[%u] skip addr %s:%u\n", core->name,
                                       addr->coreid.idx, _inet_ntoa(info->info[i].addr),
                                       info->info[i].port);
                         } else {
-                                DINFO("%s[%u] use addr %s:%u\n", core->name,
+                                DBUG("%s[%u] use addr %s:%u\n", core->name,
                                       addr->coreid.idx, _inet_ntoa(info->info[i].addr),
                                       info->info[i].port);
 
@@ -399,7 +399,7 @@ static void *__corenet_register(void *_mask)
         (void) _mask;
         
         while (srv_running) {
-                sleep(2);
+                sleep(5);
 #if 1
                 corenet_maping_offline(__mask__);
 #else
