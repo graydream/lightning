@@ -322,7 +322,7 @@ static int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
 
         return 0;
 err_close:
-	DERROR("%s[%d] connected, restart for safe\n",
+	DWARN("%s[%d] connected, restart for safe\n",
 			netable_rname(nid), i);
 	EXIT(EAGAIN);
         UNIMPLEMENTED(__DUMP__);
