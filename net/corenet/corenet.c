@@ -260,7 +260,7 @@ static int __corenet_getaddr____(const core_t *core, uint32_t port,
         int count = 0;
         for (int i = 0; i < info->info_count; i++) {
                 if (force) {
-                        DINFO("%s[%u] use cross core addr %s:%u\n", core->name,
+                        DWARN("%s[%u] use cross core addr %s:%u\n", core->name,
                              addr->coreid.idx, _inet_ntoa(info->info[i].addr),
                              info->info[i].port);
 

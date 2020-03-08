@@ -53,7 +53,7 @@ int corenet_tcp_connect(const coreid_t *coreid, uint32_t addr, uint32_t port,
         sin.sin_addr.s_addr = addr;
         sin.sin_port = port;
 
-        DINFO("connect %s:%u\n", inet_ntoa(sin.sin_addr), ntohs(port));
+        DBUG("connect %s:%u\n", inet_ntoa(sin.sin_addr), ntohs(port));
 
         ret = core_getid(&msg.from);
         if (unlikely(ret))

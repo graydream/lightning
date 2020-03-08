@@ -139,7 +139,7 @@ STATIC int __corenet_maping_connect_core(const coreid_t *coreid,
                 GOTO(err_ret, ret);
         }
         
-        DINFO("connect to %s/%d sd %u, addr %d:%d\n", netable_rname(&coreid->nid),
+        DBUG("connect to %s/%d sd %u, addr %d:%d\n", netable_rname(&coreid->nid),
               coreid->idx, sockid.sd, sock->addr, sock->port);
 
         *_sockid = sockid;
@@ -479,7 +479,7 @@ static int IO_FUNC __corenet_maping_connect_wait(corenet_maping_t *entry)
 
                 ltg_spin_unlock(&entry->lock);
 
-                DINFO("connect to %s\n", netable_rname(nid));
+                DBUG("connect to %s\n", netable_rname(nid));
 
                 sche_task_new("corenet_maping",
                               __corenet_maping_connect_task,
@@ -488,7 +488,7 @@ static int IO_FUNC __corenet_maping_connect_wait(corenet_maping_t *entry)
                 ltg_spin_unlock(&entry->lock);
         }
 
-        DINFO("connect to %s wait\n", netable_rname(nid));
+        DBUG("connect to %s wait\n", netable_rname(nid));
         ret = sche_yield("maping_connect", NULL, NULL);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
@@ -550,7 +550,7 @@ static void __corenet_maping_close_entry(corenet_maping_t *entry,
                 if (_sockid && _sockid->sd == sockid->sd
                     && _sockid->seq == sockid->seq) {
 
-                        DINFO("close maping one sock %s nid[%u], sockid %u\n",
+                        DBUG("close maping one sock %s nid[%u], sockid %u\n",
                               netable_rname(&entry->nid), entry->nid.id,
                               sockid->sd);
 
@@ -558,7 +558,7 @@ static void __corenet_maping_close_entry(corenet_maping_t *entry,
                         sockid->sd = -1;
                         break;
                 } else {
-                        DINFO("close maping all sock %s nid[%u], sockid %u\n",
+                        DBUG("close maping all sock %s nid[%u], sockid %u\n",
                               netable_rname(&entry->nid), entry->nid.id,
                               sockid->sd);
 

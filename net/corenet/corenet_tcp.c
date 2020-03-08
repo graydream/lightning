@@ -240,7 +240,7 @@ static int __corenet_add(corenet_tcp_t *corenet, const sockid_t *sockid, void *c
                 UNIMPLEMENTED(__DUMP__);//remove checklist
         }
 
-        DINFO("corenet_tcp connect %s[%u] %s sd %d, ev %o:%o\n", sche->name,
+        DBUG("corenet_tcp connect %s[%u] %s sd %d, ev %o:%o\n", sche->name,
               sche->id, node->name, sd, node->ev, event);
 
         return 0;
