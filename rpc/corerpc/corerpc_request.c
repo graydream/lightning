@@ -310,3 +310,37 @@ err_ret:
         }
         return ret;
 }
+
+int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
+                          const sockid_t *sockid, const void *request,
+                          int reqlen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
+                          int msg_type, int msg_size, int group, int timeout)
+{
+        int ret;
+        corerpc_op_t op;
+
+        op.coreid = *coreid;
+        op.request = request;
+        op.reqlen = reqlen;
+        op.wbuf = wbuf;
+        op.rbuf = rbuf;
+        op.group = group;
+        op.msg_type = msg_type;
+        op.msg_size = msg_size;
+        op.timeout = timeout;
+        op.sockid = *sockid;
+        
+        if (likely(ltgconf_global.daemon)) {
+                core_t *core = core_self();
+                ret = corerpc_send_and_wait(core, name, &op);
+                if (unlikely(ret)) {
+                        GOTO(err_ret, ret);
+                }
+        } else {
+                UNIMPLEMENTED(__DUMP__);
+        }
+
+        return 0;
+err_ret:
+        return ret;
+}

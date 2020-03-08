@@ -7,7 +7,7 @@
 
 #define CORENET_DEV_MAX 10
 
-typedef int (*corerpc_send)(void *ctx, void *);
+typedef int (*corerpc_request)(void *ctx, void *);
 
 typedef struct {
         nid_t nid;
@@ -17,7 +17,7 @@ typedef struct {
         ltg_spinlock_t lock;
         struct list_head list;
         char loading;
-        corerpc_send send;
+        corerpc_request request;
 
         int (*connected)(const sockid_t *);
 } corenet_maping_t;

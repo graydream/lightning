@@ -73,6 +73,7 @@ add_library(lightning STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/net/stdnet/net_lib.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/stdnet/net_table.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/stdnet/heartbeat.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/net/stdnet/heartbeat1.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/stdnet/xnect.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/stdnet/main_loop.c
 

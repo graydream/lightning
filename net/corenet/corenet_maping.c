@@ -26,6 +26,9 @@ typedef struct {
         task_t task;
 } wait_t;
 
+static int __corenet_hb_add(const coreid_t *coreid, const sockid_t *sockid,
+                            int (*connected)(const sockid_t *));
+
 static void __corenet_maping_close_entry(corenet_maping_t *entry,
                                          const sockid_t *_sockid);
 
@@ -225,8 +228,6 @@ err_ret:
 }
 
 
-#if 1
-
 static int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
                                       uint64_t *_coremask)
 {
@@ -280,69 +281,26 @@ err_ret:
         return ret;
 }
 
-#else
-
-static int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
-                                      uint64_t *_coremask)
-{
-        int ret;
-        corenet_addr_t *addr;
-        char buf[MAX_BUF_LEN];
-        uint64_t coremask;
-        coreid_t coreid;
-        int i;
-
-        ret = network_connect(nid, NULL, 0, 0);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        ret = net_rpc_coremask(nid, &coremask);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        coreid.nid = *nid;
-        addr = (void *)buf;
-        for (i = 0; i < CORE_MAX; i++) {
-                if (!core_usedby(coremask, i))
-                        continue;
-                
-                coreid.idx = i;
-                ret = net_rpc_coreinfo(&coreid, addr);
-                if (unlikely(ret)) {
-                        GOTO(err_close, ret);
-                }
-
-                ret = __corenet_maping_connect_core(&coreid, addr, &_sockid[i]);
-                if (unlikely(ret)) {
-                        GOTO(err_close, ret);
-                }
-        }
-
-        *_coremask = coremask;
-
-        return 0;
-err_close:
-	DWARN("%s[%d] connected, restart for safe\n",
-			netable_rname(nid), i);
-	EXIT(EAGAIN);
-        UNIMPLEMENTED(__DUMP__);
-err_ret:
-        return ret;
-}
-
-#endif
-
 STATIC int __corenet_maping_update(const nid_t *nid, const sockid_t *_sockid, uint64_t coremask)
 {
         int ret;
         corenet_maping_t *entry;
+        coreid_t coreid = {*nid, 0};
 
         entry = &__corenet_maping_get__()[nid->id];
-
+        
         ret = ltg_spin_lock(&entry->lock);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
+        if (ltgconf_global.rdma) {
+                entry->request = corerpc_rdma_request;
+                entry->connected = corenet_rdma_connected;
+        } else {
+                entry->request = corerpc_tcp_request;
+                entry->connected = corenet_tcp_connected;
+        }
+        
         if (entry->connected) {
                 for (int i = 0; i < CORE_MAX; i++) {
                         if (!core_usedby(coremask, i))
@@ -353,6 +311,13 @@ STATIC int __corenet_maping_update(const nid_t *nid, const sockid_t *_sockid, ui
                                         netable_rname(nid), i);
                                 EXIT(EAGAIN);
                         }
+
+                        coreid.idx = i;
+                        sockid_t sockid = _sockid[i];
+                        sockid.request = entry->request;
+                        ret = __corenet_hb_add(&coreid, &sockid, entry->connected);
+                        if (unlikely(ret))
+                                UNIMPLEMENTED(__DUMP__);
                 }
         }
 
@@ -360,14 +325,6 @@ STATIC int __corenet_maping_update(const nid_t *nid, const sockid_t *_sockid, ui
         
         entry->loading = 0;
         entry->coremask = coremask;
-
-        if (ltgconf_global.rdma) {
-                entry->send = corerpc_rdma_request;
-                entry->connected = corenet_rdma_connected;
-        } else {
-                entry->send = corerpc_tcp_request;
-                entry->connected = corenet_tcp_connected;
-        }
 
         __corenet_maping_resume__(&entry->list, nid, 0);
 
@@ -394,7 +351,6 @@ STATIC int __corenet_maping_connect(const nid_t *nid)
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
-        return 0;
 err_ret:
         corenet_maping_resume(core, nid, ret);
         return ret;
@@ -504,7 +460,7 @@ int IO_FUNC corenet_maping(void *core, const coreid_t *coreid, sockid_t *sockid)
 {
         int ret;
         corenet_maping_t *entry;
-        
+
         ANALYSIS_BEGIN(0);
 retry:
         entry = &__corenet_maping_get_byctx(core)[coreid->nid.id];
@@ -524,7 +480,7 @@ retry:
                 goto retry;
         }
 
-        sockid->request = entry->send;
+        sockid->request = entry->request;
 
         ANALYSIS_QUEUE(0, IO_WARN, NULL);
 
@@ -686,6 +642,98 @@ int corenet_maping_init()
                 GOTO(err_ret, ret);
 
         return 0;
+err_ret:
+        return ret;
+}
+
+typedef struct {
+        coreid_t coreid;
+        sockid_t sockid;
+        coreid_t localid;
+        int (*connected)(const sockid_t *);
+} hb_ctx_t;
+
+static int __corenet_hb_connected(void *_ctx)
+{
+        hb_ctx_t *ctx = _ctx;
+
+        return (ctx->connected(&ctx->sockid));
+}
+
+static int __corenet_hb_send_va(va_list ap)
+{
+        int ret;
+        const hb_ctx_t *ctx = va_arg(ap, hb_ctx_t *);
+
+        va_end(ap);
+
+        ret = net_rpc_hello2(&ctx->coreid, &ctx->sockid, 0);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
+        return 0;
+err_ret:
+        return ret;
+}
+
+static int __corenet_hb_send(void *_ctx)
+{
+        int ret;
+        hb_ctx_t *ctx = _ctx;
+
+        ret = core_request(ctx->localid.idx, -1, "hb send", __corenet_hb_send_va, ctx);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+        
+        return 0;
+err_ret:
+        return ret;
+}
+
+static int __corenet_hb_close(void *_ctx)
+{
+        hb_ctx_t *ctx = _ctx;
+
+        corenet_maping_close(&ctx->coreid.nid, &ctx->sockid);
+
+        ltg_free((void **)&ctx);
+        
+        return 0;
+}
+
+static int __corenet_hb_add(const coreid_t *coreid, const sockid_t *sockid,
+                            int (*connected)(const sockid_t *))
+{
+        int ret, tmo;
+        char name[MAX_NAME_LEN];
+        hb_ctx_t *ctx;
+
+        tmo = 1000 * 1000 * ltgconf_global.hb_timeout;
+        snprintf(name, MAX_NAME_LEN, "%s/%d", netable_rname(&coreid->nid),
+                 coreid->idx);
+        
+        ret = ltg_malloc((void **)&ctx, sizeof(*ctx));
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
+        ctx->coreid = *coreid;
+        ctx->sockid = *sockid;
+        ctx->connected = connected;
+        ret = core_getid(&ctx->localid);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+        
+        ret = heartbeat_add1(sockid, name, ctx,
+                             __corenet_hb_connected,
+                             __corenet_hb_send,
+                             __corenet_hb_close,
+                             tmo, ltgconf_global.hb_retry);
+        if (unlikely(ret))
+                GOTO(err_free, ret);
+
+        return 0;
+err_free:
+        ltg_free((void **)&ctx);
 err_ret:
         return ret;
 }

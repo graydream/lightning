@@ -35,6 +35,10 @@ int net_init()
         if (ret)
                 GOTO(err_ret, ret);
 
+        ret = heartbeat_init();
+        if (ret)
+                GOTO(err_ret, ret);
+        
         return 0;
 err_ret:
         return ret;

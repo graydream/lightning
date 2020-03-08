@@ -105,7 +105,7 @@ static void __heartbeat(void *_ent)
 #endif
 
         lost = sent - reply;
-        if (lost > 1 && lost <= ltgconf_global.hb_retry) {
+        if (lost && lost <= ltgconf_global.hb_retry) {
                 DINFO("heartbeat %s lost ack %u\n", netable_rname(&hb_ent->parent), lost);
         } else if (lost > ltgconf_global.hb_retry) {
                 DWARN("heartbeat %s fail, lost ack %u\n", netable_rname(&hb_ent->parent), lost);
