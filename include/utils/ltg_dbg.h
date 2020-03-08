@@ -110,7 +110,7 @@ void  __attribute__((noinline)) dbg_log_write(const int logtype, const int size,
 #define LTG_ASSERT(exp)                                                \
         do {                                                            \
                 if (unlikely(!(exp))) {                                 \
-                        DERROR("!!!!!!!!!!assert fail!!!!!!!!!!!!!!!\n"); \
+                        DERROR("!!!!!!!!!!assert fail, coredump:%d\n", ltgconf_global.coredump); \
                         if (ltgconf_global.coredump) {                         \
                                 abort();                                \
                         } else {                                        \
