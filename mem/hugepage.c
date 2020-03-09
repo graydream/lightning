@@ -341,7 +341,8 @@ int hugepage_getfree(void **_addr, uint64_t *phyaddr)
         }
         
         if (unlikely(list_empty(&head->hugepage_free_list))) {
-                UNIMPLEMENTED(__DUMP__);
+                DERROR("hugepage full\n");
+                EXIT(EAGAIN);
                 ret = ENOMEM;
                 GOTO(err_ret, ret);
         }
