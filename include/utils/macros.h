@@ -49,10 +49,10 @@
 
 #define ARRAY_POP(__head__, __count__, __total__)                         \
         do {                                                            \
-                memmove(&(__head__), &(__head__) + __count__,           \
-                        sizeof(__head__) * ((__total__) - (__count__))); \
-                memset(&(__head__) + (__total__) - (__count__), 0x0,    \
-                       sizeof(__head__) * (__count__));                 \
+                memmove((__head__), (__head__) + (__count__),           \
+                        sizeof(__head__[0]) * ((__total__) - (__count__))); \
+                memset((__head__) + (__total__) - (__count__), 0x0,    \
+                       sizeof(__head__[0]) * (__count__));                 \
         } while (0);
 
 #define ARRAY_PUSH(__head__, __count__, __len__)                        \
