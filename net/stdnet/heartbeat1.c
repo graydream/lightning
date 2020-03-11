@@ -11,156 +11,35 @@
 #include "ltg_net.h"
 #include "ltg_utils.h"
 #include "ltg_rpc.h"
+#include "ltg_core.h"
 
 extern int ltg_nofile_max;
 
 typedef struct {
         uint64_t timeout;
         uint64_t reply;
+        uint64_t sent;
         sockid_t sockid;
         int retry;
+        int refcount;
         void *ctx;
         int (*connected)(void *);
         int (*send)(void *, uint64_t);
         int (*close)(void *);
+        int (*free)(void *);
         char name[MAX_NAME_LEN];
 } entry_t;
 
-static uint64_t *__send__;
-static uint64_t *__reply__;
-
-static void __heartbeat_set(const sockid_t *id, const uint64_t *send, const uint64_t *reply)
-{
-        if (send) {
-                __send__[id->sd] = *send;
-        }
-
-        if (reply) {
-                __reply__[id->sd] = *reply;
-        }
-}
-
-static void __heartbeat_get(const sockid_t *id, uint64_t *send, uint64_t *reply)
-{
-        if (send) {
-                *send = __send__[id->sd];
-        }
-
-        if (reply) {
-                *reply = __reply__[id->sd];
-        }
-}
-
-#if 1
-static void __heartbeat_send(void *_ctx)
-{
-        int ret;
-        entry_t *ent;
-
-        ent = _ctx;
-
-        ANALYSIS_BEGIN(0);
-
-        ret = ent->send(ent->ctx, ent->reply);
-        if (unlikely(ret)) {
-                DWARN("heartbeat %s/%s fail ret:%d, seq %ju\n", ent->name,
-                      _inet_ntoa(ent->sockid.addr), ret, ent->reply);
-        } else {
-                __heartbeat_set(&ent->sockid, NULL, &ent->reply);
-        }
-
-        ANALYSIS_END(0, 1000 * 1000, NULL);
-
-        ltg_free((void **)&ent);
-}
-
-#else
-static void *__heartbeat_send(void *_ctx)
-{
-        int ret;
-        entry_t *ent;
-
-        ent = _ctx;
-
-        ANALYSIS_BEGIN(0);
-
-        ret = ent->send(ent->ctx, ent->reply);
-        if (unlikely(ret)) {
-                DWARN("heartbeat %s/%s fail ret:%d, seq %ju\n", ent->name,
-                      _inet_ntoa(ent->sockid.addr), ret, ent->reply);
-        } else {
-                __heartbeat_set(&ent->sockid, NULL, &ent->reply);
-        }
-
-        ANALYSIS_END(0, 1000 * 1000, NULL);
-
-        ltg_free((void **)&ent);
-
-        pthread_exit(NULL);
-}
-#endif
-
-static int __heartbeat__(const entry_t *_ent, uint64_t reply)
-{
-        int ret;
-        entry_t *ent;
-
-        ret = ltg_malloc((void **)&ent, sizeof(*ent));
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        memcpy(ent, _ent, sizeof(*_ent));
-        ent->reply = reply;
-
-#if 1
-        ret = main_loop_request(__heartbeat_send, ent, "heartbeat1");
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-#else
-        pthread_t th;
-        pthread_attr_t ta;
-
-        (void) pthread_attr_init(&ta);
-        (void) pthread_attr_setdetachstate(&ta, PTHREAD_CREATE_DETACHED);
-        
-        ret = pthread_create(&th, &ta, __heartbeat_send, ent);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-#endif
-
-        return 0;
-err_ret:
-        return ret;
-}
-
 int heartbeat_init()
 {
-        int ret, size;
-
-        size = sizeof(*__send__) * ltg_nofile_max;
-        ret = ltg_malloc((void **)&__send__, size);
-        if (ret)
-                GOTO(err_ret, ret);
-
-        ret = ltg_malloc((void **)&__reply__, size);
-        if (ret)
-                GOTO(err_ret, ret);
-
-        memset(__send__, 0x0, size);
-        memset(__reply__, 0x0, size);
-
         return 0;
-err_ret:
-        return ret;
 }
 
-static void __heartbeat(void *_ent)
+
+static int __heartbeat_check(entry_t *ent)
 {
         int ret, lost;
         uint64_t sent, reply;
-        entry_t *ent;
-        
-        ent = _ent;
 
         if (!ent->connected(ent->ctx)) {
                 DWARN("%s already closed\n", ent->name);
@@ -168,10 +47,8 @@ static void __heartbeat(void *_ent)
                 GOTO(err_ret, ret);
         }
 
-        __heartbeat_get(&ent->sockid, &sent, &reply);
-
-        DINFO("heartbeat to %s/%s seq %llu %llu\n", ent->name,
-              _inet_ntoa(ent->sockid.addr), (LLU)sent, (LLU)reply);
+        sent = ent->sent;
+        reply = ent->reply;
 
         lost = sent - reply;
         if (lost && lost <= ent->retry) {
@@ -182,32 +59,77 @@ static void __heartbeat(void *_ent)
                 GOTO(err_ret, ret);
         }
 
-        sent++;
-
-        __heartbeat_set(&ent->sockid, &sent, NULL);
-
-        ret = __heartbeat__(ent, sent);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        /**
-         * @brief 一个心跳周期会发送多条心跳包，如果心跳包丢失大于1，则重置
-         *
-         * @todo 高负载情况下，为了减少误判的可能性，此方案有待改进
-         */
-        ret = timer_insert("heartbeat", ent, __heartbeat, ent->timeout);
-        if (unlikely(ret))
-                UNIMPLEMENTED(__DUMP__);
-
-        return;
+        return 0;
 err_ret:
+        return ret;
+}
+
+static void __heartbeat_close(entry_t *ent)
+{
         ent->close(ent->ctx);
+
+        while (ent->refcount) {
+                DWARN("wait for free %d\n", ent->refcount);
+                sche_task_sleep("close sleep", 1000);
+        }
+
+        ent->free(ent->ctx);
         ltg_free((void **)&ent);
+        
         return;
 }
 
+static void __heartbeat_task(void *_ent)
+{
+        int ret;
+        uint64_t sent;
+        entry_t *ent = _ent;
+
+        ent->sent++;
+        sent = ent->sent;
+
+        DINFO("heartbeat to %s/%s send %llu reply %llu\n", ent->name,
+              _inet_ntoa(ent->sockid.addr), (LLU)ent->sent, (LLU)ent->reply);
+        
+        ret = ent->send(ent->ctx, sent);
+        if (unlikely(ret)) {
+                DWARN("heartbeat %s/%s fail ret:%d, seq %ju\n", ent->name,
+                      _inet_ntoa(ent->sockid.addr), ret, sent);
+        } else {
+                ent->reply = (ent->reply > sent) ? ent->reply : sent;
+                DBUG("heartbeat to %s/%s send %llu reply %llu\n", ent->name,
+                     _inet_ntoa(ent->sockid.addr), (LLU)ent->sent, (LLU)ent->reply);
+        }
+        
+        ent->refcount--;
+}
+
+static void __heartbeat_task_new(entry_t *ent)
+{
+        ent->refcount++;
+        sche_task_new("corenet_tcp_close", __heartbeat_task, ent, -1);
+}
+
+static void __heartbeat_loop(void *_ent)
+{
+        int ret;
+        entry_t *ent = _ent;
+
+        sche_task_sleep("heartbeat sleep", ent->timeout);
+
+        ret = __heartbeat_check(ent);
+        if (ret) {
+                __heartbeat_close(ent);
+                return;
+        }
+
+        __heartbeat_task_new(ent);
+        sche_task_new("corenet_tcp_close", __heartbeat_loop, ent, -1);
+}
+
 int heartbeat_add1(const sockid_t *sockid, const char *name, void *ctx,
-                   int (*connected)(void *), int (*send)(void *, uint64_t), int (*close)(void *),
+                   int (*connected)(void *), int (*send)(void *, uint64_t),
+                   int (*close)(void *), int (*free)(void *),
                    suseconds_t timeout, int retry)
 {
         int ret;
@@ -223,20 +145,25 @@ int heartbeat_add1(const sockid_t *sockid, const char *name, void *ctx,
         ent->send = send;
         ent->connected = connected;
         ent->close = close;
+        ent->free = free;
         ent->sockid = *sockid;
         ent->timeout = timeout;
         ent->retry = retry;
+        ent->refcount = 0;
+        ent->sent = 0;
+        ent->reply = 0;
         strcpy(ent->name, name);
 
-        DINFO("add heartbeat %s/%s\n", ent->name, _inet_ntoa(ent->sockid.addr));
+        DINFO("add heartbeat %s/%s, timeout %f\n", ent->name,
+              _inet_ntoa(ent->sockid.addr), (float)timeout / 1000 / 1000);
 
-        ret = timer_insert("heartbeat", ent, __heartbeat, timeout);
-        if (unlikely(ret))
-                GOTO(err_free, ret);
+        if (sche_self()) {
+                sche_task_new("corenet_tcp_close", __heartbeat_loop, ent, -1);
+        } else {
+                UNIMPLEMENTED(__DUMP__);
+        }
 
         return 0;
-err_free:
-        ltg_free((void **)&ent);
 err_ret:
         return ret;
 }

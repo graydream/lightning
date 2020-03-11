@@ -496,6 +496,7 @@ static int __corenet_tcp_recv(corenet_node_t *node, int *count)
         left = toread;
         while (left) {
                 cp = _min(left, (LLU)BUFFER_SEG_SIZE * CORE_IOV_MAX);
+                cp = _min(cp, (1024 * 1024 * 90));
 
                 if ((uint64_t)toread > ((LLU)BUFFER_SEG_SIZE * CORE_IOV_MAX)) {
                         DINFO("long msg, total %u, left %u, read %u\n", toread, left, cp);

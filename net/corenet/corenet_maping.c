@@ -505,7 +505,6 @@ static void __corenet_maping_close_entry(corenet_maping_t *entry,
                         
                 if (_sockid && _sockid->sd == sockid->sd
                     && _sockid->seq == sockid->seq) {
-
                         DBUG("close maping one sock %s nid[%u], sockid %u\n",
                               netable_rname(&entry->nid), entry->nid.id,
                               sockid->sd);
@@ -514,12 +513,15 @@ static void __corenet_maping_close_entry(corenet_maping_t *entry,
                         sockid->sd = -1;
                         break;
                 } else {
-                        DBUG("close maping all sock %s nid[%u], sockid %u\n",
+                        DWARN("close maping all sock %s nid[%u], sockid %u\n",
                               netable_rname(&entry->nid), entry->nid.id,
                               sockid->sd);
 
+                        continue;
+#if 0
                         __corenet_maping_close_finally__(&entry->nid, sockid);
                         sockid->sd = -1;
+#endif
                 }
         }
 }
@@ -569,7 +571,7 @@ err_ret:
         return ret;
 }
 
-int __corenet_maping_close(void *_core, void *_opaque)
+STATIC int __corenet_maping_close(void *_core, void *_opaque)
 {
         int ret;
         core_t *core = _core;
@@ -593,6 +595,8 @@ void corenet_maping_close(const nid_t *nid, const sockid_t *sockid)
 {
         arg_t arg;
 
+        LTG_ASSERT(sockid);
+        
         if (ltgconf_global.daemon) {
                 if (sockid) {
                         arg.sockid = *sockid;
@@ -654,14 +658,13 @@ typedef struct {
         int (*connected)(const sockid_t *);
 } hb_ctx_t;
 
-
-        
 static int __corenet_hb_connected_va(va_list ap)
 {
         const hb_ctx_t *ctx = va_arg(ap, hb_ctx_t *);
+
         va_end(ap);
 
-        return (ctx->connected(&ctx->sockid));
+        return ctx->connected(&ctx->sockid);
 }
 
 static int __corenet_hb_connected(void *_ctx)
@@ -717,6 +720,13 @@ static int __corenet_hb_close(void *_ctx)
 
         core_request(ctx->localid.idx, -1, "hb close", __corenet_hb_close_va, ctx);
 
+        return 0;
+}
+
+static int __corenet_hb_free(void *_ctx)
+{
+        hb_ctx_t *ctx = _ctx;
+
         ltg_free((void **)&ctx);
         
         return 0;
@@ -748,6 +758,7 @@ static int __corenet_hb_add(const coreid_t *coreid, const sockid_t *sockid,
                              __corenet_hb_connected,
                              __corenet_hb_send,
                              __corenet_hb_close,
+                             __corenet_hb_free,
                              tmo, ltgconf_global.hb_retry);
         if (unlikely(ret))
                 GOTO(err_free, ret);
