@@ -447,7 +447,6 @@ static int __corenet_tcp_recv__(corenet_node_t *node, int toread)
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        LTG_ASSERT(buf.len <= (LLU)CORE_IOV_MAX * BUFFER_SEG_SIZE);
         DBUG("read data %u\n", toread);
 
 #if ENABLE_TCP_THREAD
