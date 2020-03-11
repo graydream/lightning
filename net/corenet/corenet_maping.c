@@ -650,14 +650,25 @@ typedef struct {
         coreid_t coreid;
         sockid_t sockid;
         coreid_t localid;
+        uint64_t seq;
         int (*connected)(const sockid_t *);
 } hb_ctx_t;
+
+
+        
+static int __corenet_hb_connected_va(va_list ap)
+{
+        const hb_ctx_t *ctx = va_arg(ap, hb_ctx_t *);
+        va_end(ap);
+
+        return (ctx->connected(&ctx->sockid));
+}
 
 static int __corenet_hb_connected(void *_ctx)
 {
         hb_ctx_t *ctx = _ctx;
 
-        return (ctx->connected(&ctx->sockid));
+        return core_request(ctx->localid.idx, -1, "hb connected", __corenet_hb_connected_va, ctx);
 }
 
 static int __corenet_hb_send_va(va_list ap)
@@ -667,7 +678,7 @@ static int __corenet_hb_send_va(va_list ap)
 
         va_end(ap);
 
-        ret = net_rpc_hello2(&ctx->coreid, &ctx->sockid, 0);
+        ret = net_rpc_hello2(&ctx->coreid, &ctx->sockid, ctx->seq);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -676,11 +687,11 @@ err_ret:
         return ret;
 }
 
-static int __corenet_hb_send(void *_ctx)
+static int __corenet_hb_send(void *_ctx, uint64_t seq)
 {
         int ret;
         hb_ctx_t *ctx = _ctx;
-
+        ctx->seq = seq;
         ret = core_request(ctx->localid.idx, -1, "hb send", __corenet_hb_send_va, ctx);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
@@ -690,11 +701,21 @@ err_ret:
         return ret;
 }
 
+static int __corenet_hb_close_va(va_list ap)
+{
+        const hb_ctx_t *ctx = va_arg(ap, hb_ctx_t *);
+
+        va_end(ap);
+
+        corenet_maping_close(&ctx->coreid.nid, &ctx->sockid);
+
+        return 0;
+}
 static int __corenet_hb_close(void *_ctx)
 {
         hb_ctx_t *ctx = _ctx;
 
-        corenet_maping_close(&ctx->coreid.nid, &ctx->sockid);
+        core_request(ctx->localid.idx, -1, "hb close", __corenet_hb_close_va, ctx);
 
         ltg_free((void **)&ctx);
         

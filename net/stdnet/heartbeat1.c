@@ -21,7 +21,7 @@ typedef struct {
         int retry;
         void *ctx;
         int (*connected)(void *);
-        int (*send)(void *);
+        int (*send)(void *, uint64_t);
         int (*close)(void *);
         char name[MAX_NAME_LEN];
 } entry_t;
@@ -51,6 +51,30 @@ static void __heartbeat_get(const sockid_t *id, uint64_t *send, uint64_t *reply)
         }
 }
 
+#if 1
+static void __heartbeat_send(void *_ctx)
+{
+        int ret;
+        entry_t *ent;
+
+        ent = _ctx;
+
+        ANALYSIS_BEGIN(0);
+
+        ret = ent->send(ent->ctx, ent->reply);
+        if (unlikely(ret)) {
+                DWARN("heartbeat %s/%s fail ret:%d, seq %ju\n", ent->name,
+                      _inet_ntoa(ent->sockid.addr), ret, ent->reply);
+        } else {
+                __heartbeat_set(&ent->sockid, NULL, &ent->reply);
+        }
+
+        ANALYSIS_END(0, 1000 * 1000, NULL);
+
+        ltg_free((void **)&ent);
+}
+
+#else
 static void *__heartbeat_send(void *_ctx)
 {
         int ret;
@@ -60,10 +84,10 @@ static void *__heartbeat_send(void *_ctx)
 
         ANALYSIS_BEGIN(0);
 
-        ret = ent->send(ent->ctx);
+        ret = ent->send(ent->ctx, ent->reply);
         if (unlikely(ret)) {
-                DWARN("heartbeat %s/%s fail ret:%d\n", ent->name,
-                      _inet_ntoa(ent->sockid.addr), ret);
+                DWARN("heartbeat %s/%s fail ret:%d, seq %ju\n", ent->name,
+                      _inet_ntoa(ent->sockid.addr), ret, ent->reply);
         } else {
                 __heartbeat_set(&ent->sockid, NULL, &ent->reply);
         }
@@ -74,6 +98,7 @@ static void *__heartbeat_send(void *_ctx)
 
         pthread_exit(NULL);
 }
+#endif
 
 static int __heartbeat__(const entry_t *_ent, uint64_t reply)
 {
@@ -87,6 +112,11 @@ static int __heartbeat__(const entry_t *_ent, uint64_t reply)
         memcpy(ent, _ent, sizeof(*_ent));
         ent->reply = reply;
 
+#if 1
+        ret = main_loop_request(__heartbeat_send, ent, "heartbeat1");
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+#else
         pthread_t th;
         pthread_attr_t ta;
 
@@ -96,6 +126,7 @@ static int __heartbeat__(const entry_t *_ent, uint64_t reply)
         ret = pthread_create(&th, &ta, __heartbeat_send, ent);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
+#endif
 
         return 0;
 err_ret:
@@ -139,7 +170,7 @@ static void __heartbeat(void *_ent)
 
         __heartbeat_get(&ent->sockid, &sent, &reply);
 
-        DBUG("heartbeat to %s/%s seq %llu %llu\n", ent->name,
+        DINFO("heartbeat to %s/%s seq %llu %llu\n", ent->name,
               _inet_ntoa(ent->sockid.addr), (LLU)sent, (LLU)reply);
 
         lost = sent - reply;
@@ -176,7 +207,7 @@ err_ret:
 }
 
 int heartbeat_add1(const sockid_t *sockid, const char *name, void *ctx,
-                   int (*connected)(void *), int (*send)(void *), int (*close)(void *),
+                   int (*connected)(void *), int (*send)(void *, uint64_t), int (*close)(void *),
                    suseconds_t timeout, int retry)
 {
         int ret;
