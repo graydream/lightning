@@ -177,7 +177,6 @@ err_ret:
 int corerpc_send_and_wait(void *core, const char *name, corerpc_op_t *op)
 {
         int ret;
-        msgid_t msgid;
         rpc_ctx_t rpc_ctx;
 
         ANALYSIS_BEGIN(0);
@@ -197,7 +196,7 @@ int corerpc_send_and_wait(void *core, const char *name, corerpc_op_t *op)
 	}
 
         DBUG("%s msgid (%u, %x) to %s\n", name, &op->msgid.idx,
-             msgid.figerprint, _inet_ntoa(op->sockid.addr));
+             op->msgid.figerprint, _inet_ntoa(op->sockid.addr));
 
         SOCKID_DUMP(&op->sockid);
         MSGID_DUMP(&op->msgid);
@@ -211,7 +210,7 @@ int corerpc_send_and_wait(void *core, const char *name, corerpc_op_t *op)
         return 0;
 
 err_free:
-        __corerpc_request_reset(&msgid);
+        __corerpc_request_reset(&op->msgid);
 err_ret:
         return ret;
 }
