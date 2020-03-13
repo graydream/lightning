@@ -88,7 +88,7 @@ static void __heartbeat_task(void *_ent)
         ent->sent++;
         sent = ent->sent;
 
-        DINFO("heartbeat to %s/%s send %llu reply %llu\n", ent->name,
+        DBUG("heartbeat to %s/%s send %llu reply %llu\n", ent->name,
               _inet_ntoa(ent->sockid.addr), (LLU)ent->sent, (LLU)ent->reply);
         
         ret = ent->send(ent->ctx, sent);
