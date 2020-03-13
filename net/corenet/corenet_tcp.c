@@ -315,7 +315,7 @@ static void __corenet_close__(const sockid_t *sockid)
         //DBUG("close %d\n", sd);
 
         sd = node->sockid.sd;
-        DINFO("corenet_tcp close %s[%u] %s sd %d, ev %x\n", sche->name,
+        DBUG("corenet_tcp close %s[%u] %s sd %d, ev %x\n", sche->name,
               sche->id, node->name, sd, node->ev);
         LTG_ASSERT(node->ev);
 
