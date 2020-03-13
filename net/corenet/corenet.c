@@ -400,7 +400,7 @@ static void *__corenet_register(void *_mask)
         
         while (srv_running) {
                 sleep(5);
-#if 1
+#if 0
                 corenet_maping_offline(__mask__);
 #else
                 corenet_maping_register(__mask__);
