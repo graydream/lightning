@@ -28,8 +28,18 @@ typedef struct {
         hugepage_t       hgpages[0];
 } hugepage_head_t;
 
+#define HUGEPAGE_HEAD_DUMP(head) do { \
+        DINFO("hugepage head %p hash %d count %d free %u\n", \
+               (head), \
+               (head)->hash, \
+               (head)->hugepage_count, \
+               (head)->hugepage_free_count \
+        ); \
+} while(0)
+
 static hugepage_head_t *__hugepage__;
 static __thread hugepage_head_t *__private_huge__ = NULL;
+
 static int __use_huge__ = 0;
 static int PRIVATE_HP_COUNT = 0;
 
@@ -101,6 +111,8 @@ static int __map_hugepages(void *addr, int map, int hp_count)
 
         if (!map)
                 return 0;
+
+        DINFO("hp_count %d\n", hp_count);
 
         for (i = 0; i < hp_count; i++) {
                 map_ret = mmap(map_addr, HUGEPAGE_SIZE, PROT_READ | PROT_WRITE,
@@ -177,9 +189,10 @@ void *hugepage_private_init(int hash, int sockid)
 
         head->hash = hash;
 
-        DINFO("init private hugepage finish \n");
         __private_huge__ = head;
 
+        HUGEPAGE_HEAD_DUMP(head);
+        DINFO("init private hugepage finish \n");
         return head;
 }
 
@@ -187,6 +200,8 @@ static void __hugepage_init_public(hugepage_head_t *head, void *public, int daem
 {
         hugepage_t *hpage;
         void *pos = public;
+
+        DINFO("hp_count %d\n", PUBLIC_HP_COUNT);
 
         for (int i = 0; i < PUBLIC_HP_COUNT; i++) {
                 hpage = &head->hgpages[i];
@@ -197,6 +212,8 @@ static void __hugepage_init_public(hugepage_head_t *head, void *public, int daem
 
         __hugepage__ = head;
         __use_huge__ = use_huge;
+
+        HUGEPAGE_HEAD_DUMP(head);
 }
 
 static void __hugepage_init_private(hugepage_head_t *head, void *private)
@@ -212,8 +229,7 @@ static void __hugepage_init_private(hugepage_head_t *head, void *private)
                 head->private_hp_head[i] = pos;
                 pos += (PRIVATE_HP_COUNT  + 1) * HUGEPAGE_SIZE;
 
-                DINFO("core[%d] head 0x%p\n", i, pos);
-        
+                DINFO("core[%d] count %d head 0x%p\n", i, PRIVATE_HP_COUNT + 1, pos);
         }
 }
 
@@ -237,16 +253,19 @@ int hugepage_init(int daemon, uint64_t coremask, int nr_hugepage)
                 if (core_usedby(coremask, i))
                         poll_num++;
         }
-        
+
         if (daemon) {
-                mem_size = ((LLU)PRIVATE_HP_COUNT  + 1) * HUGEPAGE_SIZE * poll_num
+                mem_size = ((LLU)PRIVATE_HP_COUNT + 1) * HUGEPAGE_SIZE * poll_num
                         + (PUBLIC_HP_COUNT + 2) * HUGEPAGE_SIZE;
-                hp_count = (PRIVATE_HP_COUNT  + 1) * poll_num 
+                hp_count = (PRIVATE_HP_COUNT + 1) * poll_num
                         + PUBLIC_HP_COUNT + 1;
         } else  {
                 mem_size = (PUBLIC_HP_COUNT + 2) * HUGEPAGE_SIZE;
                 hp_count = PUBLIC_HP_COUNT + 1;
         }
+
+        DINFO("private_hp_count %d poll_num %d hp_count %d\n",
+              PRIVATE_HP_COUNT, poll_num, hp_count);
 
         mem = malloc(mem_size);
         if (mem == NULL) {

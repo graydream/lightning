@@ -18,7 +18,9 @@
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
 
 static int rdma_epoll_fd;
+
 static LIST_HEAD(events_list);
+static int __nr_fds = 0;
 
 struct rdma_handle_op_t {
         void (*rdma_connect_requtest)(struct rdma_cm_event *, void *);
@@ -49,7 +51,7 @@ static struct event_data *rdma_event_lookup(int fd)
 }
 
 int rdma_event_add(int fd, int type, int event, event_handle_t handler,
-                void *data, void *core)
+                   void *data, void *core)
 {
         int ret;
         struct epoll_event ev;
@@ -76,7 +78,9 @@ int rdma_event_add(int fd, int type, int event, event_handle_t handler,
         }
 
         list_add(&tev->e_list, &events_list);
+        __nr_fds++;
 
+        DINFO("add type %d fd %d nr %d\n", type, fd, __nr_fds);
         return 0;
 err_free:
         ltg_free((void **)&tev);
@@ -100,7 +104,11 @@ void rdma_event_del(int fd)
                 DERROR("fail to remove epoll event, %s\n", strerror(errno));
 
         list_del(&tev->e_list);
+        __nr_fds--;
+
         ltg_free1(tev);
+
+        DINFO("del fd %d nr %d\n", fd, __nr_fds);
 }
 
 int rdma_event_modify(int fd, int events)
@@ -161,14 +169,16 @@ retry:
 }
 
 void rdma_handle_event(int fd, int type,
-                int events __attribute__ ((unused)),
-                void *data __attribute__ ((unused)),
-                void *core)
+                       int events __attribute__ ((unused)),
+                       void *data __attribute__ ((unused)),
+                       void *core)
 {
-        int ret;
+        int ret, ack = 1;
         struct rdma_cm_event *ev;
         enum rdma_cm_event_type ev_type;
         struct rdma_event_channel rdma_evt_channel;
+        struct rdma_cm_id *cm_id;
+        rdma_conn_t *handler;
 
         DINFO("corenet rdma:rdma handle event\n");
         ANALYSIS_BEGIN(0);
@@ -179,20 +189,30 @@ void rdma_handle_event(int fd, int type,
                 GOTO(err_ret, ret);
 
         ev_type = ev->event;
+        cm_id = ev->id;
+
+        CMID_DUMP(cm_id);
+
+        handler = cm_id->context;
+        if (handler)
+                handler->nr_get++;
+
         DBUG("iser fd[%d], type:%d, UD-related event:%d, %s, core:%d\n", fd, type,
-                ev_type, rdma_event_str(ev_type), core ? ((core_t *)core)->hash : -1);
+             ev_type, rdma_event_str(ev_type), core ? ((core_t *)core)->hash : -1);
 
         switch (ev_type) {
         case RDMA_CM_EVENT_CONNECT_REQUEST:
-                DINFO("%s connect request\n",
-                                inet_ntoa(((struct sockaddr_in *)(&ev->id->route.addr.dst_addr))->sin_addr));
+                DINFO("connect request from %s fd %d\n",
+                      inet_ntoa(((struct sockaddr_in *)(&ev->id->route.addr.dst_addr))->sin_addr),
+                      fd);
                 rdma_request_op[type].rdma_connect_requtest(ev, core);
                 break;
 
         case RDMA_CM_EVENT_ESTABLISHED:
                 if (type == RDMA_SERVER_EV_FD)
-                        DINFO("%s established on passive side.\n",
-                                inet_ntoa(((struct sockaddr_in *)(&ev->id->route.addr.dst_addr))->sin_addr));
+                        DINFO("%s established on passive side, fd %d\n",
+                              inet_ntoa(((struct sockaddr_in *)(&ev->id->route.addr.dst_addr))->sin_addr),
+                              fd);
                 rdma_request_op[type].rdma_established_requtest(ev, core);
                 break;
 
@@ -200,15 +220,20 @@ void rdma_handle_event(int fd, int type,
         case RDMA_CM_EVENT_REJECTED:
         case RDMA_CM_EVENT_ADDR_CHANGE:
         case RDMA_CM_EVENT_DISCONNECTED:
-                DINFO("%s disconnected request\n",
-                                inet_ntoa(((struct sockaddr_in *)(&ev->id->route.addr.dst_addr))->sin_addr));
+                DINFO("%s disconnected request fd %d\n",
+                      inet_ntoa(((struct sockaddr_in *)(&ev->id->route.addr.dst_addr))->sin_addr),
+                      fd);
                 rdma_request_op[type].rdma_disconnected_requtest(ev, core);
                 break;
 
         case RDMA_CM_EVENT_TIMEWAIT_EXIT:
-                DINFO("%s timewait exit request\n",
-                                inet_ntoa(((struct sockaddr_in *)(&ev->id->route.addr.dst_addr))->sin_addr));
+                DINFO("%s timewait exit request fd %d\n",
+                      inet_ntoa(((struct sockaddr_in *)(&ev->id->route.addr.dst_addr))->sin_addr),
+                      fd);
                 rdma_request_op[type].rdma_timewait_exit_requtest(ev, core);
+                if (type == RDMA_CLIENT_EV_FD || type == RDMA_SERVER_EV_FD) {
+                        ack = 0;
+                }
                 break;
 
         case RDMA_CM_EVENT_MULTICAST_JOIN:
@@ -237,9 +262,14 @@ void rdma_handle_event(int fd, int type,
                 break;
         }
 
-        ret = rdma_ack_cm_event(ev);
-        if (unlikely(ret))
-                DERROR("ack cm event failed, %s\n", rdma_event_str(ev_type));
+        if (ack) {
+                ret = rdma_ack_cm_event(ev);
+                if (unlikely(ret))
+                        DERROR("ack cm event failed, %s\n", rdma_event_str(ev_type));
+
+                if (handler)
+                        handler->nr_ack++;
+        }
 
         ANALYSIS_END(0, 1000 * 1000 * 5, NULL);
         DINFO("successfully.\n");

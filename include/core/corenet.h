@@ -18,6 +18,15 @@
 
 #if ENABLE_RDMA
 
+#define CMID_DUMP(cmid) do { \
+        DINFO("cm_id %p verbs %p pd %p qp %p context %p\n", \
+               (cmid), \
+               (cmid)->verbs, \
+               (cmid)->pd, \
+               (cmid)->qp, \
+               (cmid)->context); \
+} while(0)
+
 typedef struct {
         struct ibv_context *ibv_verbs;
         struct ibv_cq *cq;
@@ -50,23 +59,31 @@ typedef struct {
         struct ibv_mr *iov_mr;
         struct ibv_qp *qp;
         struct ibv_pd *pd;
+        struct rdma_event_channel *channel;
 
         void *private_mem;
         void *iov_addr;
+
+        uint64_t nr_get;
+        uint64_t nr_ack;
 } rdma_conn_t;
 
 #define RDMA_CONN_DUMP(conn) do { \
-        DINFO("rdma_conn[%d] %p core %p close %d conn %d ref %d/%d cm_id %p qp %p addr %p\n", \
+        DINFO("rdma_conn[%d] %p chan %p nr %ju/%ju conn %d close %d ref %d/%d cm_id %p qp %p mr %p addr %p core %p\n", \
                (conn)->node_loc, \
                (conn), \
-               (conn)->core, \
-               (conn)->is_closing, \
+               (conn)->channel, \
+               (conn)->nr_get, \
+               (conn)->nr_ack, \
                (conn)->is_connected, \
+               (conn)->is_closing, \
                (conn)->ref, \
                (conn)->qp_ref, \
                (conn)->cm_id, \
                (conn)->qp, \
-               (conn)->iov_addr \
+               (conn)->iov_mr, \
+               (conn)->iov_addr, \
+               (conn)->core \
                ); \
 } while(0)
 
@@ -271,8 +288,11 @@ void corenet_rdma_check();
 
 int corenet_rdma_connect(uint32_t addr, uint32_t port, sockid_t *sockid);
 int corenet_rdma_connected(const sockid_t *sockid);
+
+void corenet_rdma_connect_request(struct rdma_cm_event *ev, void *core);
 void corenet_rdma_established(struct rdma_cm_event *ev, void *core);
 void corenet_rdma_disconnected(struct rdma_cm_event *ev, void *core);
+void corenet_rdma_timewait_exit(struct rdma_cm_event *ev, void *core);
 
 int corenet_rdma_post_recv(void *ptr);
 int corenet_rdma_send(const sockid_t *sockid, ltgbuf_t *buf, void **addr, uint32_t rkey, uint32_t size,
@@ -286,14 +306,11 @@ rdma_req_t *build_rdma_write_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf, void 
 
 int corenet_rdma_poll(__corenet_t *corenet);
 
-void corenet_rdma_timewait_exit(struct rdma_cm_event *ev, void *core);
-
 int corenet_rdma_evt_channel_init();
 
 // server-side
 int corenet_rdma_passive(uint32_t *port, int cpu_index);
 int corenet_rdma_listen_by_channel(int cpu_idx, uint32_t port);
-void corenet_rdma_connect_request(struct rdma_cm_event *ev, void *core);
 
 // client-side
 int corenet_rdma_connect_by_channel(const uint32_t addr, const uint32_t port, core_t *core, sockid_t *sockid);

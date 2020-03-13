@@ -44,16 +44,15 @@ void rdma_event_register(int type,
                          rdma_event_handler_t timewait_exit,
                          sched_remains remains);
 
-int rdma_event_add(int fd, int type, int event, event_handle_t handler,
-                   void *data, void *private_mem);
-void rdma_event_del(int fd);
-
 void *rdma_event_loop(void *arg);
 void rdma_handle_event(int fd, int type,
                 int events __attribute__ ((unused)),
                 void *data __attribute__ ((unused)),
                 void *core);
 
+int rdma_event_add(int fd, int type, int event, event_handle_t handler,
+                   void *data, void *private_mem);
+void rdma_event_del(int fd);
 int rdma_event_modify(int fd, int events);
 
 #endif
