@@ -178,7 +178,7 @@ void corenet_tcp_check_add()
                 node = (void *)pos;
                 list_del(pos);
 
-                DINFO("add sd %d\n", node->sockid.sd);
+                DBUG("add sd %d\n", node->sockid.sd);
 
                 ret = __corenet_add(__corenet__, &node->sockid, node->ctx, node->exec,
                                     node->reset, node->check, node->recv, node->name);

@@ -114,7 +114,7 @@ STATIC void *__corenet_tcp_accept__(void *arg)
 
         sockid = &ctx->sockid;
 
-        DINFO("accept from %s, sd %d\n",  _inet_ntoa(sockid->addr), sockid->sd);
+        DBUG("accept from %s, sd %d\n",  _inet_ntoa(sockid->addr), sockid->sd);
 
         ret = sock_poll_sd(sockid->sd, 1000 * 1000, POLLIN);
         if (unlikely(ret))
@@ -150,7 +150,7 @@ STATIC void *__corenet_tcp_accept__(void *arg)
         core = core_get(msg->to.idx);
         ctx->coreid = msg->from;
 
-        DINFO("core[%d] %p maping:%p, sd %u\n", msg->to.idx, core,
+        DBUG("core[%d] %p maping:%p, sd %u\n", msg->to.idx, core,
               core->maping, sockid->sd);
 
         ret = corenet_attach(core->corenet, sockid, ctx, corerpc_recv,
@@ -222,7 +222,7 @@ static void *__corenet_tcp_passive(void *_arg)
                                 GOTO(err_ret, ret);
                 }
 
-                DINFO("got new event\n");
+                DBUG("got new event\n");
 
                 __corenet_tcp_accept(corenet_tcp);
         }

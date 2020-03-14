@@ -359,8 +359,7 @@ int core_init(uint64_t mask, int flag)
 
         if (mask == 0) {
                 LTG_ASSERT(ltgconf_global.polling_timeout || ltgconf_global.daemon);
-                flag = flag ^ CORE_FLAG_POLLING;
-
+                //flag = flag ^ CORE_FLAG_POLLING;
                 //mask = (LLU)1 << (CORE_MAX - 1);
                 mask = 1;
                 DINFO("set coremask default\n");
