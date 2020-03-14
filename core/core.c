@@ -104,13 +104,13 @@ static void IO_FUNC core_stat(core_t *core)
         if (used > 0) {
                 DINFO("%s[%d] "
                       "pps:%jd "
-                      "task:%u/%u/%u/%u "
+                      "task:%u/%u/%u "
                       "ring:%u "
                       "counter:%ju "
                       "cpu %ju \n",
                       core->name, core->hash,
                       (core->stat_nr2 - core->stat_nr1) * 1000000 / used,
-                      core->sche->task_count, task_used, task_wait, task_runable,
+                      task_used, task_wait, task_runable,
                       ring_count,
                       core->sche->counter / (core->stat_nr2 - core->stat_nr1),
                       (run_time * 100)/ used);
@@ -450,7 +450,7 @@ int core_attach(int hash, const sockid_t *sockid, const char *name,
         int ret;
         core_t *core;
 
-        DINFO("attach hash %d fd %d name %s\n", hash, sockid->sd, name);
+        DBUG("attach hash %d fd %d name %s\n", hash, sockid->sd, name);
 
         core = core_get(hash);
 

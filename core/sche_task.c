@@ -377,9 +377,10 @@ static void IO_FUNC __sche_trampoline(taskctx_t *taskctx)
         used = _time_used(&taskctx->ctime, &now);
         sche->c_runtime += used;
 #else
-        sche->task_count--;
+        //sche->task_count--;
 #endif
-
+        sche->task_count--;
+        
         __sche_wait_task_resume(sche);
 
         DBUG("free task %s, id [%u][%u]\n", taskctx->name, sche->id, taskctx->id);

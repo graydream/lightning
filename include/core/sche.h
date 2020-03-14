@@ -41,7 +41,7 @@
 #define SCHE_NAME_LEN 32
 
 #define KEEP_STACK_SIZE (1024)
-#define DEFAULT_STACK_SIZE (1024 * 512)
+#define DEFAULT_STACK_SIZE (1024 * 128)
 
 #if 1
 #define NEW_SCHED

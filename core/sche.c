@@ -141,16 +141,16 @@ static inline void __sche_check_yield_used(sche_t *sche, taskctx_t *taskctx, uin
                 return;
         }
 
-        if (unlikely(used > (uint64_t)1000 * 1000 * (ltgconf_global.rpc_timeout * 2))) {
+        if (unlikely(used > (uint64_t)1000 * 1000 * (ltgconf_global.rpc_timeout * 4))) {
                 __sche_backtrace__(sche->name, sche->id, taskctx->id, sche->scan_seq);
 
-                if (unlikely(used > (uint64_t)1000 * 1000 * (ltgconf_global.rpc_timeout * 2))) {
-                        DERROR("%s[%u][%u] %s.%s wait %fs, total %lu, retval %u\n",
+                if (unlikely(used > (uint64_t)1000 * 1000 * (ltgconf_global.rpc_timeout * 4))) {
+                        DWARN("%s[%u][%u] %s.%s wait %fs, total %lu, retval %u\n",
                               sche->name, sche->id, taskctx->id,
                               taskctx->name, taskctx->wait_name, (double)used / (1000 * 1000),
                               gettime() - taskctx->ctime.tv_sec, taskctx->retval);
-                } else if (unlikely(used > (uint64_t)1000 * 1000 * (ltgconf_global.rpc_timeout * 1))) {
-                        DWARN("%s[%u][%u] %s.%s wait %fs, total %lu, retval %u\n",
+                } else if (unlikely(used > (uint64_t)1000 * 1000 * (ltgconf_global.rpc_timeout * 2))) {
+                        DINFO("%s[%u][%u] %s.%s wait %fs, total %lu, retval %u\n",
                               sche->name, sche->id, taskctx->id,
                               taskctx->name, taskctx->wait_name, (double)used / (1000 * 1000),
                               gettime() - taskctx->ctime.tv_sec, taskctx->retval);
@@ -172,18 +172,18 @@ static inline void __sche_check_scan_used(sche_t *sche, taskctx_t *taskctx, uint
         }
 
         if (unlikely((taskctx->wait_tmo != -1 && time_used > (uint64_t)taskctx->wait_tmo))
-                        || time_used > (uint64_t)ltgconf_global.rpc_timeout) {
-                DINFO("%s[%u][%u] %s status %u time_used %lus\n", sche->name,
-                      sche->id, taskctx->id, taskctx->name, taskctx->state, time_used);
+            || time_used > (uint64_t)ltgconf_global.rpc_timeout * 4) {
+                DBUG("%s[%u][%u] %s status %u time_used %lus\n", sche->name,
+                     sche->id, taskctx->id, taskctx->name, taskctx->state, time_used);
 
                 if (!taskctx->sleeping)
                         __sche_backtrace_set(taskctx);
-        } else if (unlikely(time_used > (uint64_t)ltgconf_global.rpc_timeout / 2)) {
-                DWARN("%s[%u][%u] %s status %u time_used %lus\n", sche->name,
-                                sche->id, taskctx->id, taskctx->name, taskctx->state, time_used);
+        } else if (unlikely(time_used > (uint64_t)ltgconf_global.rpc_timeout * 2)) {
+                DINFO("%s[%u][%u] %s status %u time_used %lus\n", sche->name,
+                      sche->id, taskctx->id, taskctx->name, taskctx->state, time_used);
         } else if (unlikely(time_used > 1)) {
                 DBUG("%s[%u][%u] %s status %u time_used %lus\n", sche->name, sche->id, taskctx->id,
-                                taskctx->name, taskctx->state, time_used);
+                     taskctx->name, taskctx->state, time_used);
         }
 }
 
@@ -258,7 +258,7 @@ void sche_stack_assert(sche_t *_sche)
 
         DBUG("size %u\n", (int)((uint64_t)&taskctx - (uint64_t)taskctx->stack));
         LTG_ASSERT((int)((uint64_t)&taskctx - (uint64_t)taskctx->stack)
-                > DEFAULT_STACK_SIZE / 4);
+                   > DEFAULT_STACK_SIZE / 4);
 
         LTG_ASSERT(!memcmp(taskctx->stack, zerobuf, KEEP_STACK_SIZE));
 }
@@ -487,7 +487,6 @@ inline int sche_stat(int *sid, int *taskid, int *runable, int *wait, int *count,
                 *run_time = sche->run_time;
                 *c_runtime = sche->c_runtime;
 #if SCHEDULE_TASKCTX_RUNTIME
-                sche->task_count = 0;
                 sche->run_time = 0;
                 sche->c_runtime = 0;
 #endif
