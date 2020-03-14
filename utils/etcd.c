@@ -1044,7 +1044,7 @@ int etcd_del2(char *key)
                 GOTO(err_ret, ret);
         }
 
-        DINFO("remove %s\n", key);
+        DBUG("remove %s\n", key);
         ret = __etcd_del(sess, key);
         if (ret) {
                 GOTO(err_close, ret);
