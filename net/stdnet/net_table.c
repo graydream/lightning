@@ -237,7 +237,7 @@ static int __network_connect2(entry_t *ent, const ltg_net_info_t *info)
         
         ret = net_connect(&sock, info, 1);
         if (unlikely(ret)) {
-                DWARN("connect to %s fail ret %u %s\n", info->name, ret, strerror(ret));
+                DBUG("connect to %s fail ret %u %s\n", info->name, ret, strerror(ret));
                 if (ret == EBADF)
                         ret = ETIMEDOUT;
                 GOTO(err_lock, ret);
