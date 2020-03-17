@@ -507,13 +507,19 @@ int etcd_update_text(const char *prefix, const char *_key, const char *_value,
                 GOTO(err_ret, ret);
         }
 
-#if 0
+#if 1
         if (idx) {
-                ret = etcd_get_text(prefix, _key, tmp, idx);
+                int newidx
+                ret = etcd_get_text(prefix, _key, tmp, &newidx);
                 if (ret)
                         GOTO(err_ret, ret);
 
-                LTG_ASSERT(strcmp(_value, tmp) == 0);
+                if (strcmp(_value, tmp)) {
+                        ret = ESTALE;
+                        GOTO(err_ret, ret);
+                }
+
+                *idx = newidx;
         }
 #endif
         
