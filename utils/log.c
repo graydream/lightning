@@ -51,7 +51,7 @@ int log_init2(logmode_t logmode, const char *file, int log_max_mbytes)
                         if (fd == -1) {
                                 ret = errno;
                                 fprintf(stderr, "open(%s, ...) ret (%d) %s\n", file, ret,
-                                       strerror(ret));
+                                        strerror(ret));
                                 goto err_ret;
                         }
 

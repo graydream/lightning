@@ -58,7 +58,7 @@ void dbg_goto(int on);
 void dbg_bug(int on);
 void dbg_level(int level);
 
-#define ERRNO_KEEP_SYSEM 256
+#define ERRNO_KEEP_SYSTEM 256
 #define ERRNO_KEEP_LTG 256
 
 const char *ltg_strerror(int errno);
