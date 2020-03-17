@@ -509,7 +509,7 @@ int etcd_update_text(const char *prefix, const char *_key, const char *_value,
 
 #if 1
         if (idx) {
-                int newidx
+                int newidx;
                 ret = etcd_get_text(prefix, _key, tmp, &newidx);
                 if (ret)
                         GOTO(err_ret, ret);
