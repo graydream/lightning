@@ -58,6 +58,12 @@ void dbg_goto(int on);
 void dbg_bug(int on);
 void dbg_level(int level);
 
+#define ERRNO_KEEP_SYSEM 256
+#define ERRNO_KEEP_LTG 256
+
+const char *ltg_strerror(int errno);
+int ltg_errno_set(int idx, const char *_str);
+
 #if defined(CMAKE_SOURCE_PATH_SIZE)
 
 #define __FILENAME__ (__FILE__ + CMAKE_SOURCE_PATH_SIZE)
