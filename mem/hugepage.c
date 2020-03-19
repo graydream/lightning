@@ -116,7 +116,7 @@ static int __map_hugepages(void *addr, int map, int hp_count)
 
         for (i = 0; i < hp_count; i++) {
                 map_ret = mmap(map_addr, HUGEPAGE_SIZE, PROT_READ | PROT_WRITE,
-                                MAP_PRIVATE |MAP_FIXED|MAP_ANONYMOUS|0x40000 , -1, 0);
+                                MAP_HUGETLB|MAP_PRIVATE |MAP_FIXED|MAP_ANONYMOUS|0x40000 , -1, 0);
                 if (map_ret == MAP_FAILED) {
                         DINFO("mmap erro  %p %d %s\n", map_addr, hp_count, strerror(errno))
                                 ret = ENOMEM;
@@ -279,8 +279,8 @@ int hugepage_init(int daemon, uint64_t coremask, int nr_hugepage)
                 addr = mem + HUGEPAGE_SIZE - align;
         } else
                 addr = mem;
-
-        ret = __map_hugepages(addr, daemon & nr_hugepage, hp_count);
+        
+        ret = __map_hugepages(addr, daemon && nr_hugepage, hp_count);
         if (ret)
                 GOTO(err_ret, ret);
 
