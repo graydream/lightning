@@ -78,7 +78,7 @@ static int __sock_connect(net_handle_t *nh, const sock_info_t *info,
 
         LTG_ASSERT(timeout < 30);
 
-        ret = sdevent_connect(info, nh, &net_proto, 0, timeout);
+        ret = sock_info2sock(nh, info, 0, timeout);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
         }
@@ -90,11 +90,11 @@ static int __sock_connect(net_handle_t *nh, const sock_info_t *info,
                             MSG_NOSIGNAL | MSG_DONTWAIT);
                 if (ret < 0) {
                         ret = -ret;
-                        GOTO(err_ret, ret);
+                        GOTO(err_fd, ret);
                 } else if ((uint32_t)ret != infolen) {
                         ret = EBADF;
                         DWARN("bad sd %u\n", nh->u.sd.sd);
-                        GOTO(err_ret, ret);
+                        GOTO(err_fd, ret);
                 }
 
         }
@@ -122,9 +122,13 @@ static int __sock_connect(net_handle_t *nh, const sock_info_t *info,
                 GOTO(err_fd, ret);
         }
 
+        ret = sdevent_open(nh, &net_proto);
+        if (unlikely(ret))
+                GOTO(err_fd, ret);
+        
         return 0;
 err_fd:
-        sdevent_close(nh);
+        close(nh->u.sd.sd);
 err_ret:
         return ret;
 }
