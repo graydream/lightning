@@ -313,25 +313,14 @@ void sdevent_close(const net_handle_t *nh)
 STATIC void __sdevent_exit(event_node_t *node, int force)
 {
         int ret;
-        net_handle_t parent, socknh;
-        char name[MAX_NAME_LEN];
-
-        memset(&parent, 0x0, sizeof(net_handle_t));
-        memset(&socknh, 0x0, sizeof(net_handle_t));
 
         ret = __sdevent_wrlock1(node, force);
         if (unlikely(ret))
                 return;
 
-        socknh = node->sock->nh;
-
-        sprintf(name, "%s", _inet_ntoa(node->sock->nh.u.sd.addr));
-
         __sdevent_close_nolock(node);
 
         __sdevent_unlock(node);
-
-        DBUG("close %u\n", socknh.u.sd.sd);
 }
 
 STATIC int __sdevent_read_recv(event_node_t *node)

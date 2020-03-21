@@ -18,15 +18,17 @@
 
 static uint32_t __ltime_seq__ = 1;
 
-#define LTIME_UPDATE(__lname__, __ltime__)                               \
+#define LTIME_UPDATE(__lname__, __ltime__)                              \
         do {                                                            \
                 time_t now;                                             \
-                int __retry__ = 0;                                            \
+                int __retry__ = 0;                                      \
                                                                         \
                 while (1) {                                             \
                         now = ++__ltime_seq__;                          \
                         if ((__ltime__)->prev == now || now == 0) {     \
-                                DWARN("conn %s too fast, %u %u retry %u\n", __lname__, (int)(__ltime__)->prev, (int)now, __retry__); \
+                                DWARN("conn %s too fast, %u %u retry %u\n", \
+                                      __lname__, (int)(__ltime__)->prev, \
+                                      (int)now, __retry__);             \
                                 if (__retry__ > 10) {                   \
                                         EXIT(EAGAIN);                   \
                                 }                                       \
@@ -36,18 +38,18 @@ static uint32_t __ltime_seq__ = 1;
                         break;                                          \
                 }                                                       \
                                                                         \
-                (__ltime__)->prev = now;                                      \
-                (__ltime__)->now = now;                                       \
+                (__ltime__)->prev = now;                                \
+                (__ltime__)->now = now;                                 \
         } while (0)
 
-#define LTIME_INIT(__ltime__)              \
+#define LTIME_INIT(__ltime__)                   \
         do {                                    \
-                (__ltime__)->now = 0;                \
-                (__ltime__)->prev = 0;               \
+                (__ltime__)->now = 0;           \
+                (__ltime__)->prev = 0;          \
         } while (0)
 
-#define LTIME_DROP(__ltime__)              \
-        do {                                    \
+#define LTIME_DROP(__ltime__)                  \
+        do {                                   \
                 (__ltime__)->now = 0;          \
         } while (0)
 
@@ -85,11 +87,6 @@ void netable_unlock(const nid_t *nid)
         ltg_rwlock_unlock(&__net_table__[nid->id]->rwlock);
 }
 
-static void __netable_update_ltime(entry_t *ent)
-{
-        LTIME_UPDATE(ent->lname, &ent->ltime);
-}
-
 static int __entry_load(entry_t *ent, const ltg_net_info_t *info,
                         const net_handle_t *sock)
 {
@@ -99,7 +96,7 @@ static int __entry_load(entry_t *ent, const ltg_net_info_t *info,
         ent->status = NETABLE_CONN;
         ent->timeout = 1000 * 1000 * ltgconf_global.hb_timeout;
         sprintf(ent->lname, "%s", info->name);
-        __netable_update_ltime(ent);
+        LTIME_UPDATE(ent->lname, &ent->ltime);
 
         DBUG("info.name %s \n", ent->lname);
 
@@ -135,42 +132,14 @@ inline static ltg_net_conn_t *__netable_nidfind(const nid_t *nid)
         return __net_table__[nid->id]->ent;
 }
 
-static int __iterate_handler(void *arg_null, void *net)
-{
-        int ret;
-        (void) arg_null;
-        entry_t *ent = (entry_t *) net;
-        nid_t nid = ent->nh.u.nid;
-
-        ret = netable_rdlock(&nid);
-        if (unlikely(ret))
-                UNIMPLEMENTED(__DUMP__);
-
-        DINFO("%s, load: %llu, status %u\n", ent->lname, ent->status);
-
-        netable_unlock(&nid);
-
-        return 0;
-}
-
 static int __netable_connect__(entry_t *ent, const net_handle_t *sock,
-                               const ltg_net_info_t *info, int flag)
+                               const ltg_net_info_t *info)
 {
         int ret;
 
         LTG_ASSERT(sock->type == NET_HANDLE_TRANSIENT);
         LTG_ASSERT(sock->u.sd.type == SOCKID_NORMAL);
         
-        if (ent->status == NETABLE_CONN) {
-                if (flag) {
-                        ret = EEXIST;
-                        GOTO(err_ret, ret);
-                } else {
-                        DINFO("%s already connected\n", ent->lname);
-                        goto out;
-                }
-        }
-
         ret = __entry_load(ent, info, sock);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
@@ -179,13 +148,11 @@ static int __netable_connect__(entry_t *ent, const net_handle_t *sock,
         if (unlikely(ret))
                 GOTO(err_ret, ret);
         
-        DINFO("add heartbeat to %s\n", ent->lname);
         ret = heartbeat_add(&ent->sock.u.sd, &ent->nh.u.nid,
                             ent->timeout, ent->ltime.now);
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
-out:
         return 0;
 err_ret:
         return ret;
@@ -204,9 +171,9 @@ static int __network_connect(entry_t *ent, const ltg_net_info_t *info)
                 GOTO(err_ret, ret);
 
         if (ent->status == NETABLE_CONN) {
-                DINFO("connect to %s sockid %s/%d time %u, exist\n",
-                      ent->lname, _inet_ntoa(ent->sock.u.sd.addr),
-                      ent->sock.u.sd.sd, (int)ent->ltime.now);
+                DBUG("connect to %s sockid %s/%d time %u, exist\n",
+                     ent->lname, _inet_ntoa(ent->sock.u.sd.addr),
+                     ent->sock.u.sd.sd, (int)ent->ltime.now);
                 goto out;
         }
         
@@ -218,7 +185,7 @@ static int __network_connect(entry_t *ent, const ltg_net_info_t *info)
                 GOTO(err_lock, ret);
         }
 
-        ret = __netable_connect__(ent, &sock, info, 1);
+        ret = __netable_connect__(ent, &sock, info);
         if (unlikely(ret)) {
                 GOTO(err_lock, ret);
         }
@@ -304,12 +271,10 @@ err_ret:
         return ret;
 }
 
-int netable_connect_info(net_handle_t *nh, const ltg_net_info_t *info, int force)
+int netable_connect(net_handle_t *nh, const ltg_net_info_t *info)
 {
         int ret;
         entry_t *ent;
-
-        (void) force;
 
         LTG_ASSERT(!net_isnull(&info->id));
 
@@ -342,17 +307,6 @@ err_ret:
         return ret;
 }
 
-
-static void __netable_close(entry_t *ent)
-{
-        LTG_ASSERT(ent->status == NETABLE_CONN);
-
-        LTIME_DROP(&ent->ltime);
-        ent->status = NETABLE_DEAD;
-
-        DBUG("net %s closed\n", ent->lname);
-}
-
 void netable_close(const nid_t *nid, const char *why, const time_t *ltime)
 {
         int ret;
@@ -379,7 +333,11 @@ void netable_close(const nid_t *nid, const char *why, const time_t *ltime)
         DINFO("close %s by '%s', ltime %p\n", ent->lname, why, ltime);
 
         sock = ent->sock;
-        __netable_close(ent);
+
+        LTG_ASSERT(ent->status == NETABLE_CONN);
+
+        LTIME_DROP(&ent->ltime);
+        ent->status = NETABLE_DEAD;
 
         netable_unlock(nid);
 
@@ -433,19 +391,6 @@ const char *netable_rname(const nid_t *nid)
                         return ent->lname;
                 } else {
                         return __netable_rname(nid);
-                }
-        }
-}
-
-void netable_iterate(void)
-{
-        int i;
-        net_table_t *net_table;
-
-        for (i = 0; i < NODEID_MAX; i++) {
-                net_table = __net_table__[i];
-                if (net_table->ent) {
-                        __iterate_handler(NULL, net_table->ent);
                 }
         }
 }
@@ -515,85 +460,6 @@ int netable_getsock(const nid_t *nid, sockid_t *sockid)
         return 0;
 err_lock:
         netable_unlock(nid);
-err_ret:
-        return ret;
-}
-
-STATIC int __netable_accept(entry_t *ent, const net_handle_t *sock,
-                            const ltg_net_info_t *info)
-{
-        int ret;
-        nid_t nid = info->id;
-
-        ret = netable_wrlock(&nid);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        if (ent->status == NETABLE_CONN) {
-                if (net_getnid()->id > info->id.id) {
-                        ret = ECONNRESET;
-                        GOTO(err_lock, ret);
-                } else if (net_getnid()->id == info->id.id) {
-                        ret = sdevent_add(sock, &info->id, LTG_EPOLL_EVENTS);
-                        if (unlikely(ret))
-                                GOTO(err_lock, ret);
-
-                        DINFO("local conn %s\n", info->name);
-                        goto out;
-                } else {
-                        DINFO("dup conn, close exist conn of %s\n",
-                              info->name);
-
-                        __netable_close(ent);
-                        sdevent_close(&ent->sock);
-                        rpc_table_reset(__rpc_table__, &ent->sock.u.sd, &info->id);
-                }
-        }
-
-        ret = __netable_connect__(ent, sock, info, 0);
-        if (unlikely(ret))
-                GOTO(err_lock, ret);
-
-out:
-        netable_unlock(&nid);
-
-        return 0;
-err_lock:
-        netable_unlock(&nid);
-err_ret:
-        return ret;
-}
-
-int netable_accept(const ltg_net_info_t *info, const net_handle_t *sock)
-{
-        int ret;
-        entry_t *ent;
-
-        LTG_ASSERT(sock->u.sd.type == SOCKID_NORMAL);
-        
-        DINFO("accept %s sd %d\n", info->name, sock->u.sd.sd);
-        
-        LTG_ASSERT(!net_isnull(&info->id));
-
-retry:
-        ent = __netable_nidfind(&info->id);
-        if (ent == NULL) {
-                ret = __netable_new(&info->id, &ent);
-                if (unlikely(ret)) {
-                        if (ret == EEXIST) {
-                                DINFO("accept %s sd %d, retry\n", info->name,
-                                      sock->u.sd.sd);
-                                goto retry;
-                        } else
-                                GOTO(err_ret, ret);
-                }
-        }
-
-        ret = __netable_accept(ent, sock, info);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        return 0;
 err_ret:
         return ret;
 }

@@ -40,7 +40,7 @@ static int __conn_add(const nid_t *nid)
 
         DBUG("connect to %u %s\n", nid->id, info->name);
 
-        ret = netable_connect_info(&nh, info, 1);
+        ret = netable_connect(&nh, info);
         if (ret) {
                 DBUG("connect to %u %s fail\n", nid->id, info->name);
                 GOTO(err_ret, ret);

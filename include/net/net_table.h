@@ -28,13 +28,11 @@ typedef struct __connection {
 } ltg_net_conn_t;
 
 int netable_init(int daemon);
-int netable_accept(const ltg_net_info_t *info, const net_handle_t *sock);
-int netable_connect_info(net_handle_t *nh, const ltg_net_info_t *info, int force);
+int netable_connect(net_handle_t *nh, const ltg_net_info_t *info);
 int netable_connected(const nid_t *nid);
 void netable_close(const nid_t *nid, const char *resion, const time_t *ltime);
 const char *netable_rname(const nid_t *nid);
 int netable_getsock(const nid_t *nid, sockid_t *sockid);
 time_t netable_conn_time(const nid_t *nid);
-void netable_iterate(void);
 
 #endif
