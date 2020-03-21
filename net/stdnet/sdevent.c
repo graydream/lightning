@@ -386,11 +386,38 @@ err_ret:
         return ret;
 }
 
-STATIC int __sdevent_exec_write(event_node_t *node, event_t *ev)
+STATIC int __sdevent_write__(event_node_t *node, event_t *ev)
 {
         int ret;
         ltg_sock_conn_t *sock;
         int64_t sent = 0;
+
+        ANALYSIS_BEGIN(0);
+
+        sock = node->sock;
+        sent = sock->proto.writer(ev, sock);
+        if (sent < 0) {
+                ret = -sent;
+                if (ret == EAGAIN) {
+                }  else {
+                        DWARN("send error %d\n", ret);
+                        ret = ECONNRESET;
+                }
+
+                GOTO(err_ret, ret);
+        }
+
+        ANALYSIS_END(0, 1000 * 10, NULL);
+        
+        return 0;
+err_ret:
+        ANALYSIS_END(0, 1000 * 10, NULL);
+        return ret;
+}
+
+STATIC int __sdevent_exec_write(event_node_t *node, event_t *ev)
+{
+        int ret;
 
         ret = __sdevent_rdlock1(node, 0);
         if (unlikely(ret))
@@ -406,22 +433,9 @@ STATIC int __sdevent_exec_write(event_node_t *node, event_t *ev)
 
         DBUG("write event from sd %u\n", ev->data.fd);
 
-        ANALYSIS_BEGIN(0);
-
-        sock = node->sock;
-        sent = sock->proto.writer(ev, sock);
-        if (sent < 0) {
-                ret = -sent;
-                if (ret == EAGAIN) {
-                }  else {
-                        DWARN("send error %d\n", ret);
-                        ret = ECONNRESET;
-                }
-
+        ret = __sdevent_write__(node, ev);
+        if (unlikely(ret))
                 GOTO(err_lock, ret);
-        }
-
-        ANALYSIS_END(0, 1000 * 100, NULL);
 
         __sdevent_unset_out(node);
 
@@ -637,7 +651,7 @@ void sdevent_close_force(const net_handle_t *nh)
 
 STATIC int __sdevent_queue__(event_node_t *node, const ltgbuf_t *buf)
 {
-        int ret, epollout = 0;
+        int ret;
 
         if (node->ev == 0) {
                 ret = EAGAIN;
@@ -647,13 +661,6 @@ STATIC int __sdevent_queue__(event_node_t *node, const ltgbuf_t *buf)
         ret = sock_wbuffer_queue(&node->sock->wbuf, buf);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
-        }
-
-        if (!(node->ev & EPOLLOUT)) {
-                DBUG("add epollout %u %u %u\n", epollout,
-                     node->ev & EPOLLOUT, sock_wbuffer_isempty(&node->sock->wbuf));
-
-                __sdevent_set_out(node);
         }
 
         return 0;
@@ -669,8 +676,10 @@ STATIC int __sdevent_queue(const net_handle_t *nh, const ltgbuf_t *buf)
         LTG_ASSERT(nh->type == NET_HANDLE_TRANSIENT);
         //LTG_ASSERT(nh->u.sd.addr);
         LTG_ASSERT(nh->u.sd.sd > 0 && nh->u.sd.sd < sdevent->size);
-        
-        ret = __sdevent_tryrdlock(nh, &node);
+
+        ANALYSIS_BEGIN(0);
+
+        ret = __sdevent_wrlock(nh, &node);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -679,27 +688,65 @@ STATIC int __sdevent_queue(const net_handle_t *nh, const ltgbuf_t *buf)
                 GOTO(err_lock, ret);
         }
 
+        ret = __sdevent_write__(node, NULL);
+        if (unlikely(ret)) {
+                GOTO(err_lock, ret);
+        }
+
+        if (!(node->ev & EPOLLOUT)) {
+                __sdevent_set_out(node);
+        }
+        
         __sdevent_unlock(node);
 
+        ANALYSIS_END(0, 1000 * 100, NULL);
+        
         return 0;
 err_lock:
         __sdevent_unlock(node);
 err_ret:
+        ANALYSIS_END(0, 1000 * 100, NULL);
         return ret;
+}
+
+typedef struct {
+        net_handle_t nh;
+        ltgbuf_t buf;
+} __ctx_t; 
+
+static void __sdevent_queue_task(void *_ctx)
+{
+        __ctx_t *ctx = _ctx;
+        __sdevent_queue(&ctx->nh, &ctx->buf);
+        ltgbuf_free(&ctx->buf);
+        ltg_free((void **)&ctx);
 }
 
 int sdevent_queue(const net_handle_t *nh, const ltgbuf_t *buf)
 {
         int ret;
+        __ctx_t *ctx;
 
-        ret = __sdevent_queue(nh, buf);
-        if (unlikely(ret)) {
-                if (ret == EAGAIN || ret == EBUSY) {
-                        ret = ECONNRESET;
-                        DWARN("send %u fail\n",nh->u.sd.sd);
+        if (sche_self()) {
+                ret = ltg_malloc((void **)&ctx, sizeof(*ctx));
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+
+                ctx->nh = *nh;
+                ltgbuf_init(&ctx->buf, 0);
+                ltgbuf_clone(&ctx->buf, buf);
+                
+                sche_task_new("sdevent queue", __sdevent_queue_task, ctx, -1);
+        } else {
+                ret = __sdevent_queue(nh, buf);
+                if (unlikely(ret)) {
+                        if (ret == EAGAIN || ret == EBUSY) {
+                                ret = ECONNRESET;
+                                DWARN("send %u fail\n",nh->u.sd.sd);
+                        }
+
+                        GOTO(err_ret, ret);
                 }
-
-                GOTO(err_ret, ret);
         }
         
         return 0;

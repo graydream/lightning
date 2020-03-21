@@ -658,7 +658,7 @@ void ltgbuf_clone(ltgbuf_t *newbuf, const ltgbuf_t *buf)
 
         BUFFER_CHECK(buf);
         BUFFER_CHECK(newbuf);
-        LTG_ASSERT(newbuf->len == buf->len);
+        //LTG_ASSERT(newbuf->len == buf->len);
 
         list_for_each(pos, &buf->list) {
                 seg = (seg_t *)pos;
