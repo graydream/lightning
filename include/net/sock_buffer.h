@@ -34,7 +34,7 @@ typedef struct{
         ltgbuf_t buf;
         struct iovec iov[SOCK_IOV_MAX]; //iov for send
         int closed;
-} sock_wltgbuf_t;
+} sock_wbuf_t;
 
 #define BUFFER_KEEP 0x00000001
 
@@ -44,11 +44,11 @@ extern void sock_rbuffer_free(sock_rltgbuf_t *buf);
 int sock_rbuffer_recv(sock_rltgbuf_t *sbuf, int sd);
 //extern int sock_rbuffer_recv(sock_rltgbuf_t *buf, int sd, int *retry);
 extern int sock_rbuffer_destroy(sock_rltgbuf_t *buf);
-extern int sock_wbuffer_create(sock_wltgbuf_t *buf);
-extern int sock_wbuffer_send(sock_wltgbuf_t *buf, int);
-extern int sock_wbuffer_queue(sock_wltgbuf_t *wbuf,
+extern int sock_wbuffer_create(sock_wbuf_t *buf);
+extern int sock_wbuffer_send(sock_wbuf_t *buf, int);
+extern int sock_wbuffer_queue(sock_wbuf_t *wbuf,
                               const ltgbuf_t *buf);
-int sock_wbuffer_destroy(sock_wltgbuf_t *buf);
-int sock_wbuffer_isempty(sock_wltgbuf_t *sbuf);
+int sock_wbuffer_destroy(sock_wbuf_t *buf);
+int sock_wbuffer_isempty(sock_wbuf_t *sbuf);
 
 #endif

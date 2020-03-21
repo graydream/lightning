@@ -26,21 +26,13 @@ int sdevent_init(int max);
 void sdevent_destroy(void);
 
 int sdevent_open(net_handle_t *nh, const net_proto_t *proto);
-void sdevent_close_force(const net_handle_t *nh);
-
-int sdevent_connect(const sock_info_t *info,
-                    net_handle_t *nh, net_proto_t *proto, int nonblock, int timeout);
-
-int sdevent_add(const net_handle_t *socknh, const nid_t *nid, int event,
-                void *ctx, func_t reset);
+void sdevent_close(const net_handle_t *nh);
+int sdevent_connect(const sock_info_t *info, net_handle_t *nh,
+                    net_proto_t *proto, int nonblock, int timeout);
+int sdevent_add(const net_handle_t *socknh, const nid_t *nid, int event);
 int sdevent_queue(const net_handle_t *nh, const ltgbuf_t *buf);
-
 int sdevent_check(const sockid_t *id);
-
 int sdevent_recv(int fd);
 void sdevent_exit(int fd);
-
-int sdevent_heartbeat_get(const sockid_t *id, uint64_t *send, uint64_t *reply);
-int sdevent_heartbeat_set(const sockid_t *id, const uint64_t *send, const uint64_t *reply);
 
 #endif

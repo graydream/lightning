@@ -83,17 +83,19 @@ static void *__rpc_accept__(void *_arg)
         LTG_ASSERT(strcmp(info->name, "none"));
 
         if (net_isnull(&info->id) || net_islocal(&info->id)) {
-                ret = sdevent_add(&newnh, NULL, LTG_EPOLL_EVENTS, NULL, NULL);
+                ret = sdevent_add(&newnh, NULL, LTG_EPOLL_EVENTS);
                 if (unlikely(ret)) {
                         DINFO("accept from %s, sd %u ret:%d \n",
-                              _inet_ntoa(newnh.u.sd.addr), newnh.u.sd.sd, ret);
+                              _inet_ntoa(newnh.u.sd.addr),
+                              newnh.u.sd.sd, ret);
                         GOTO(err_sd, ret);
                 }
         } else {
                 ret = netable_accept(info, &newnh);
                 if (unlikely(ret)) {
                         DINFO("accept from %s(%s), sd %u ret:%d\n",
-                               _inet_ntoa(newnh.u.sd.addr), info->name, newnh.u.sd.sd, ret);
+                              _inet_ntoa(newnh.u.sd.addr), info->name,
+                              newnh.u.sd.sd, ret);
                         GOTO(err_sd, ret);
                 }
         }
@@ -104,7 +106,7 @@ static void *__rpc_accept__(void *_arg)
 
         pthread_exit(NULL);
 err_sd:
-        sdevent_close_force(&newnh);
+        sdevent_close(&newnh);
 err_ret:
         ltg_free((void **)&_arg);
         pthread_exit(NULL);

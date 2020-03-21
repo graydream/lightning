@@ -23,7 +23,6 @@ static int __conn_add(const nid_t *nid)
         size_t len;
 
         if (netable_connected(nid)) {
-                netable_update(nid);
                 goto out;
         }
 

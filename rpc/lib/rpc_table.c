@@ -161,7 +161,7 @@ static int __rpc_table_check(rpc_table_t *rpc_table, slot_t *slot, uint32_t now)
 #if 0
                         net_handle_t nh;
                         sock2nh(&nh, sockid);
-                        sdevent_close_force(&nh);
+                        sdevent_close(&nh);
 #endif
                 }
         }

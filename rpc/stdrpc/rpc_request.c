@@ -135,13 +135,11 @@ err_ret:
         return ret;
 }
 
-STATIC int __stdrpc_request_wait__(const net_handle_t *nh, const char *name, ltgbuf_t *rbuf,
-                                rpc_ctx_t *ctx, int timeout)
+STATIC int __stdrpc_request_wait__(const char *name, ltgbuf_t *rbuf,
+                                   rpc_ctx_t *ctx)
 {
         int ret;
 
-        (void) timeout;
-        
         ANALYSIS_BEGIN(0);
         
         if (sche_running()) {
@@ -173,26 +171,11 @@ STATIC int __stdrpc_request_wait__(const net_handle_t *nh, const char *name, ltg
         }
                 
         
-        if (nh->type == NET_HANDLE_PERSISTENT) {
-                DBUG("%s latency %llu\n", netable_rname(&nh->u.nid), (LLU)ctx->latency);
-                netable_load_update(&nh->u.nid, ctx->latency);
-        }
-
-#ifdef RPC_ASSERT
-        timeout = _max(timeout, ltgconf_global.rpc_timeout);
-        ANALYSIS_ASSERT(0, 1000 * 1000 * (timeout * 3), name);
-#else
         ANALYSIS_END(0, IO_INFO, name);
-#endif
 
         return 0;
 err_ret:
-#ifdef RPC_ASSERT
-        timeout = _max(timeout, ltgconf_global.rpc_timeout);
-        ANALYSIS_ASSERT(0, 1000 * 1000 * (timeout * 3), name);
-#else
         ANALYSIS_END(0, IO_INFO, NULL);
-#endif
         return ret;
 }
 
@@ -237,7 +220,7 @@ STATIC int __stdrpc_request_wait(const char *name, const net_handle_t *nh,
 
         ANALYSIS_END(0, IO_INFO, NULL);
         
-        ret = __stdrpc_request_wait__(nh, name, rbuf, &ctx, timeout);
+        ret = __stdrpc_request_wait__(name, rbuf, &ctx);
         if (unlikely(ret)) {
                 goto err_ret;
         }

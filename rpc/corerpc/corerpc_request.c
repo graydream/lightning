@@ -63,7 +63,7 @@ err_ret:
 }
 
 STATIC int __corerpc_wait__(const char *name, ltgbuf_t *rbuf,
-                            rpc_ctx_t *ctx, const corerpc_op_t *op)
+                            rpc_ctx_t *ctx)
 {
         int ret;
 
@@ -75,25 +75,13 @@ STATIC int __corerpc_wait__(const char *name, ltgbuf_t *rbuf,
                 GOTO(err_ret, ret);
         }
 
-        netable_load_update(&op->coreid.nid, ctx->latency);
-
         DBUG("%s yield resume\n", name);
 
-#ifdef RPC_ASSERT
-        timeout = _max(timeout, ltgconf_global.rpc_timeout);
-        ANALYSIS_ASSERT(0, 1000 * 1000 * (timeout * 3), name);
-#else
         ANALYSIS_QUEUE(0, IO_INFO, NULL);
-#endif
 
         return 0;
 err_ret:
-#ifdef RPC_ASSERT
-        timeout = _max(timeout, ltgconf_global.rpc_timeout);
-        ANALYSIS_ASSERT(0, 1000 * 1000 * (timeout * 3), name);
-#else
         ANALYSIS_END(0, IO_INFO, name);
-#endif
         return ret;
 }
 
@@ -200,7 +188,7 @@ int corerpc_send_and_wait(void *core, const char *name, corerpc_op_t *op)
 
         SOCKID_DUMP(&op->sockid);
         MSGID_DUMP(&op->msgid);
-        ret = __corerpc_wait__(name, op->rbuf, &rpc_ctx, op);
+        ret = __corerpc_wait__(name, op->rbuf, &rpc_ctx);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
         }

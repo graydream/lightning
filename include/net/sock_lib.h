@@ -31,7 +31,7 @@ typedef struct {
         int sendclose;/*close after sent*/
         int used;
 
-        sock_wltgbuf_t wbuf;
+        sock_wbuf_t wbuf;
         sock_rltgbuf_t rbuf;
 } ltg_sock_conn_t;
 

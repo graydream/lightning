@@ -120,7 +120,6 @@ static int __entry_create(entry_t **_ent, const nid_t *nid)
         ent->nh.type = NET_HANDLE_PERSISTENT;
         ent->nh.u.nid = *nid;
         ent->status = NETABLE_NULL;
-        ent->update = gettime();
         LTIME_INIT(&ent->ltime);
 
         *_ent = ent;
@@ -147,33 +146,17 @@ static int __iterate_handler(void *arg_null, void *net)
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
-        DINFO("%s, load: %llu, status %u\n", ent->lname,
-              (LLU)ent->load, ent->status);
+        DINFO("%s, load: %llu, status %u\n", ent->lname, ent->status);
 
         netable_unlock(&nid);
 
         return 0;
 }
 
-typedef struct {
-	nid_t nid;
-	time_t ltime;
-} arg_t;
-
-static void __netable_close(void *_arg)
-{
-        arg_t *arg = _arg;
-
-        netable_close(&arg->nid, "close by sdevent", &arg->ltime);
-
-        ltg_free((void **)&_arg);
-}
-
 static int __netable_connect__(entry_t *ent, const net_handle_t *sock,
                                const ltg_net_info_t *info, int flag)
 {
         int ret;
-        arg_t *arg;
 
         LTG_ASSERT(sock->type == NET_HANDLE_TRANSIENT);
         LTG_ASSERT(sock->u.sd.type == SOCKID_NORMAL);
@@ -192,15 +175,9 @@ static int __netable_connect__(entry_t *ent, const net_handle_t *sock,
         if (unlikely(ret))
                 GOTO(err_ret, ret);
         
-        ret = ltg_malloc((void **)&arg, sizeof(*arg));
+        ret = sdevent_add(sock, &ent->nh.u.nid, LTG_EPOLL_EVENTS);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
-
-        arg->nid = ent->nh.u.nid;
-	arg->ltime = ent->ltime.now;
-        ret = sdevent_add(sock, &ent->nh.u.nid, LTG_EPOLL_EVENTS, arg, __netable_close);
-        if (unlikely(ret))
-                GOTO(err_free, ret); /*XXX:clean*/
         
         DINFO("add heartbeat to %s\n", ent->lname);
         ret = heartbeat_add(&ent->sock.u.sd, &ent->nh.u.nid,
@@ -210,13 +187,11 @@ static int __netable_connect__(entry_t *ent, const net_handle_t *sock,
 
 out:
         return 0;
-err_free:
-        ltg_free((void **)&arg);
 err_ret:
         return ret;
 }
 
-static int __network_connect2(entry_t *ent, const ltg_net_info_t *info)
+static int __network_connect(entry_t *ent, const ltg_net_info_t *info)
 {
         int ret;
         net_handle_t sock;
@@ -248,8 +223,8 @@ static int __network_connect2(entry_t *ent, const ltg_net_info_t *info)
                 GOTO(err_lock, ret);
         }
 
-        DINFO("connect to %s sockid %s/%d\n",
-              ent->lname, _inet_ntoa(ent->sock.u.sd.addr), ent->sock.u.sd.sd);
+        DINFO("connect to %s sockid %s/%d\n", ent->lname,
+              _inet_ntoa(ent->sock.u.sd.addr), ent->sock.u.sd.sd);
 
 out:
         ANALYSIS_END(0, IO_INFO, NULL);
@@ -354,7 +329,7 @@ retry:
         }
 
         if (ent->status != NETABLE_CONN) {
-                ret = __network_connect2(ent, info);
+                ret = __network_connect(ent, info);
                 if (unlikely(ret)) {
                         GOTO(err_ret, ret);
                 }
@@ -368,7 +343,7 @@ err_ret:
 }
 
 
-static void __netable_close1(entry_t *ent)
+static void __netable_close(entry_t *ent)
 {
         LTG_ASSERT(ent->status == NETABLE_CONN);
 
@@ -404,11 +379,11 @@ void netable_close(const nid_t *nid, const char *why, const time_t *ltime)
         DINFO("close %s by '%s', ltime %p\n", ent->lname, why, ltime);
 
         sock = ent->sock;
-        __netable_close1(ent);
+        __netable_close(ent);
 
         netable_unlock(nid);
 
-        sdevent_close_force(&sock);
+        sdevent_close(&sock);
 
         return;
 err_lock:
@@ -462,30 +437,6 @@ const char *netable_rname(const nid_t *nid)
         }
 }
 
-void netable_load_update(const nid_t *nid, uint64_t load)
-{
-        //int ret;
-        entry_t *ent;
-
-        ANALYSIS_BEGIN(0);
-
-        if (unlikely(net_isnull(nid))) {
-                return;
-        }
-
-        ent = __netable_nidfind(nid);
-        if (unlikely(ent == NULL)) {
-                return;
-        }
-
-        DBUG("update %s latency %llu\n", ent->lname, (LLU)load);
-        ent->load = load;
-
-        ANALYSIS_END(0, IO_WARN, NULL);
-
-        return;
-}
-
 void netable_iterate(void)
 {
         int i;
@@ -497,44 +448,6 @@ void netable_iterate(void)
                         __iterate_handler(NULL, net_table->ent);
                 }
         }
-}
-
-int netable_nodeid(const nid_t *nid, char *nodeid)
-{
-        int ret;
-        entry_t *ent;
-
-        ent = __netable_nidfind(nid);
-        if (ent == NULL) {
-                ret = ENONET;
-                DBUG("nid "NID_FORMAT" no found\n", NID_ARG(nid));
-                GOTO(err_ret, ret);
-        }
-
-        ret = netable_rdlock(nid);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        if ((int)ent->ltime.now == 0) {
-                ret = ENONET;
-                DBUG("nid "NID_FORMAT" not connected\n", NID_ARG(nid));
-                GOTO(err_lock, ret);
-        }
-
-        if (ent->status == NETABLE_CONN) {
-                strcpy(nodeid, ent->nodeid);
-        } else {
-                ret = ENONET;
-                GOTO(err_lock, ret);
-        }
-
-        netable_unlock(nid);
-
-        return 0;
-err_lock:
-        netable_unlock(nid);
-err_ret:
-        return ret;
 }
 
 time_t IO_FUNC netable_conn_time(const nid_t *nid)
@@ -562,66 +475,6 @@ int netable_connected(const nid_t *nid)
                 return 0;
         }
 }
-
-#if 0
-#define REPLICA_MAX 8
-
-static int __netable_load_cmp(const void *arg1, const void *arg2)
-{
-        const section_t *sec1 = arg1, *sec2 = arg2;
-        return sec1->load - sec2->load;
-}
-
-void netable_sort(diskid_t *nids, int count)
-{
-        int ret, i;
-        ltg_net_conn_t *net;
-        section_t section[REPLICA_MAX], *sec;
-        char buf[MAX_NAME_LEN];
-
-        LTG_ASSERT(count <= REPLICA_MAX);
-        LTG_ASSERT(count * sizeof(nid_t) < MAX_BUF_LEN);
-
-        memcpy(buf, nids, count * sizeof(nid_t));
-
-        for (i = 0; i < count; i++) {
-                sec = &section[i];
-                sec->diskid = nids[i];
-                ret = d2n_nid(&sec->diskid, &sec->nid);
-                if (unlikely(ret)) {
-                        UNIMPLEMENTED(__DUMP__);
-                }
-
-                if (net_islocal(&sec->nid)) {
-                        sec->load = core_latency_get();
-                } else {
-                        net = __netable_nidfind(&sec->nid);
-                        if (unlikely(net == NULL || net->status != NETABLE_CONN)) {
-                                DINFO("%s not online, no balance\n",
-                                      netable_rname(&sec->nid));
-                                return;
-                        }
-
-                        DBUG("%s latency %llu\n", netable_rname(&sec->nid),
-                             (LLU)net->load);
-
-                        if (net->load < 0.1)
-                                sec->load = 0;
-                        else
-                                sec->load = net->load;
-                }
-        }
-
-        qsort(section, count, sizeof(section_t), __netable_load_cmp);
-        for (i = 0; i < count; i++) {
-                sec = &section[i];
-                nids[i] = sec->diskid;
-
-                DBUG("node[%u] %s latency %llu\n", i, netable_rname(&sec->nid),
-                     (LLU)section[i].load);
-        }
-}
-#endif
 
 int netable_getsock(const nid_t *nid, sockid_t *sockid)
 {
@@ -681,7 +534,7 @@ STATIC int __netable_accept(entry_t *ent, const net_handle_t *sock,
                         ret = ECONNRESET;
                         GOTO(err_lock, ret);
                 } else if (net_getnid()->id == info->id.id) {
-                        ret = sdevent_add(sock, &info->id, LTG_EPOLL_EVENTS, NULL, NULL);
+                        ret = sdevent_add(sock, &info->id, LTG_EPOLL_EVENTS);
                         if (unlikely(ret))
                                 GOTO(err_lock, ret);
 
@@ -691,8 +544,8 @@ STATIC int __netable_accept(entry_t *ent, const net_handle_t *sock,
                         DINFO("dup conn, close exist conn of %s\n",
                               info->name);
 
-                        __netable_close1(ent);
-                        sdevent_close_force(&ent->sock);
+                        __netable_close(ent);
+                        sdevent_close(&ent->sock);
                         rpc_table_reset(__rpc_table__, &ent->sock.u.sd, &info->id);
                 }
         }
@@ -743,18 +596,4 @@ retry:
         return 0;
 err_ret:
         return ret;
-}
-
-void netable_update(const nid_t *nid)
-{
-        entry_t *ent;
-
-        ent = __netable_nidfind(nid);
-        if (ent == NULL)
-                return;
-
-        if (ent->status == NETABLE_CONN) {
-                ent->update = gettime();
-                DBUG("update %s\n", ent->lname);
-        }
 }

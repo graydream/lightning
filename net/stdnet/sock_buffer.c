@@ -131,10 +131,10 @@ err_ret:
         return ret;
 }
 
-int sock_wbuffer_create(sock_wltgbuf_t *wbuf)
+int sock_wbuffer_create(sock_wbuf_t *wbuf)
 {
         int ret;
-        //memset(buf, 0x0, sizeof(sock_wltgbuf_t));
+        //memset(buf, 0x0, sizeof(sock_wbuf_t));
 
         wbuf->closed = 0;
 
@@ -205,7 +205,7 @@ err_ret:
         return -ret;
 }
 
-STATIC int sock_wbuffer_revert(sock_wltgbuf_t *wbuf, ltgbuf_t *buf)
+STATIC int sock_wbuffer_revert(sock_wbuf_t *wbuf, ltgbuf_t *buf)
 {
         int ret;
         ltgbuf_t tmp;
@@ -236,7 +236,7 @@ err_ret:
 }
 
 //read form buf, write to sd
-int sock_wbuffer_send(sock_wltgbuf_t *wbuf, int sd)
+int sock_wbuffer_send(sock_wbuf_t *wbuf, int sd)
 {
         int ret, count = 0;
         ltgbuf_t buf;
@@ -288,7 +288,7 @@ err_ret:
         return ret;
 }
 
-STATIC void __sock_wbuffer_queue(sock_wltgbuf_t *wbuf, const ltgbuf_t *buf)
+STATIC void __sock_wbuffer_queue(sock_wbuf_t *wbuf, const ltgbuf_t *buf)
 {
         DBUG("queue msg %u\n", buf->len);
 
@@ -298,7 +298,7 @@ STATIC void __sock_wbuffer_queue(sock_wltgbuf_t *wbuf, const ltgbuf_t *buf)
         ltgbuf_merge(&wbuf->buf, &tmp);
 }
 
-int sock_wbuffer_queue(sock_wltgbuf_t *wbuf, const ltgbuf_t *buf)
+int sock_wbuffer_queue(sock_wbuf_t *wbuf, const ltgbuf_t *buf)
 {
         int ret;
 
@@ -325,7 +325,7 @@ err_ret:
         return ret;
 }
 
-int sock_wbuffer_isempty(sock_wltgbuf_t *wbuf)
+int sock_wbuffer_isempty(sock_wbuf_t *wbuf)
 {
         int ret, empty;
 
@@ -341,7 +341,7 @@ int sock_wbuffer_isempty(sock_wltgbuf_t *wbuf)
         return empty;
 }
 
-int sock_wbuffer_destroy(sock_wltgbuf_t *wbuf)
+int sock_wbuffer_destroy(sock_wbuf_t *wbuf)
 {
         int ret;
 

@@ -18,14 +18,10 @@ int net_init()
         int ret;
 
         net_proto.head_len = sizeof(ltg_net_head_t);
-        net_proto.writer = net_proto.writer ? net_proto.writer
-                : net_events_handle_write;
-        net_proto.reader = net_proto.reader ? net_proto.reader
-                : net_events_handle_read;
-        net_proto.pack_len = net_proto.pack_len ? net_proto.pack_len
-                : rpc_pack_len;
-        net_proto.pack_handler = net_proto.pack_handler ? net_proto.pack_handler
-                : rpc_pack_handler;
+        net_proto.writer = net_events_handle_write;
+        net_proto.reader = net_events_handle_read;
+        net_proto.pack_len = rpc_pack_len;
+        net_proto.pack_handler = rpc_pack_handler;
 
         ret = netable_init(ltgconf_global.daemon);
         if (ret)

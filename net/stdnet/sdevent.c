@@ -16,11 +16,7 @@
 typedef struct {
         int ev;
         ltg_sock_conn_t *sock;
-        uint64_t heartbeat_seq_send;
-        uint64_t heartbeat_seq_reply;
         ltg_rwlock_t lock;
-        void *ctx;
-        func_t reset;
         ltg_spinlock_t evlock;
 } event_node_t;
 
@@ -290,10 +286,6 @@ STATIC int __sdevent_close_nolock(event_node_t *node)
                 GOTO(err_ret, ret);
         }
 
-        if (node->ctx) {
-                ltg_free((void **)&node->ctx);
-        }
-
         ltg_free((void **)&node->sock);
         node->sock = NULL;
 
@@ -302,7 +294,7 @@ err_ret:
         return ret;
 }
 
-STATIC void __sdevent_close(const net_handle_t *nh)
+void sdevent_close(const net_handle_t *nh)
 {
         int ret;
         event_node_t *node;
@@ -323,8 +315,6 @@ STATIC void __sdevent_exit(event_node_t *node, int force)
         int ret;
         net_handle_t parent, socknh;
         char name[MAX_NAME_LEN];
-        void *ctx;
-        void (*callback)(void *);
 
         memset(&parent, 0x0, sizeof(net_handle_t));
         memset(&socknh, 0x0, sizeof(net_handle_t));
@@ -334,10 +324,6 @@ STATIC void __sdevent_exit(event_node_t *node, int force)
                 return;
 
         socknh = node->sock->nh;
-        //parent = node->sock->parent;
-        callback = node->reset;
-        ctx = node->ctx;
-        node->ctx = NULL;
 
         sprintf(name, "%s", _inet_ntoa(node->sock->nh.u.sd.addr));
 
@@ -346,18 +332,6 @@ STATIC void __sdevent_exit(event_node_t *node, int force)
         __sdevent_unlock(node);
 
         DBUG("close %u\n", socknh.u.sd.sd);
-
-        if (ctx) {
-                LTG_ASSERT(callback);
-
-                if (sche_self()) {
-                        sche_task_new("netable_close", callback, ctx, -1);
-                } else {
-                        callback(ctx);
-                }
-        } else {
-                //rpc_table_reset(__rpc_table__, &socknh.u.sd, NULL);
-        }
 }
 
 STATIC int __sdevent_read_recv(event_node_t *node)
@@ -372,7 +346,7 @@ STATIC int __sdevent_read_recv(event_node_t *node)
                 GOTO(err_ret, ret);
 
         conn = node->sock;
-        ret = conn->proto.reader(conn, node->ctx);
+        ret = conn->proto.reader(conn, NULL);
         if (unlikely(ret)) {
                 goto err_lock;
         }
@@ -519,8 +493,7 @@ err_ret:
         return ret;
 }
 
-int sdevent_add(const net_handle_t *socknh, const nid_t *nid, int event,
-                void *ctx, func_t reset)
+int sdevent_add(const net_handle_t *socknh, const nid_t *nid, int event)
 {
         int ret, sd;
         struct epoll_event ev;
@@ -559,8 +532,6 @@ int sdevent_add(const net_handle_t *socknh, const nid_t *nid, int event,
                 UNIMPLEMENTED(__DUMP__);
 
         node->ev |= event;
-        node->ctx = ctx;
-        node->reset = reset;
 
         __sdevent_unlock(node);
 
@@ -608,8 +579,6 @@ int sdevent_open(net_handle_t *nh, const net_proto_t *proto)
         node->sock->nh.u.sd.type = SOCKID_NORMAL;
         node->sock->nh.type = NET_HANDLE_TRANSIENT;
         *nh = node->sock->nh;
-        node->heartbeat_seq_send = 0;
-        node->heartbeat_seq_reply = 0;
 
         __sdevent_unlock(node);
 
@@ -623,8 +592,8 @@ err_ret:
         return ret;
 }
 
-int sdevent_connect(const sock_info_t *info,
-                    net_handle_t *nh, net_proto_t *proto, int nonblock, int timeout)
+int sdevent_connect(const sock_info_t *info, net_handle_t *nh, net_proto_t *proto,
+                    int nonblock, int timeout)
 {
         int ret;
 
@@ -642,11 +611,6 @@ err_close:
         close(nh->u.sd.sd);
 err_ret:
         return ret;
-}
-
-void sdevent_close_force(const net_handle_t *nh)
-{
-        __sdevent_close(nh);
 }
 
 STATIC int __sdevent_queue__(event_node_t *node, const ltgbuf_t *buf)
@@ -792,58 +756,6 @@ int sdevent_recv(int fd)
         event_node_t *node;
         node = &sdevent->array[fd];
         return __sdevent_read_recv(node);
-}
-
-int sdevent_heartbeat_set(const sockid_t *id, const uint64_t *send, const uint64_t *reply)
-{
-        int ret;
-        event_node_t *node;
-        net_handle_t nh;
-
-        sock2nh(&nh, id);
-        ret = __sdevent_rdlock(&nh, &node);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        if (send) {
-                node->heartbeat_seq_send = *send;
-        }
-
-        if (reply) {
-                node->heartbeat_seq_reply = *reply;
-        }
-
-        __sdevent_unlock(node);
-
-        return 0;
-err_ret:
-        return ret;
-}
-
-int sdevent_heartbeat_get(const sockid_t *id, uint64_t *send, uint64_t *reply)
-{
-        int ret;
-        event_node_t *node;
-        net_handle_t nh;
-
-        sock2nh(&nh, id);
-        ret = __sdevent_rdlock(&nh, &node);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        if (send) {
-                *send = node->heartbeat_seq_send;
-        }
-
-        if (reply) {
-                *reply = node->heartbeat_seq_reply;
-        }
-
-        __sdevent_unlock(node);
-
-        return 0;
-err_ret:
-        return ret;
 }
 
 int sdevent_init(int max)

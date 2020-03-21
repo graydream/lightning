@@ -77,6 +77,27 @@ err_ret:
  * @param _args
  * @return
  */
+
+#if 0
+typedef struct {
+        int fd;
+} __ctx_t;
+
+static void __main_loop_close_task(void *_ctx)
+{
+        __ctx_t *ctx = _ctx;
+        net_handle_t nh;
+
+        nh.u.type = 
+
+        sdevent_close();
+
+        ltg_free((void **)&_ctx);
+}
+
+#endif
+
+
 STATIC void *__main_loop_worker(void *_args)
 {
         int ret, nfds;

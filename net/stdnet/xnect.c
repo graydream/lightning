@@ -124,7 +124,7 @@ static int __sock_connect(net_handle_t *nh, const sock_info_t *info,
 
         return 0;
 err_fd:
-        sdevent_close_force(nh);
+        sdevent_close(nh);
 err_ret:
         return ret;
 }
