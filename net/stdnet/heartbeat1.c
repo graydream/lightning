@@ -158,9 +158,10 @@ int heartbeat_add1(const sockid_t *sockid, const char *name, void *ctx,
               _inet_ntoa(ent->sockid.addr), (float)timeout / 1000 / 1000);
 
         if (sche_self()) {
-                sche_task_new("corenet_tcp_close", __heartbeat_loop, ent, -1);
+                sche_task_new("heartbeat", __heartbeat_loop, ent, -1);
         } else {
-                UNIMPLEMENTED(__DUMP__);
+                ret = main_loop_request(__heartbeat_loop, ent, "heartbeat");
+                LTG_ASSERT(ret == 0);
         }
 
         return 0;

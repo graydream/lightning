@@ -83,6 +83,7 @@ add_library(lightning STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/net/corenet/corenet_tcp.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/corenet/corenet_connect_tcp.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/corenet/corenet_maping.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/net/corenet/corenet_hb.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/corenet/rdma_event.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/corenet/corenet.c
 
