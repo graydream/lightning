@@ -9,7 +9,6 @@ typedef enum {
         NET_HANDLE_TRANSIENT, /*temporary connect*/
 } net_handle_type_t;
 
-
 typedef struct {
         void *rdma_handler;
         uint32_t addr;
@@ -60,40 +59,6 @@ static inline int sockid_cmp(const sockid_t *sock1, const sockid_t *sock2)
         return 0;
 }
 
-#if 0
-static inline int nid_cmp(const nid_t *lhs, const nid_t *rhs)
-{
-        if (lhs->id < rhs->id)
-                return -1;
-        else if (lhs->id > rhs->id)
-                return 1;
-        return 0;
-}
-#endif
-
-static inline int net_handle_cmp(const net_handle_t *lhs, const  net_handle_t *rhs)
-{
-        if (lhs->type == rhs->type) {
-                if (lhs->type == NET_HANDLE_PERSISTENT) {
-                        return nid_cmp(&lhs->u.nid, &rhs->u.nid);
-                } else {
-                        return sockid_cmp(&lhs->u.sd, &rhs->u.sd);
-                }
-        } else {
-                if (lhs->type < rhs->type)
-                        return -1;
-                else if (lhs->type > rhs->type)
-                        return 1;
-
-                if (lhs->u.nid.id < rhs->u.nid.id)
-                        return -1;
-                else if (lhs->u.nid.id > rhs->u.nid.id)
-                        return 1;
-
-                return 0;
-        }
-}
-
 static inline void id2nh(net_handle_t *nh, const nid_t *id)
 {
         nh->u.nid = *id;
@@ -104,13 +69,6 @@ static inline void sock2nh(net_handle_t *nh, const sockid_t *id)
 {
         nh->u.sd = *id;
         nh->type = NET_HANDLE_TRANSIENT;
-}
-
-static inline void net_handle_reset(void *_nh)
-{
-        net_handle_t *nh = (net_handle_t *)_nh;
-
-        nh->type = NET_HANDLE_NULL;
 }
 
 typedef struct {

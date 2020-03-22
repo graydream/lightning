@@ -601,37 +601,6 @@ const void IO_FUNC *_opaque_decode(const void *buf, uint32_t len, ...)
         return pos;
 }
 
-void _str_split(char *from, char split, char *to[], int *_count)
-{
-        int max, i;
-        char *pos;
-
-        if (strlen(from) == 0) {
-                *_count = 0;
-                return;
-        }
-        
-        if (from[strlen(from) - 1] == ',')
-                from[strlen(from) - 1] = '\0';
-
-        pos = from;
-        max = *_count;
-        to[0] = pos;
-        for (i = 1; i < max; i++) {
-                pos = strchr(pos, split);
-                if (pos) {
-                        pos[0] = '\0';
-                        pos++;
-                } else {
-                        break;
-                }
-
-                to[i] = pos;
-        }
-
-        *_count = i;
-}
-
 int _set_text(const char *path, const char *value, int size, int flag)
 {
         int ret, fd;
@@ -872,11 +841,6 @@ void _backtrace(const char *name)
         _backtrace_caller(name, 2, MAX_BACKTRACE - 2);
 }
 
-void _backtrace1(const char *name, int start, int end)
-{
-        _backtrace_caller(name, start, start + end);
-}
-
 void calltrace(char *buf, size_t buflen)
 {
         void* array[MAX_BACKTRACE] = {0};
@@ -928,50 +892,6 @@ int ltg_thread_create(thread_func fn, void *arg, const char *name)
                 GOTO(err_ret, ret);
 
         DINFO("thread %s started\n", name);
-
-        return 0;
-err_ret:
-        return ret;
-}
-
-int eventfd_poll(int fd, int tmo, uint64_t *_event)
-{
-        int ret, event;
-        struct pollfd pfd;
-        uint64_t e;
-
-        pfd.fd = fd;
-        pfd.events = POLLIN | POLLRDHUP | POLLERR | POLLHUP;
-        
-        while (1) { 
-                event = poll(&pfd, 1, tmo * 1000 * 1000);
-                if (event < 0)  {
-                        ret = errno;
-                        if (ret == EINTR) {
-                                DBUG("poll EINTR\n");
-                                continue;
-                        } else
-                                GOTO(err_ret, ret);
-                }
-
-                e = 0;
-                if (event) {
-                        ret = read(fd, &e, sizeof(e));
-                        if (ret < 0)  {
-                                ret = errno;
-                                if (ret == EAGAIN) {
-                                } else {
-                                        GOTO(err_ret, ret);
-                                }
-                        }
-                }
-
-                if (_event) {
-                        *_event = e;
-                }
-                
-                break;
-        }
 
         return 0;
 err_ret:

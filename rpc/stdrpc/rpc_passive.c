@@ -153,7 +153,7 @@ static void *__rpc_accept_worker(void *_arg)
 
                 ret = __rpc_accept();
                 if (unlikely(ret)) {
-                        ret = _errno(ret);
+                        ret = _errno_net(ret);
                         if (ret == EAGAIN)
                                 continue;
                         else

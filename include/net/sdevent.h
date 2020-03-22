@@ -18,9 +18,6 @@ be careful to use it
 #include "sock_lib.h"
 
 typedef struct epoll_event event_t;
-typedef int (*event_handler_t)(event_t *);
-typedef int (*event_handler_func)(event_t *);
-
 
 int sdevent_init(int max);
 void sdevent_destroy(void);
