@@ -42,7 +42,7 @@ static int __heartbeat_check(entry_t *ent)
         uint64_t sent, reply;
 
         if (!ent->connected(ent->ctx)) {
-                DWARN("%s already closed\n", ent->name);
+                DINFO("%s already closed\n", ent->name);
                 ret = ENONET;
                 GOTO(err_ret, ret);
         }
