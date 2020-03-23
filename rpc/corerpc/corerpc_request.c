@@ -16,6 +16,7 @@ typedef struct {
 
 extern rpc_table_t *corerpc_self_byctx(void *);
 extern rpc_table_t *corerpc_self();
+extern int corerpc_inited;
 
 static void __corerpc_post_task(void *arg1, void *arg2, void *arg3, void *arg4)
 {
@@ -245,8 +246,8 @@ int IO_FUNC corerpc_postwait(const char *name, const coreid_t *coreid, const voi
         op.msg_type = msg_type;
         op.msg_size = msg_size;
         op.timeout = timeout;
-        
-        if (likely(ltgconf_global.daemon)) {
+
+        if (likely(ltgconf_global.daemon && corerpc_inited)) {
                 ret = __corerpc_postwait(name, &op);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);

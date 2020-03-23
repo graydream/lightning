@@ -136,6 +136,7 @@ int heartbeat_add1(const sockid_t *sockid, const char *name, void *ctx,
         entry_t *ent;
 
         LTG_ASSERT(sockid->addr);
+        LTG_ASSERT(sockid->sd != -1);
 
         ret = ltg_malloc((void **)&ent, sizeof(*ent));
         if (unlikely(ret))

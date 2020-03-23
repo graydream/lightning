@@ -8,6 +8,8 @@
 #include "ltg_rpc.h"
 #include "ltg_core.h"
 
+int corerpc_inited = 0;
+
 rpc_table_t *corerpc_self()
 {
         return core_tls_get(NULL, VARIABLE_CORERPC);
@@ -134,6 +136,8 @@ int corerpc_init()
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
+        corerpc_inited = 1;
+        
         return 0;
 err_ret:
         return ret;

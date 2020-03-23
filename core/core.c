@@ -421,18 +421,19 @@ int core_init(uint64_t mask, int flag)
                         UNIMPLEMENTED(__DUMP__);
         }
 
-        ret = corenet_init(flag);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        ret = corerpc_init();
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        ret = corenet_maping_init();
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
+        if (flag & CORE_FLAG_NET) {
+                ret = corenet_init(flag);
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+                
+                ret = corerpc_init();
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+                
+                ret = corenet_maping_init();
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+        }
 #if 1
         ret = core_latency_init();
         if (unlikely(ret))
