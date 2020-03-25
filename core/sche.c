@@ -1135,3 +1135,20 @@ int sche_getid()
                 return sche->id;
 }
 
+void sche_unyielding(int unyielding)
+{
+        sche_t *sche = sche_self();
+        taskctx_t *taskctx;
+
+        LTG_ASSERT(sche);
+        LTG_ASSERT(sche->running_task != -1);
+        taskctx = &sche->tasks[sche->running_task];
+
+        if (unyielding) {
+                LTG_ASSERT(taskctx->pre_yield == 0);
+                taskctx->pre_yield = 1;
+        } else {
+                LTG_ASSERT(taskctx->pre_yield);
+                taskctx->pre_yield = 0;
+        }
+}

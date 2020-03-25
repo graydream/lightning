@@ -339,6 +339,7 @@ void sche_fingerprint_new(sche_t *sche, taskctx_t *taskctx);
 
 int sche_task_run(int group, func_va_t exec, ...);
 int sche_getid();
+void sche_unyielding(int unyielding);
 
 #if 1
 
