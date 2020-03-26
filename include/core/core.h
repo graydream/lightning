@@ -140,7 +140,6 @@ int core_register_poller(const char *name, func2_t func, void *ctx);
 int core_register_routine(const char *name, func2_t func, void *ctx);
 int core_register_scan(const char *name, func2_t func, void *ctx);
 uint32_t get_io();
-int perf_init(int target_begin, int target_end);
 
 #if 1
 void core_ring_queue(int coreid, ring_ctx_t *ctx,
