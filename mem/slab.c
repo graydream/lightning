@@ -81,7 +81,7 @@ static int __slab_init__(const char *name, slab_bucket_t *slab, int split,
         INIT_LIST_HEAD(&slab->used);
         strcpy(slab->name, name);
 
-        DINFO("init split %u %s\n", slab->split, name);
+        DBUG("init split %u %s\n", slab->split, name);
 
         return 0;
 }
