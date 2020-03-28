@@ -23,8 +23,7 @@ typedef struct {
         int coredump;
         int restart;
         int rdma;
-        int testing;
-        int maxcore;
+        int numa;
         int rpc_timeout;
         int backtrace;
         int coreflag;
@@ -41,7 +40,6 @@ typedef struct {
         int lease_timeout;
         int hb_timeout;
         int hb_retry;
-        int tcp_discovery;
 } ltgconf_t;
 
 extern ltgconf_t ltgconf_global;
