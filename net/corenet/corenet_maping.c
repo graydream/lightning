@@ -502,10 +502,20 @@ static void __corenet_maping_close_entry(corenet_maping_t *entry,
                 if (sockid->sd == -1) {
                         continue;
                 }
-                        
-                if (_sockid && _sockid->sd == sockid->sd
+
+                if (_sockid == NULL) {
+                        DINFO("close all sock %s nid[%u], sockid %u\n",
+                              netable_rname(&entry->nid), entry->nid.id,
+                              sockid->sd);
+
+                        __corenet_maping_close_finally__(&entry->nid, sockid);
+                        sockid->sd = -1;
+                        continue;
+                }
+
+                if (_sockid->sd == sockid->sd
                     && _sockid->seq == sockid->seq) {
-                        DBUG("close maping one sock %s nid[%u], sockid %u\n",
+                        DBUG("close one sock %s nid[%u], sockid %u\n",
                               netable_rname(&entry->nid), entry->nid.id,
                               sockid->sd);
 
@@ -513,15 +523,9 @@ static void __corenet_maping_close_entry(corenet_maping_t *entry,
                         sockid->sd = -1;
                         break;
                 } else {
-                        DWARN("close maping all sock %s nid[%u], sockid %u\n",
+                        DBUG("skip close %s nid[%u], sockid %u\n",
                               netable_rname(&entry->nid), entry->nid.id,
                               sockid->sd);
-
-                        continue;
-#if 0
-                        __corenet_maping_close_finally__(&entry->nid, sockid);
-                        sockid->sd = -1;
-#endif
                 }
         }
 }

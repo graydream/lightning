@@ -339,9 +339,9 @@ void __mem_ring_scan__(core_t *core, mem_ring_head_t *head)
                 hpage = (void *)pos;
 
                 if (now - head->time > 30) {
-                        DWARN("%s[%d] used ring %p, ref %d, status %d, seq[%d]\n",
+                        DWARN("%s[%d] used ring %p, ref %d, status %d, seq[%d], used %d\n",
                               core->name, core->hash, hpage, hpage->ref,
-                              hpage->status, seq);
+                              hpage->status, seq, now - head->time);
                         seq++;
                 }
         }

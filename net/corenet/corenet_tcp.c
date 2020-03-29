@@ -1103,9 +1103,9 @@ static int __corenet_tcp_exec(void *ctx, corenet_node_t *node, event_t *ev)
         sockid_t sockid = node->sockid;
 
         if (node->ev == 0 || node->sockid.sd == -1) {
-                 DERROR("node ev:%d, sockid sd:%d, ev->events:0x%x\n", node->ev, node->sockid.sd, ev->events);
-                 ret = ESTALE;
-                 return ret;
+                DERROR("node ev:%d, sockid sd:%d, ev->events:0x%x\n", node->ev, node->sockid.sd, ev->events);
+                ret = ESTALE;
+                return ret;
         }
 
         DBUG("ev %x\n", ev->events);
