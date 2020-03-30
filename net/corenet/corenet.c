@@ -36,7 +36,7 @@ static void __corenet_scan(void *_core, void *var, void *_corenet)
         (void) _corenet;
         (void) var;
 
-        if (unlikely(!ltgconf_global.rdma || ltgconf_global.tcp_discovery)) {
+        if (unlikely(!ltgconf_global.rdma)) {
                 corenet_tcp_check();
         }
 
@@ -308,15 +308,21 @@ int __corenet_getaddr__(uint32_t port, corenet_addr_t *addr)
         int ret;
         core_t *core = core_self();
 
-        ret = __corenet_getaddr____(core, port, addr, 0);
-        if (ret) {
-                if (ret == ENODEV) {
-                        ret = __corenet_getaddr____(core, port, addr, 1);
-                        if (ret)
+        if (ltgconf_global.numa) {
+                ret = __corenet_getaddr____(core, port, addr, 0);
+                if (ret) {
+                        if (ret == ENODEV) {
+                                ret = __corenet_getaddr____(core, port, addr, 1);
+                                if (ret)
+                                        GOTO(err_ret, ret);
+                        } else {
                                 GOTO(err_ret, ret);
-                } else {
-                        GOTO(err_ret, ret);
+                        }
                 }
+        } else {
+                ret = __corenet_getaddr____(core, port, addr, 1);
+                if (ret)
+                        GOTO(err_ret, ret);
         }
         
         return 0;

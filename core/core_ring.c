@@ -251,7 +251,8 @@ inline static void __core_ring_request(void *arg)
         request_ctx->retval = request_ctx->exec(request_ctx->ap);
 }
 
-inline int core_ring_wait(int coreid, int group, const char *name, func_va_t exec, ...)
+inline int core_ring_wait(int coreid, int group, const char *name,
+                          func_va_t exec, ...)
 {
         int ret;
         request_ctx_t request_ctx;

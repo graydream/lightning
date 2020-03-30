@@ -71,7 +71,6 @@ int ltg_conf_init(ltgconf_t *ltgconf, const char *system_name)
 
         memset(ltgconf, 0x0, sizeof(*ltgconf));
 
-        ltgconf->maxcore = 1;
         ltgconf->hb_retry = 2;
         ltgconf->coredump = 1;
         ltgconf->wmem_max = XMITBUF;
