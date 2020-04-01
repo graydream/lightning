@@ -90,6 +90,8 @@ static void __heartbeat_task(void *_ent)
 
         DBUG("heartbeat to %s/%s send %llu reply %llu\n", ent->name,
               _inet_ntoa(ent->sockid.addr), (LLU)ent->sent, (LLU)ent->reply);
+
+        ANALYSIS_BEGIN(0);
         
         ret = ent->send(ent->ctx, sent);
         if (unlikely(ret)) {
@@ -101,6 +103,7 @@ static void __heartbeat_task(void *_ent)
                      _inet_ntoa(ent->sockid.addr), (LLU)ent->sent, (LLU)ent->reply);
         }
         
+        ANALYSIS_END(0, 1000 * 100, NULL);
         ent->refcount--;
 }
 

@@ -115,12 +115,12 @@ STATIC int __sdevent_lock__(event_node_t *node, int flag)
                 if (flag & RDLOCK) {
                         ret = ltg_rwlock_tryrdlock(&node->lock);
                         if (unlikely(ret))
-                                GOTO(err_ret, ret);
+                                goto err_ret;
                 } else {
                         LTG_ASSERT(flag & WRLOCK);
                         ret = ltg_rwlock_trywrlock(&node->lock);
                         if (unlikely(ret))
-                                GOTO(err_ret, ret);
+                                goto err_ret;
                 }
         } else {
                 if (flag & RDLOCK) {
@@ -262,7 +262,7 @@ STATIC int __sdevent_read_recv(event_node_t *node)
 
         ret = __sdevent_lock__(node, RDLOCK | TRYLOCK);
         if (unlikely(ret))
-                GOTO(err_ret, ret);
+                goto err_ret;
 
         conn = node->sock;
         ret = conn->proto.reader(conn, NULL);

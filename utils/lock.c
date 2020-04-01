@@ -147,7 +147,7 @@ STATIC int __ltg_rwlock_trylock0(ltg_rwlock_t *rwlock, char type)
                         goto err_ret;
         } else {
                 ret = EBUSY;
-                GOTO(err_ret, ret);
+                goto err_ret;
         }
 
         return 0;

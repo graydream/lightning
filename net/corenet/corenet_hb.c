@@ -23,6 +23,7 @@ static int __corenet_hb_connected(void *_ctx)
 {
         hb_ctx_t *ctx = _ctx;
 
+        LTG_ASSERT(ctx->sockid.sd != -1);
         return corenet_maping_connected(&ctx->localid, &ctx->sockid);
 }
 
@@ -64,6 +65,8 @@ static int __corenet_hb_close_va(va_list ap)
 
         corenet_maping_close(&ctx->coreid.nid, &ctx->sockid);
 
+        DINFO("close %s\n", netable_rname(&ctx->coreid.nid));
+        
         return 0;
 }
 static int __corenet_hb_close(void *_ctx)
@@ -90,6 +93,8 @@ int corenet_hb_add(const coreid_t *coreid, const sockid_t *sockid)
         char name[MAX_NAME_LEN];
         hb_ctx_t *ctx;
 
+        LTG_ASSERT(sockid->sd != -1);
+        
         tmo = 1000 * 1000 * ltgconf_global.hb_timeout;
         snprintf(name, MAX_NAME_LEN, "%s/%d", netable_rname(&coreid->nid),
                  coreid->idx);
