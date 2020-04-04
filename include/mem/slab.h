@@ -2,7 +2,7 @@
 #define __SLAB_H__
 
 
-#define SLAB_SEG_MAX 1024
+#define SLAB_SEG_MAX (1024 * 10)
 
 typedef struct {
         char name[MAX_NAME_LEN];
