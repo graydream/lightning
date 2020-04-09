@@ -35,8 +35,20 @@ int heartbeat_init()
         return 0;
 }
 
+STATIC void __heartbeat_close(entry_t *ent)
+{
+        while (ent->refcount) {
+                DWARN("wait for free %d\n", ent->refcount);
+                sche_task_sleep("close sleep", 1000 * 100);
+        }
 
-static int __heartbeat_check(entry_t *ent)
+        ent->free(ent->ctx);
+        ltg_free((void **)&ent);
+        
+        return;
+}
+
+STATIC int __heartbeat_check(entry_t *ent)
 {
         int ret, lost;
         uint64_t sent, reply;
@@ -56,30 +68,18 @@ static int __heartbeat_check(entry_t *ent)
         } else if (lost > ent->retry) {
                 DWARN("heartbeat %s fail, lost ack %u\n", ent->name, lost);
                 ret = ETIME;
-                GOTO(err_ret, ret);
+                GOTO(err_close, ret);
         }
 
         return 0;
+err_close:
+        ent->close(ent->ctx);
 err_ret:
+        __heartbeat_close(ent);
         return ret;
 }
 
-static void __heartbeat_close(entry_t *ent)
-{
-        ent->close(ent->ctx);
-
-        while (ent->refcount) {
-                DWARN("wait for free %d\n", ent->refcount);
-                sche_task_sleep("close sleep", 1000);
-        }
-
-        ent->free(ent->ctx);
-        ltg_free((void **)&ent);
-        
-        return;
-}
-
-static void __heartbeat_task(void *_ent)
+STATIC void __heartbeat_task(void *_ent)
 {
         int ret;
         uint64_t sent;
@@ -122,7 +122,6 @@ static void __heartbeat_loop(void *_ent)
 
         ret = __heartbeat_check(ent);
         if (ret) {
-                __heartbeat_close(ent);
                 return;
         }
 
@@ -158,8 +157,9 @@ int heartbeat_add1(const sockid_t *sockid, const char *name, void *ctx,
         ent->reply = 0;
         strcpy(ent->name, name);
 
-        DINFO("add heartbeat %s/%s, timeout %f\n", ent->name,
-              _inet_ntoa(ent->sockid.addr), (float)timeout / 1000 / 1000);
+        DINFO("add heartbeat %s/%s, timeout %f, sock (%d, %d)\n", ent->name,
+              _inet_ntoa(ent->sockid.addr), (float)timeout / 1000 / 1000,
+              sockid->sd, sockid->seq);
 
         if (sche_self()) {
                 sche_task_new("heartbeat", __heartbeat_loop, ent, -1);

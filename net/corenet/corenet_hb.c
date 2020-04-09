@@ -63,10 +63,10 @@ static int __corenet_hb_close_va(va_list ap)
 
         va_end(ap);
 
-        corenet_maping_close(&ctx->coreid.nid, &ctx->sockid);
-
         DINFO("close %s\n", netable_rname(&ctx->coreid.nid));
         
+        corenet_maping_close(&ctx->coreid.nid, &ctx->sockid);
+
         return 0;
 }
 static int __corenet_hb_close(void *_ctx)

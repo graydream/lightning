@@ -301,33 +301,32 @@ STATIC int __corenet_maping_update(const nid_t *nid, const sockid_t *_sockid,
                 entry->connected = corenet_tcp_connected;
         }
         
-        if (entry->connected) {
-                for (int i = 0; i < CORE_MAX; i++) {
-                        if (!core_usedby(coremask, i))
-                                continue;
-                        
-                        if (entry->connected(&entry->sockid[i])) {
-                                DERROR("%s[%d] connected, restart for safe\n",
-                                        netable_rname(nid), i);
-                                EXIT(EAGAIN);
-                        }
+        LTG_ASSERT(entry->connected);
 
-                        coreid.idx = i;
-                        sockid_t sockid = _sockid[i];
-                        sockid.request = entry->request;
-                        ret = corenet_hb_add(&coreid, &sockid);
-                        if (unlikely(ret))
-                                UNIMPLEMENTED(__DUMP__);
+        for (int i = 0; i < CORE_MAX; i++) {
+                if (!core_usedby(coremask, i))
+                        continue;
+                        
+                if (entry->connected(&entry->sockid[i])) {
+                        DERROR("%s[%d] connected, restart for safe\n",
+                               netable_rname(nid), i);
+                        EXIT(EAGAIN);
                 }
+
+                coreid.idx = i;
+                sockid_t sockid = _sockid[i];
+                sockid.request = entry->request;
+                ret = corenet_hb_add(&coreid, &sockid);
+                if (unlikely(ret))
+                        UNIMPLEMENTED(__DUMP__);
         }
 
         memcpy(entry->sockid, _sockid, sizeof(*_sockid) * CORE_MAX);
-        
         entry->loading = 0;
         entry->coremask = coremask;
 
         __corenet_maping_resume__(&entry->list, nid, 0);
-
+        
         ltg_spin_unlock(&entry->lock);
 
         return 0;

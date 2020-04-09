@@ -52,6 +52,7 @@ typedef struct {
 } corenet_rdma_fwd_t;
 
 typedef corenet_rdma_node_t corenet_node_t;
+static int __seq__ = 1;
 
 static void *__corenet_get()
 {
@@ -622,7 +623,7 @@ inline static int IO_FUNC __corenet_rdma_handle_wc(struct ibv_wc *wc, __corenet_
         return 0;
 }
 
-static int __corenet_rdma_handle_wc_error(struct ibv_wc *wc, __corenet_t *corenet)
+STATIC int __corenet_rdma_handle_wc_error(struct ibv_wc *wc, __corenet_t *corenet)
 {
         (void)corenet;
         rdma_req_t *req;
@@ -1291,7 +1292,7 @@ err_ret:
         return ret;
 }
 
-static int __corenet_rdma_disconnect(va_list ap)
+STATIC int __corenet_rdma_disconnect(va_list ap)
 {
         rdma_conn_t *rdma_handler = va_arg(ap, rdma_conn_t *);
         va_end(ap);
@@ -1383,7 +1384,7 @@ static int __corenet_rdma_resolve_route(struct rdma_cm_id *cm_id, core_t *core, 
 
         // create rdma_handler, qp, post recv
 
-        sockid->seq = _random();
+        sockid->seq = __seq__++;
         sockid->type = SOCKID_CORENET;
 
         ctx = slab_static_alloc(sizeof(corerpc_ctx_t));
@@ -1808,7 +1809,7 @@ void corenet_rdma_connect_request(struct rdma_cm_event *ev, void *_core)
         ctx->running = 0;
 
         ctx->sockid.addr = ((struct sockaddr_in *)(&ev->id->route.addr.dst_addr))->sin_addr.s_addr;
-        ctx->sockid.seq = _random();
+        ctx->sockid.seq = __seq__++;
         ctx->sockid.type = SOCKID_CORENET;
         ctx->sockid.reply = corerpc_reply_rdma;
 
