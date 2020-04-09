@@ -303,6 +303,8 @@ STATIC int __corenet_maping_update(const nid_t *nid, const sockid_t *_sockid,
         
         LTG_ASSERT(entry->connected);
 
+        DBUG("nid %s %d, %p\n", netable_rname(nid), nid->id, entry);
+        
         for (int i = 0; i < CORE_MAX; i++) {
                 if (!core_usedby(coremask, i))
                         continue;
@@ -678,25 +680,12 @@ err_ret:
         return ret;
 }
 
-static int __corenet_mapping_connected_va(va_list ap)
+int corenet_maping_connected(const nid_t *nid, const sockid_t *sockid)
 {
-        const nid_t *nid = va_arg(ap, const nid_t *);
-        const sockid_t *sockid = va_arg(ap, const sockid_t *);
         corenet_maping_t *entry;
 
-        va_end(ap);
-
         entry = &__corenet_maping_get__()[nid->id];
-        if (entry->connected == NULL) {
-                return 0;
-        } else {
-                return entry->connected(sockid);
-        }
-}
+        LTG_ASSERT(entry->connected);
 
-int corenet_maping_connected(const coreid_t *coreid, const sockid_t *sockid)
-{
-        return core_request(coreid->idx, -1, "corenet connected",
-                            __corenet_mapping_connected_va,
-                            &coreid->nid, sockid);
+        return entry->connected(sockid);
 }

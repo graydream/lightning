@@ -24,7 +24,7 @@ static int __corenet_hb_connected(void *_ctx)
         hb_ctx_t *ctx = _ctx;
 
         LTG_ASSERT(ctx->sockid.sd != -1);
-        return corenet_maping_connected(&ctx->localid, &ctx->sockid);
+        return corenet_maping_connected(&ctx->coreid.nid, &ctx->sockid);
 }
 
 static int __corenet_hb_send_va(va_list ap)
@@ -108,7 +108,7 @@ int corenet_hb_add(const coreid_t *coreid, const sockid_t *sockid)
         ret = core_getid(&ctx->localid);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
-        
+
         ret = heartbeat_add1(sockid, name, ctx,
                              __corenet_hb_connected,
                              __corenet_hb_send,
