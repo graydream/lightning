@@ -392,7 +392,7 @@ int corenet_send(void *ctx, const sockid_t *sockid, ltgbuf_t *buf)
 void corenet_close(const sockid_t *sockid)
 {
         if (ltgconf_global.rdma && sockid->rdma_handler != NULL) {
-                corenet_rdma_close((rdma_conn_t *)sockid->rdma_handler);
+                corenet_rdma_close((rdma_conn_t *)sockid->rdma_handler, __FUNCTION__);
         } else {
                 corenet_tcp_close(sockid);
         }

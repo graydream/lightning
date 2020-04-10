@@ -102,7 +102,7 @@ STATIC void __corenet_maping_close_finally__(const nid_t *nid, const sockid_t *s
         (void) nid;
         
         if (ltgconf_global.rdma && sockid->rdma_handler != NULL)
-                corenet_rdma_close((rdma_conn_t *)sockid->rdma_handler);
+                corenet_rdma_close((rdma_conn_t *)sockid->rdma_handler, __FUNCTION__);
         else
                 corenet_tcp_close(sockid);
 

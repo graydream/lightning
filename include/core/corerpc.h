@@ -87,7 +87,9 @@ void corerpc_destroy(rpc_table_t **_rpc_table);
 
 //rpc table
 int corerpc_init();
+
 #if ENABLE_RDMA
+
 void corerpc_rdma_reset(const sockid_t *sockid);
 int corerpc_rdma_recv_msg(void *_ctx, void *iov, int *_count);
 int corerpc_rdma_recv_data(void *_ctx, void *_msg_buf);

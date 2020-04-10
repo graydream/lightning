@@ -117,7 +117,7 @@ void corenet_rdma_check()
 void __rdma_destroy_qp(struct rdma_cm_id *cm_id, const char *env)
 {
         DINFO("env %s\n", env);
-        CMID_DUMP(cm_id);
+        CMID_DUMP_L(DINFO, cm_id);
 
         // rdma_destroy_qp(cm_id);
         ibv_destroy_qp(cm_id->qp);
@@ -130,7 +130,7 @@ static void __corenet_rdma_free_node(corenet_rdma_t *rdma_net, corenet_node_t *n
         }
 
         CORENET_RDMA_NODE_DUMP(node);
-        RDMA_CONN_DUMP(&node->handler);
+        RDMA_CONN_DUMP_L(DINFO, &node->handler);
 
         //  ltg_free((void **)&node->ctx);
 
@@ -284,8 +284,8 @@ static void __corenet_rdma_close(rdma_conn_t *rdma_handler)
         corenet_rdma_t *__corenet_rdma__ = (corenet_rdma_t *)corenet->rdma_net;
         struct rdma_cm_id *cm_id = rdma_handler->cm_id;
 
-        RDMA_CONN_DUMP(rdma_handler);
-        CMID_DUMP(rdma_handler->cm_id);
+        RDMA_CONN_DUMP_L(DINFO, rdma_handler);
+        CMID_DUMP_L(DINFO, rdma_handler->cm_id);
 
         LTG_ASSERT( rdma_handler->nr_get == rdma_handler->nr_ack);
 
@@ -302,6 +302,8 @@ static void __corenet_rdma_close(rdma_conn_t *rdma_handler)
 			sr = sr->next;
 		}
 	}
+
+	ibv_dereg_mr(rdma_handler->iov_mr);
 
         ltg_free(&rdma_handler->iov_addr);
 
@@ -344,7 +346,7 @@ void corenet_rdma_put(rdma_conn_t *rdma_handler)
         }
 }
 
-void corenet_rdma_close(rdma_conn_t *rdma_handler)
+void corenet_rdma_close(rdma_conn_t *rdma_handler, const char *caller)
 {
         int ret;
         corenet_node_t *node = container_of(rdma_handler, corenet_node_t, handler);
@@ -353,7 +355,9 @@ void corenet_rdma_close(rdma_conn_t *rdma_handler)
                 return;
 
         if (rdma_handler->is_closing == 0) {
-                RDMA_CONN_DUMP(rdma_handler);
+                DINFO("caller %s\n", caller);
+
+                RDMA_CONN_DUMP_L(DINFO, rdma_handler);
 
                 LTG_ASSERT(rdma_handler->cm_id != NULL);
                 ret = rdma_disconnect(rdma_handler->cm_id);
@@ -656,7 +660,7 @@ STATIC int __corenet_rdma_handle_wc_error(struct ibv_wc *wc, __corenet_t *corene
                       ibv_wc_status_str(wc->status), (int)wc->status, rdma_handler);
         }
 
-        corenet_rdma_close(rdma_handler);
+        corenet_rdma_close(rdma_handler, __FUNCTION__);
 
         //DINFO("rdma_handler (%p %p) ref %d\n", req, rdma_handler, rdma_handler->ref);
         corenet_rdma_put(rdma_handler);
@@ -945,7 +949,7 @@ int __rdma_create_cq(rdma_info_t **_dev, struct rdma_cm_id *cm_id, int ib_port, 
         void *private_mem;
         uint64_t private_mem_size = 0;
 
-        CMID_DUMP(cm_id);
+        CMID_DUMP_L(DINFO, cm_id);
 
         LTG_ASSERT(corenet->dev_count < MAX_RDMA_DEV);
         dev = &corenet->dev_list[corenet->dev_count];
@@ -987,7 +991,7 @@ int __rdma_create_cq(rdma_info_t **_dev, struct rdma_cm_id *cm_id, int ib_port, 
 
         DINFO("private_mem %p size %jd dev_count %d\n", private_mem, private_mem_size, corenet->dev_count);
 
-        dev->mr = (struct ibv_mr *)rdma_register_mgr(cm_id->pd, private_mem, private_mem_size);
+        dev->mr = (struct ibv_mr *)rdma_register_mr(cm_id->pd, private_mem, private_mem_size);
         if (dev->mr == NULL)
                 LTG_ASSERT(0);
 
@@ -1007,7 +1011,7 @@ err_ret:
         return ret;
 }
 
-void *rdma_register_mgr(void *pd, void *buf, size_t size)
+void *rdma_register_mr(void *pd, void *buf, size_t size)
 {
         int mr_flags = 0;
         struct ibv_mr *mr = NULL;
@@ -1022,6 +1026,7 @@ void *rdma_register_mgr(void *pd, void *buf, size_t size)
                 goto err_ret;
         }
 
+        IBV_MR_DUMP_L(DINFO, mr);
         return mr;
 err_ret:
         return NULL;
@@ -1086,7 +1091,7 @@ static int __corenet_rdma_create_qp__(struct rdma_cm_id *cm_id, core_t *core, rd
                 GOTO(err_ret, ret);
         }
 
-        CMID_DUMP(cm_id);
+        CMID_DUMP_L(DINFO, cm_id);
 
         ret = rdma_create_qp(cm_id, cm_id->pd, &qp_init_attr);
         if (ret) {
@@ -1126,7 +1131,7 @@ static int __corenet_rdma_post_mem_handler(rdma_conn_t *handler, core_t *core)
         DINFO("new rdma conn %p\n", handler->iov_addr);
 
         RDMA_CONN_DUMP(handler);
-        handler->iov_mr = (struct ibv_mr *)rdma_register_mgr(handler->pd,
+        handler->iov_mr = (struct ibv_mr *)rdma_register_mr(handler->pd,
                                                              tmp, size * DEFAULT_MH_NUM);
         if (handler->iov_mr == NULL)
                 LTG_ASSERT(0);
@@ -1159,8 +1164,8 @@ static int __corenet_rdma_create_qp_real(core_t *core, struct rdma_cm_id *cm_id,
 {
         int ret;
 
-        CMID_DUMP(cm_id);
-        RDMA_CONN_DUMP(rdma_handler);
+        CMID_DUMP_L(DINFO, cm_id);
+        RDMA_CONN_DUMP_L(DINFO, rdma_handler);
 
         ret = __corenet_rdma_create_qp__(cm_id, core, rdma_handler);
         if (ret)
@@ -1175,7 +1180,7 @@ static int __corenet_rdma_create_qp_real(core_t *core, struct rdma_cm_id *cm_id,
         if (ret)
                 GOTO(err_free, ret);
 
-        RDMA_CONN_DUMP(rdma_handler);
+        RDMA_CONN_DUMP_L(DINFO, rdma_handler);
 
         return 0;
 err_free:
@@ -1300,7 +1305,7 @@ STATIC int __corenet_rdma_disconnect(va_list ap)
         if (rdma_handler == NULL || rdma_handler->is_closing == 1)
                 return 0;
 
-        corenet_rdma_close(rdma_handler);
+        corenet_rdma_close(rdma_handler, __FUNCTION__);
 
         return 0;
 }
@@ -1315,7 +1320,7 @@ void corenet_rdma_disconnected(struct rdma_cm_event *ev, void *_core)
         if (rdma_handler == NULL)
                 return;
 
-        RDMA_CONN_DUMP(rdma_handler);
+        RDMA_CONN_DUMP_L(DINFO, rdma_handler);
 
 retry:
         ret = core_request(core->hash, -1, "rdma_disconnected",
@@ -1355,7 +1360,7 @@ void corenet_rdma_timewait_exit(struct rdma_cm_event *ev, void *_core)
         LTG_ASSERT(handler != NULL);
         handler->nr_ack++;
 
-        RDMA_CONN_DUMP(handler);
+        RDMA_CONN_DUMP_L(DINFO, handler);
 
 retry:
         ret = core_request(core->hash, -1, "rdma_timewait",
@@ -1380,7 +1385,7 @@ static int __corenet_rdma_resolve_route(struct rdma_cm_id *cm_id, core_t *core, 
         rdma_conn_t *rdma_handler;
         corerpc_ctx_t *ctx;
 
-        CMID_DUMP(cm_id);
+        CMID_DUMP_L(DINFO, cm_id);
 
         // create rdma_handler, qp, post recv
 
@@ -1409,7 +1414,7 @@ static int __corenet_rdma_resolve_route(struct rdma_cm_id *cm_id, core_t *core, 
         if (ret)
                 GOTO(err_free, ret);
 
-        RDMA_CONN_DUMP(rdma_handler);
+        RDMA_CONN_DUMP_L(DINFO, rdma_handler);
 
         ret = rdma_resolve_route(cm_id, RESOLVE_TIMEOUT);
         if (ret) {
@@ -1618,7 +1623,7 @@ int corenet_rdma_connect_by_channel(const uint32_t addr, const uint32_t port,
                 GOTO(err_ret, ret);
         }
 
-        CMID_DUMP(cma_conn_id);
+        CMID_DUMP_L(DINFO, cma_conn_id);
 
         ret = __corenet_rdma_resolve_addr(cma_conn_id, addr, port, sockid);
         if (ret)
@@ -1632,7 +1637,7 @@ int corenet_rdma_connect_by_channel(const uint32_t addr, const uint32_t port,
                 GOTO(err_ret, ret);
         }
 
-        CMID_DUMP(cma_conn_id);
+        CMID_DUMP_L(DINFO, cma_conn_id);
 
         ret = __corenet_rdma_on_active_event(evt_channel, core, sockid);
         if (ret)
@@ -1710,7 +1715,7 @@ int corenet_rdma_listen_by_channel(int cpu_idx, uint32_t port)
                 GOTO(err_ret, ret);
         }
 
-        CMID_DUMP(cma_listen_id);
+        CMID_DUMP_L(DINFO, cma_listen_id);
 
         rdma_set_option(cma_listen_id, RDMA_OPTION_ID, RDMA_OPTION_ID_AFONLY, &afonly, sizeof(afonly));
 
@@ -1729,7 +1734,7 @@ int corenet_rdma_listen_by_channel(int cpu_idx, uint32_t port)
         }
 
         DINFO("chan %p fd %d\n", evt_channel, evt_channel->fd);
-        CMID_DUMP(cma_listen_id);
+        CMID_DUMP_L(DINFO, cma_listen_id);
 
 #if CORENET_RDMA_ON_ACTIVE_WAIT
         (void)core;
@@ -1754,7 +1759,7 @@ void corenet_rdma_established(struct rdma_cm_event *ev, void *_core)
         core_t *core = _core;
         LTG_ASSERT(core->corenet != NULL);
 
-        CMID_DUMP(cm_id);
+        CMID_DUMP_L(DINFO, cm_id);
 
         addr = rdma_get_peer_addr(cm_id);
         if (addr == NULL) {
@@ -1800,7 +1805,7 @@ void corenet_rdma_connect_request(struct rdma_cm_event *ev, void *_core)
                 .retry_count = 5,
         };
 
-        CMID_DUMP(cm_id);
+        CMID_DUMP_L(DINFO, cm_id);
 
         ctx = slab_static_alloc(sizeof(corerpc_ctx_t));
         if (unlikely(ctx == NULL))
@@ -1830,7 +1835,7 @@ void corenet_rdma_connect_request(struct rdma_cm_event *ev, void *_core)
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        RDMA_CONN_DUMP(rdma_handler);
+        RDMA_CONN_DUMP_L(DINFO, rdma_handler);
 
         /* now we can actually accept the connection */
         ret = rdma_accept(cm_id, &conn_param);

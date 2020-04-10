@@ -18,14 +18,30 @@
 
 #if ENABLE_RDMA
 
-#define CMID_DUMP(cmid) do { \
-        DINFO("cm_id %p verbs %p pd %p qp %p context %p\n", \
+#define CMID_DUMP_L(LEVEL, cmid) do { \
+        LEVEL("cm_id %p verbs %p qp %p pd %p context %p\n", \
                (cmid), \
                (cmid)->verbs, \
-               (cmid)->pd, \
                (cmid)->qp, \
+               (cmid)->pd, \
                (cmid)->context); \
 } while(0)
+
+#define CMID_DUMP(cmid) CMID_DUMP_L(DBUG, cmid);
+
+#define IBV_MR_DUMP_L(LEVEL, mr) do { \
+        LEVEL("mr %p addr %p len %lu lkey %u rkey %u context %p pd %p\n", \
+              (mr), \
+              (mr)->addr, \
+              (mr)->length, \
+              (mr)->lkey, \
+              (mr)->rkey, \
+              (mr)->context, \
+              (mr)->pd \
+              ); \
+} while(0)
+
+#define IBV_MR_DUMP(mr) IBV_MR_DUMP_L(DBUG, mr)
 
 typedef struct {
         struct ibv_context *ibv_verbs;
@@ -34,14 +50,16 @@ typedef struct {
         // int ref;
 } rdma_info_t;
 
-#define RDMA_INFO_DUMP(info) do { \
-        DINFO("rdma_info %p verbs %p cq %p mr %p\n",  \
+#define RDMA_INFO_DUMP_L(LEVEL, info) do { \
+        LEVEL("rdma_info %p verbs %p cq %p mr %p\n",  \
                (info), \
                (info)->ibv_verbs, \
                (info)->cq, \
                (info)->mr \
                ); \
 } while(0)
+
+#define RDMA_INFO_DUMP(info) RDMA_INFO_DUMP_L(DBUG, info)
 
 typedef struct {
         int node_loc;
@@ -68,8 +86,8 @@ typedef struct {
         uint64_t nr_ack;
 } rdma_conn_t;
 
-#define RDMA_CONN_DUMP(conn) do { \
-        DINFO("rdma_conn[%d] %p chan %p nr %ju/%ju conn %d close %d ref %d/%d cm_id %p qp %p mr %p addr %p core %p\n", \
+#define RDMA_CONN_DUMP_L(LEVEL, conn) do { \
+        LEVEL("rdma_conn[%d] %p chan %p nr %ju/%ju conn %d close %d ref %d/%d cm_id %p qp %p mr %p addr %p core %p\n", \
                (conn)->node_loc, \
                (conn), \
                (conn)->channel, \
@@ -87,6 +105,8 @@ typedef struct {
                ); \
 } while(0)
 
+#define RDMA_CONN_DUMP(conn) RDMA_CONN_DUMP_L(DBUG, conn);
+
 typedef struct {
         uint32_t mode:4;
         uint32_t err:2;
@@ -100,6 +120,17 @@ typedef struct {
         } wr;
         struct ibv_sge sge[MAX_SGE];
 } rdma_req_t;
+
+#define RDMA_REQ_DUMP_L(LEVEL, req) do { \
+        LEVEL("rdma_req %p m %u ref %u h %p\n", \
+               (req), \
+               (req)->mode, \
+               (req)->ref, \
+               (req)->rdma_handler \
+        ); \
+} while(0)
+
+#define RDMA_REQ_DUMP(req) RDMA_REQ_DUMP_L(DBUG, req)
 
 #define CORENET_RDMA_ON_ACTIVE_WAIT FALSE
 
@@ -177,8 +208,8 @@ typedef struct {
         struct list_head send_list;
 } corenet_rdma_node_t;
 
-#define CORENET_RDMA_NODE_DUMP(node) do { \
-        DINFO("rdma_node %p sock %d conn %p ref %d in_use %d send %d ctx %p\n",  \
+#define CORENET_RDMA_NODE_DUMP_L(LEVEL, node) do { \
+        LEVEL("rdma_node %p sock %d conn %p ref %d in_use %d send %d ctx %p\n",  \
                (node), \
                (node)->sockid.sd, \
                &(node)->handler, \
@@ -188,6 +219,8 @@ typedef struct {
                (node)->ctx \
                ); \
 } while(0)
+
+#define CORENET_RDMA_NODE_DUMP(node) CORENET_RDMA_NODE_DUMP_L(DBUG, node);
 
 #endif
 
@@ -273,13 +306,13 @@ int rdma_create_cq(rdma_info_t *res, int ib_port);
 
 //struct ibv_mr *rdma_get_mr();
 void *rdma_get_mr_addr();
-void *rdma_register_mgr(void* pd, void* buf, size_t size);
+void *rdma_register_mr(void* pd, void* buf, size_t size);
 
 int corenet_rdma_add(core_t *core, sockid_t *sockid, void *ctx,
                      core_exec exec, core_exec1 exec1, func_t reset,
                      func_t check, func_t recv, rdma_conn_t **_handler);
 
-void corenet_rdma_close(rdma_conn_t *rdma_handler);
+void corenet_rdma_close(rdma_conn_t *rdma_handler, const char *caller);
 
 void corenet_rdma_put(rdma_conn_t *rdma_handler);
 void corenet_rdma_get(rdma_conn_t *rdma_handler, int n);
