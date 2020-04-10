@@ -754,25 +754,12 @@ err_ret:
         return -ret;
 }
 
-int _errno(int ret)
-{
-        int i;
-        static int errlist[] = {EAGAIN, EREMCHG, ENONET, ETIMEDOUT, ETIME, EBUSY, ECONNREFUSED,
-                                ENOLCK, ENOSYS, ECANCELED, ESTALE, ECONNRESET, EADDRNOTAVAIL, EPERM, ENODEV};
-        static int count = sizeof(errlist) / sizeof(int);
-
-        for (i = 0; i < count; i++) {
-                if (errlist[i] == ret)
-                        return EAGAIN;
-        }
-
-        return ret;
-}
-
 int _errno_net(int ret)
 {
         int i;
-        static int errlist[] = {ENONET, ETIMEDOUT, ETIME, ECONNRESET, EHOSTUNREACH, EPIPE,  ECONNREFUSED};
+        static int errlist[] = {ENONET, ETIMEDOUT, ETIME, ECONNRESET,
+                                EHOSTUNREACH, EPIPE, ECONNREFUSED,
+                                EHOSTDOWN, EADDRNOTAVAIL};
         static int count = sizeof(errlist) / sizeof(int);
 
         for (i = 0; i < count; i++) {

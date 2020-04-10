@@ -43,7 +43,6 @@ const char *_inet_ntop(const struct sockaddr *addr);
 long int _random(void);
 void *_opaque_encode(void *buf, uint32_t *len, ...);
 const void *_opaque_decode(const void *buf, uint32_t len, ...);
-int _errno(int ret);
 int _errno_net(int ret);
 void _backtrace(const char *name);
 int64_t _time_used(const struct timeval *prev, const struct timeval *now);
