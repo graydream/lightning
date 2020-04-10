@@ -25,7 +25,6 @@ static void IO_FUNC  __corenet_routine(void *_core, void *var, void *_corenet)
         if (likely(ltgconf_global.rdma)) {
                 corenet_rdma_commit(((__corenet_t *)_corenet)->rdma_net);
         } else {
-                corenet_tcp_check_add();
                 corenet_tcp_commit(var);
         }
 
@@ -196,13 +195,15 @@ int corenet_init(int flag)
 {
         int ret;
 #if ENABLE_RDMA
-        ret = rdma_event_init();
-        if (ret)
-                GOTO(err_ret, ret);
+        if (ltgconf_global.rdma && ltgconf_global.daemon) {
+                ret = rdma_event_init();
+                if (ret)
+                        GOTO(err_ret, ret);
 
-        ret = corenet_rdma_evt_channel_init();
-        if (ret)
-                GOTO(err_ret, ret);
+                ret = corenet_rdma_evt_channel_init();
+                if (ret)
+                        GOTO(err_ret, ret);
+        }
 #endif
         ret = core_init_modules("corenet", __corenet_init, &flag, NULL);
         if (unlikely(ret))
@@ -362,22 +363,6 @@ int corenet_getaddr(const coreid_t *coreid, corenet_addr_t *addr)
 err_ret:
         return ret;
 }
-
-int corenet_attach(void *_corenet, const sockid_t *sockid, void *ctx,
-                   core_exec exec, func_t reset, func_t check, func_t recv,
-                   const char *name)
-{
-        __corenet_t *corenet = _corenet;
-
-        if (ltgconf_global.rdma) {
-                UNIMPLEMENTED(__DUMP__);
-                return 0;
-        } else {
-                return corenet_tcp_add(corenet->tcp_net, sockid, ctx, exec,
-                                       reset, check, recv, name);
-        }
-}
-
 
 int corenet_send(void *ctx, const sockid_t *sockid, ltgbuf_t *buf)
 {

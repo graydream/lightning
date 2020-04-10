@@ -153,8 +153,8 @@ STATIC void *__corenet_tcp_accept__(void *arg)
         DBUG("core[%d] %p maping:%p, sd %u\n", msg->to.idx, core,
               core->maping, sockid->sd);
 
-        ret = corenet_attach(core->corenet, sockid, ctx, corerpc_recv,
-                             corerpc_close, NULL, NULL, netable_rname(&ctx->coreid.nid));
+        ret = corenet_tcp_attach(msg->to.idx, sockid, ctx, corerpc_recv,
+                                 corerpc_close, NULL, NULL, netable_rname(&ctx->coreid.nid));
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 

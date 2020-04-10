@@ -455,7 +455,7 @@ int core_attach(int hash, const sockid_t *sockid, const char *name,
 
         core = core_get(hash);
 
-        ret = corenet_attach(core->corenet, sockid, ctx, func, reset, check, NULL, name);
+        ret = corenet_tcp_attach(hash, sockid, ctx, func, reset, check, NULL, name);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 

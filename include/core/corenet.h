@@ -157,7 +157,6 @@ typedef struct {
         struct list_head hook;
         int ev;
         sockid_t sockid;
-        ltg_spinlock_t lock;
         void *ctx;
 
         core_exec exec;
@@ -167,16 +166,11 @@ typedef struct {
 
         ltgbuf_t send_buf;
         ltgbuf_t recv_buf;
-        ltgbuf_t queue_buf;
-        struct list_head send_list;
-        int ref;
-        int closed;
 
 #if ENABLE_TCP_THREAD
         plock_t rwlock;
 #endif
-
-        char name[MAX_NAME_LEN / 2];
+        char *name;
 } corenet_tcp_node_t;
 
 #if ENABLE_RDMA
@@ -235,11 +229,10 @@ typedef struct {
 
 typedef struct {
         int epoll_fd;
-	int size;
+	int count;
         ltg_spinlock_t lock;
         time_t last_check;
         struct list_head check_list;
-        struct list_head add_list;
         struct list_head forward_list;
         uint32_t figerprint;
 } corenet_t;
@@ -282,11 +275,13 @@ typedef struct {
 int corenet_tcp_init(int max, corenet_tcp_t **corenet);
 void corenet_tcp_destroy();
 
+int corenet_tcp_attach(int coreid, const sockid_t *sockid, void *ctx,
+                       core_exec exec, func_t reset, func_t check,
+                       func_t recv, const char *name);
 int corenet_tcp_add(corenet_tcp_t *corenet, const sockid_t *sockid, void *ctx,
                     core_exec exec, func_t reset, func_t check, func_t recv, const char *name);
 void corenet_tcp_close(const sockid_t *sockid);
 
-void corenet_tcp_check_add();
 void corenet_tcp_check();
 
 int corenet_tcp_connected(const sockid_t *sockid);
@@ -362,9 +357,6 @@ int corenet_getaddr(const coreid_t *coreid, corenet_addr_t *addr);
 int corenet_register(uint64_t coremask);
 void corenet_close(const sockid_t *sockid);
 
-int corenet_attach(void *_corenet, const sockid_t *sockid, void *ctx,
-                   core_exec exec, func_t reset, func_t check, func_t recv,
-                   const char *name);
 int corenet_send(void *ctx, const sockid_t *sockid, ltgbuf_t *buf);
 
 #endif

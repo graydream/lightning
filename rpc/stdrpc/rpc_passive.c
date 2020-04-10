@@ -142,8 +142,8 @@ static void *__rpc_accept_worker(void *_arg)
 
         main_loop_hold();
 
-        while (1) {
-                ret = sock_poll_sd(__pasv_sd__, 1000 * 1000, POLLIN);
+        while (srv_running) {
+                ret = sock_poll_sd(__pasv_sd__, 1000 * 100, POLLIN);
                 if (unlikely(ret)) {
                         if (ret == ETIMEDOUT || ret == ETIME)
                                 continue;

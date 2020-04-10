@@ -222,7 +222,7 @@ int corenet_rdma_add(core_t *_core, sockid_t *sockid, void *ctx, core_exec exec,
 
         event = EPOLLIN;
 
-        loc = __corenet_get_free_node(&corenet->array[0], corenet->corenet.size);
+        loc = __corenet_get_free_node(&corenet->array[0], corenet->corenet.count);
         if (loc < 0) {
                 ret = -loc;
                 GOTO(err_ret, ret);
@@ -856,7 +856,7 @@ int corenet_rdma_init(int max, corenet_rdma_t **_corenet)
         ltg_malloc((void **)&corenet, sizeof(corenet_rdma_t) + max * sizeof(corenet_node_t));
 
         memset(corenet, 0x0, len);
-        corenet->corenet.size = size;
+        corenet->corenet.count = size;
 
         for (i = 0; i < size; i++) {
                 node = &corenet->array[i];
@@ -870,7 +870,6 @@ int corenet_rdma_init(int max, corenet_rdma_t **_corenet)
 
         INIT_LIST_HEAD(&corenet->corenet.forward_list);
         INIT_LIST_HEAD(&corenet->corenet.check_list);
-        INIT_LIST_HEAD(&corenet->corenet.add_list);
 
         ret = ltg_spin_init(&corenet->corenet.lock);
         if (unlikely(ret))

@@ -26,7 +26,7 @@ static int __sock_poll_sd1(const int *sd, int sd_count, short event,
 
         LTG_ASSERT(usec < 100 * 1000 * 1000);
 
-        if (usec < 1000 * 500) {
+        if (usec < 1000 * 100) {
                 DERROR("wait %llu\n", (LLU)usec);
         }
 
