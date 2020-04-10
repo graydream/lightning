@@ -28,14 +28,14 @@ extern analysis_t *default_analysis;
 #define XMITBUF (1024 * 1024 * 100)     /* 100MB */
 #define MAX_OPEN_FILE 10000
 
-static int __get_nofailmax(int daemon, int *nofilemax)
+static int __get_nofilemax(int daemon, int *nofilemax)
 {
         int ret;
         struct rlimit rlim_new;
 
         if (daemon) {
-                rlim_new.rlim_cur = MAX_OPEN_FILE;
-                rlim_new.rlim_max = MAX_OPEN_FILE;
+                rlim_new.rlim_cur = ltgconf_global.nofile_max;
+                rlim_new.rlim_max = ltgconf_global.nofile_max;
                 ret = setrlimit(RLIMIT_NOFILE, &rlim_new);
                 if (ret == -1) {
                         ret = errno;
@@ -51,6 +51,8 @@ static int __get_nofailmax(int daemon, int *nofilemax)
 
         *nofilemax = rlim_new.rlim_max;
 
+        DINFO("max open file %d\n", *nofilemax);
+        
         return 0;
 err_ret:
         return ret;
@@ -91,7 +93,7 @@ static int __ltg_init_stage1(const nid_t *nid, const char *name)
 
         (void) name;
 
-        ret = __get_nofailmax(ltgconf_global.daemon, &ltg_nofile_max);
+        ret = __get_nofilemax(ltgconf_global.daemon, &ltg_nofile_max);
         if (ret)
                 GOTO(err_ret, ret);
         

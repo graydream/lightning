@@ -15,6 +15,8 @@
 #include "ltg_core.h"
 #include "ltg_net.h"
 
+extern int ltg_nofile_max;
+
 static void IO_FUNC  __corenet_routine(void *_core, void *var, void *_corenet)
 {
         (void) _core;
@@ -86,7 +88,7 @@ static int __corenet_tcp_init(core_t *core, __corenet_t *corenet, int flag)
         (void) core;
         (void) flag;
 
-        ret = corenet_tcp_init(32768, (corenet_tcp_t **)&corenet->tcp_net);
+        ret = corenet_tcp_init(ltg_nofile_max, (corenet_tcp_t **)&corenet->tcp_net);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -121,7 +123,7 @@ static int __corenet_rdma_init(__corenet_t *corenet, int flag)
         (void) flag;
 
         corenet->dev_count = 0;
-        ret = corenet_rdma_init(32768, (corenet_rdma_t **)&corenet->rdma_net);
+        ret = corenet_rdma_init(ltg_nofile_max, (corenet_rdma_t **)&corenet->rdma_net);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -159,7 +161,6 @@ static int __corenet_init(va_list ap)
                 ret = __corenet_rdma_init(corenet, *flag);
                 if (unlikely(ret))
                         GOTO(err_free, ret);
-
         } else {
                 ret = __corenet_tcp_init(core, corenet, *flag);
                 if (unlikely(ret))
