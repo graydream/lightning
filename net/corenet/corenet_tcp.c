@@ -1418,9 +1418,10 @@ int corenet_tcp_init(int count, corenet_tcp_t **_corenet)
         corenet_tcp_t *corenet;
         corenet_node_t *node;
 
-        DINFO("malloc %ju\n", sizeof(corenet_node_t) * count);
-
         len = sizeof(corenet_tcp_t) + sizeof(corenet_node_t) * count;
+
+        DINFO("count %d size %d\n", count, len);
+
         ret = ltg_malloc((void **)&corenet, len);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
