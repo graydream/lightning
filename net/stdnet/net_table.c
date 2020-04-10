@@ -172,14 +172,15 @@ static int __network_connect(entry_t *ent, const ltg_net_info_t *info)
 
         if (ent->status == NETABLE_CONN) {
                 DBUG("connect to %s sockid %s/%d time %u, exist\n",
-                     ent->lname, _inet_ntoa(ent->sock.u.sd.addr),
+                      ent->lname, _inet_ntoa(ent->sock.u.sd.addr),
                      ent->sock.u.sd.sd, (int)ent->ltime.now);
                 goto out;
         }
         
         ret = net_connect(&sock, info, 1);
         if (unlikely(ret)) {
-                DBUG("connect to %s fail ret %u %s\n", info->name, ret, strerror(ret));
+                DBUG("connect to %s fail ret %u %s\n", info->name,
+                     ret, strerror(ret));
                 if (ret == EBADF)
                         ret = ETIMEDOUT;
                 GOTO(err_lock, ret);
@@ -280,6 +281,11 @@ int netable_connect(net_handle_t *nh, const ltg_net_info_t *info)
 
         main_loop_hold();
 
+        if (netable_connected(&info->id)) {
+                DBUG("%s already connected\n", netable_rname(&info->id));
+                return 0;
+        }
+        
 retry:
         ent = __netable_nidfind(&info->id);
         if (ent == NULL) {
@@ -406,19 +412,32 @@ time_t IO_FUNC netable_conn_time(const nid_t *nid)
         return ent->ltime.now;
 }
 
+
+
 int netable_connected(const nid_t *nid)
 {
         entry_t *ent;
 
         ent = __netable_nidfind(nid);
-        if (ent == NULL)
-                return 0;
-        
-        if (ent->status == NETABLE_CONN && ent->ltime.now != 0 ) {
-                return 1;
-        } else {
+        if (ent == NULL) {
+                DBUG("%s not found\n", netable_rname(nid));
                 return 0;
         }
+        
+        if (ent->status != NETABLE_CONN || ent->ltime.now == 0 ) {
+                DBUG("%s status fail\n", netable_rname(nid));
+                return 0;
+        }
+
+        if (unlikely(sdevent_connected(&ent->sock.u.sd))) {
+                DBUG("%s lost\n", netable_rname(nid));
+                netable_close(nid, "lost socket", NULL);
+                return 0;
+        }
+
+        DBUG("%s online\n", netable_rname(nid));
+        
+        return 1;
 }
 
 int netable_getsock(const nid_t *nid, sockid_t *sockid)
@@ -450,8 +469,7 @@ int netable_getsock(const nid_t *nid, sockid_t *sockid)
 
         netable_unlock(nid);
 
-        ret = sdevent_check(sockid);
-        if (unlikely(ret)) {
+        if (unlikely(!sdevent_connected(sockid))) {
                 DWARN("%s lost\n", netable_rname(nid));
                 netable_close(nid, "lost socket", NULL);
                 GOTO(err_ret, ret);

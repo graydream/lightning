@@ -22,7 +22,7 @@ static int __netable_hb_connected(void *_ctx)
 {
         hb_ctx_t *ctx = _ctx;
 
-        return !sdevent_check(&ctx->sockid);
+        return sdevent_connected(&ctx->sockid);
 }
 
 static int __netable_hb_send(void *_ctx, uint64_t seq)

@@ -26,7 +26,7 @@ int sdevent_open(net_handle_t *nh, const net_proto_t *proto);
 void sdevent_close(const net_handle_t *nh);
 int sdevent_add(const net_handle_t *socknh, const nid_t *nid, int event);
 int sdevent_queue(const net_handle_t *nh, const ltgbuf_t *buf);
-int sdevent_check(const sockid_t *id);
+int sdevent_connected(const sockid_t *sockid);
 int sdevent_recv(int fd);
 void sdevent_exit(int fd);
 

@@ -621,23 +621,18 @@ void sdevent_destroy()
         UNIMPLEMENTED(__WARN__);
 }
 
-#if 1
-int sdevent_check(const sockid_t *id)
+int sdevent_connected(const sockid_t *sockid)
 {
-        int ret;
         event_node_t *node;
 
-        ret = __sdevent_lock(id, RDLOCK, &node);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
+        LTG_ASSERT(sockid->sd > 0 && sockid->sd < sdevent->size);
+        node = &sdevent->array[sockid->sd];
 
-        __sdevent_unlock(node);
-
-        return 0;
-err_ret:
-        return ret;
+        if (node->sock && node->sock->nh.u.sd.seq == sockid->seq) {
+                return 1;
+        } else
+                return 0;
 }
-#endif
 
 void sdevent_exit(int fd)
 {
