@@ -68,13 +68,12 @@ STATIC int __heartbeat_check(entry_t *ent)
         } else if (lost > ent->retry) {
                 DWARN("heartbeat %s fail, lost ack %u\n", ent->name, lost);
                 ret = ETIME;
-                GOTO(err_close, ret);
+                GOTO(err_ret, ret);
         }
 
         return 0;
-err_close:
-        ent->close(ent->ctx);
 err_ret:
+        ent->close(ent->ctx);
         __heartbeat_close(ent);
         return ret;
 }

@@ -281,11 +281,13 @@ int netable_connect(net_handle_t *nh, const ltg_net_info_t *info)
 
         main_loop_hold();
 
+#if 0
         if (netable_connected(&info->id)) {
                 DBUG("%s already connected\n", netable_rname(&info->id));
                 return 0;
         }
-        
+#endif
+
 retry:
         ent = __netable_nidfind(&info->id);
         if (ent == NULL) {
@@ -429,11 +431,13 @@ int netable_connected(const nid_t *nid)
                 return 0;
         }
 
+#if 0
         if (unlikely(sdevent_connected(&ent->sock.u.sd))) {
                 DBUG("%s lost\n", netable_rname(nid));
                 netable_close(nid, "lost socket", NULL);
                 return 0;
         }
+#endif
 
         DBUG("%s online\n", netable_rname(nid));
         
