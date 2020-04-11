@@ -1,25 +1,23 @@
 project (lightning)
 
-option(release "Release Mode" ON)
-
 cmake_minimum_required(VERSION 2.8)
-set(CMAKE_VERBOSE_MAKEFILE )
+
+set(CMAKE_VERBOSE_MAKEFILE OFF)
+
+set(CMAKE_C_FLAGS "-std=gnu99 -W -Wall -fPIC -Werror -Wno-array-bounds -Wno-implicit-fallthrough -Werror=return-type -Wno-stringop-truncation -Wno-format-truncation -Wno-format-overflow -Wno-stringop-overflow -Wno-misleading-indentation -Wno-deprecated-declarations -Wno-cast-function-type -Wno-int-in-bool-context -Wno-pointer-compare -D_GNU_SOURCE -D_REENTRANT -D_FILE_OFFSET_BITS=64 -fms-extensions")
+
+SET(CMAKE_C_FLAGS_DEBUG          "$ENV{CFLAGS} -DDEBUG -O0 -g -ggdb -gsplit-dwarf")
+SET(CMAKE_C_FLAGS_RELEASE        "$ENV{CFLAGS} -DDEBUG -O3 -g -ggdb -gsplit-dwarf")
+SET(CMAKE_C_FLAGS_RELWITHDEBINFO "$ENV{CFLAGS} -DDEBUG -O3 -g -ggdb -gsplit-dwarf")
+SET(CMAKE_C_FLAGS_MINSIZEREL     "$ENV{CFLAGS} -DDEBUG -O3 -g -ggdb -gsplit-dwarf")
+
+message("***************Build for ${CMAKE_BUILD_TYPE}***************")
 
 #set(CMAKE_INSTALL_PREFIX "/usr/local/lightning")
 
 execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/get_version.sh ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(CMAKE_C_FLAGS "-W -Wall -DDEBUG -g -fPIC -Werror -Wno-array-bounds -Wno-implicit-fallthrough -Werror=return-type -Wno-format-truncation -Wno-format-overflow -Wno-stringop-overflow -Wno-misleading-indentation -Wno-deprecated-declarations -Wno-cast-function-type -Wno-int-in-bool-context -Wno-pointer-compare -D_GNU_SOURCE -D_REENTRANT -D_FILE_OFFSET_BITS=64 -std=gnu99 -fms-extensions -gsplit-dwarf")
-
 set(CMAKE_C_LIBS lightning pthread crypt crypto uuid ssl isal z m curl yajl rdmacm yaml numa ibverbs)
-
-if(${release} STREQUAL "ON")
-    message("lightning: Build for release.")
-
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
-else()
-    message("lightning: Build for debug.")
-endif()
 
 message("lightning: install directory ${CMAKE_INSTALL_PREFIX}, use -D CMAKE_INSTALL_PREFIX=<dir> replace it")
 
