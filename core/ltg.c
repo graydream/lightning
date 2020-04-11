@@ -33,7 +33,9 @@ static int __get_nofilemax(int daemon, int *nofilemax)
         int ret;
         struct rlimit rlim_new;
 
-        if (daemon) {
+        (void) daemon;
+        
+        if (1) {
                 rlim_new.rlim_cur = ltgconf_global.nofile_max;
                 rlim_new.rlim_max = ltgconf_global.nofile_max;
                 ret = setrlimit(RLIMIT_NOFILE, &rlim_new);
@@ -173,8 +175,6 @@ int ltg_init(const ltgconf_t *ltgconf, const ltg_netconf_t *ltgnet_manage,
         memcpy(&ltgconf_global, ltgconf, sizeof(*ltgconf));
 
         ltgconf_global.lease_timeout =  _max(3, ltgconf->rpc_timeout / 3); 
-        //ltgconf_global.hb_timeout = _max(3, ltgconf->rpc_timeout / 3);
-
         ltg_netconf_global.count = 0;
 
         for (int i = 0; i < ltgnet_conf->count; i++) {

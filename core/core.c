@@ -424,7 +424,7 @@ int core_init(uint64_t mask, int flag)
         ret = corenet_init(flag);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
-        
+
         if (flag & CORE_FLAG_NET) {
                 ret = corerpc_init();
                 if (unlikely(ret))
