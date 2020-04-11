@@ -178,6 +178,7 @@ int corerpc_send_and_wait(void *core, const char *name, corerpc_op_t *op)
 
         ret = op->sockid.request(core, op);
         if (unlikely(ret)) {
+                sche_task_reset();
                 corenet_maping_close(&op->coreid.nid, &op->sockid);
 		ret = _errno_net(ret);
 		LTG_ASSERT(ret == ENONET || ret == ESHUTDOWN);
