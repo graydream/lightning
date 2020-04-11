@@ -141,6 +141,8 @@ int core_register_routine(const char *name, func2_t func, void *ctx);
 int core_register_scan(const char *name, func2_t func, void *ctx);
 uint32_t get_io();
 
+int core_event_init();
+
 #if 1
 void core_ring_queue(int coreid, ring_ctx_t *ctx,
                       func_t request, void *requestctx,

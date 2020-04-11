@@ -109,6 +109,7 @@ add_library(lightning STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/core/sche_task.c
     ${CMAKE_CURRENT_SOURCE_DIR}/core/sche_thread.c
     ${CMAKE_CURRENT_SOURCE_DIR}/core/ltg.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/core/core_event.c
 )
 
 install(TARGETS lightning ARCHIVE DESTINATION lib)

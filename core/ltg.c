@@ -26,7 +26,6 @@ int ltg_nofile_max = 0;
 extern analysis_t *default_analysis;
 
 #define XMITBUF (1024 * 1024 * 100)     /* 100MB */
-#define MAX_OPEN_FILE 10000
 
 static int __get_nofilemax(int daemon, int *nofilemax)
 {
@@ -35,7 +34,7 @@ static int __get_nofilemax(int daemon, int *nofilemax)
 
         (void) daemon;
         
-        if (1) {
+        if (daemon) {
                 rlim_new.rlim_cur = ltgconf_global.nofile_max;
                 rlim_new.rlim_max = ltgconf_global.nofile_max;
                 ret = setrlimit(RLIMIT_NOFILE, &rlim_new);
