@@ -145,7 +145,7 @@ void sche_task_reset()
         LTG_ASSERT(sche->running_task != -1);
         taskctx = &sche->tasks[sche->running_task];
         LTG_ASSERT(taskctx->state == TASK_STAT_RUNNING);
-        LTG_ASSERT(taskctx->pre_yield == 1);
+        //LTG_ASSERT(taskctx->pre_yield == 1);
         taskctx->pre_yield = 0;
 }
 
