@@ -18,7 +18,6 @@
 
 #include "ltg_log.h"
 #include "dbg_proto.h"
-#include "dbg_message.h"
 #include "ltg_conf.h"
 
 /* for gettime, localtime_safe etc */
