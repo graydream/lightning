@@ -733,6 +733,12 @@ static inline void count_list_del_init(struct list_head *pos, count_list_t *head
         head->count--;
 }
 
+static inline void count_list_splice_tail_init(count_list_t *src, count_list_t *dst) {
+        list_splice_tail_init(&src->list, &dst->list);
+        dst->count += src->count;
+        src->count = 0;
+}
+
 static inline void count_list_free(count_list_t *head, int (*free_fn)(void **)) {
         struct list_head *pos, *n;
 
