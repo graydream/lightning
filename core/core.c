@@ -14,7 +14,6 @@
 #include "ltg_net.h"
 #include "ltg_utils.h"
 #include "ltg_core.h"
-#include "ltg_core.h"
 #include "ltg_net.h"
 
 static core_t *__core_array__[256];
@@ -102,6 +101,8 @@ static void IO_FUNC core_stat(core_t *core)
         _gettimeofday(&core->stat_t2, NULL);
         uint64_t used = _time_used(&core->stat_t1, &core->stat_t2);
         if (used > 0) {
+
+#if !SCHEDULE_TASKCTX_RUNTIME
                 DINFO("%s[%d] "
                       "pps:%jd "
                       "task:%u/%u/%u "
@@ -114,7 +115,30 @@ static void IO_FUNC core_stat(core_t *core)
                       ring_count,
                       core->sche->counter / (core->stat_nr2 - core->stat_nr1),
                       (run_time * 100)/ used);
+#else
+                uint64_t avg_task_count, avg_task_runtime, avg_lat;
+                (void)ring_count;
+                avg_task_count = c_runtime / used;
+                if (task_used == 0) {
+                        avg_task_runtime = 0;
+                        avg_lat = 0;
+                } else {
+                        avg_task_runtime = run_time / task_used;
+                        avg_lat = c_runtime  / task_used;
+                }
 
+                DINFO("%s[%d] "
+                      "pps:%jd "
+                      "task:%lu/%lu/%lu "
+                      "task count %lu used %lu c_run_time %lu "
+                      "cpu %ju\n",
+                      core->name, core->hash,
+                      (core->stat_nr2 - core->stat_nr1) * 1000000 / used,
+                      avg_task_count, avg_task_runtime, avg_lat,
+                      task_used, used,c_runtime, 
+                      (run_time * 100) / used 
+                );
+#endif
                 core->stat_t1 = core->stat_t2;
                 core->stat_nr1 = core->stat_nr2;
                 core->sche->counter = 0;

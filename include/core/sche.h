@@ -26,7 +26,6 @@
 #define ENABLE_SCHEDULE_SELF_DEBUG 1
 #define ENABLE_SCHEDULE_STACK_ASSERT 0
 
-#define SCHEDULE_CHECK_RUNTIME ENABLE_SCHEDULE_CHECK_RUNTIME
 #define SCHEDULE_TASKCTX_RUNTIME 1
 #define SCHEDULE_CHECK_IOPS 0
 
@@ -108,9 +107,12 @@ typedef struct __task {
 
         char name[MAX_NAME_LEN];
         int id;
-        struct timeval ctime; /*create time*/
 #if SCHEDULE_TASKCTX_RUNTIME
-        struct timeval rtime; /*running time*/
+        uint64_t ctime; /*live time*/
+        uint64_t rtime; /*running time*/
+#else
+        struct timeval rtime; /*live time*/
+        struct timeval ctime; /*live time*/
 #endif
 
 #if ENABLE_SCHEDULE_LOCK_CHECK
@@ -139,7 +141,7 @@ typedef struct __task {
         const char *wait_name;
         const void *wait_opaque;
         int32_t retval;
-
+        int sleep;
         // last member?
 } taskctx_t;
 
@@ -198,7 +200,7 @@ typedef struct sche_t {
         struct timeval t1, t2;
         uint64_t nr_run1, nr_run2;
 #endif
-
+        uint64_t hz;
         // scher status
         int eventfd;
         int running;

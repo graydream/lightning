@@ -26,6 +26,7 @@ include_directories(
 )
 
 add_library(lightning STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils/gettime_tsc.c
     ${CMAKE_CURRENT_SOURCE_DIR}/3part/crc32.c
     ${CMAKE_CURRENT_SOURCE_DIR}/3part/hash.c
     ${CMAKE_CURRENT_SOURCE_DIR}/3part/libringbuf.c
