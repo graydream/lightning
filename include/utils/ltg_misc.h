@@ -82,6 +82,9 @@ extern int ltg_rwlock_wrlock(ltg_rwlock_t *rwlock);
 extern int ltg_rwlock_trywrlock(ltg_rwlock_t *rwlock);
 extern void ltg_rwlock_unlock(ltg_rwlock_t *rwlock);
 
+uint64_t get_rdtsc(void);
+uint64_t _microsec_used(uint64_t old, uint64_t new, uint64_t hz);
+uint64_t cpu_freq_init();
 #define LLIB_ISDIR 1
 #define LLIB_NOTDIR 0
 
