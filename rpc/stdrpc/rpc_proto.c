@@ -157,7 +157,7 @@ STATIC void __rpc_reply_handler(const ltg_net_head_t *head, ltgbuf_t *buf)
         DBUG("reply msg id (%u, %x), len %u\n", head->msgid.idx,
               head->msgid.figerprint, head->len);
 
-        ret = rpc_table_post(__rpc_table__, &head->msgid, retval, buf, head->load);
+        ret = rpc_table_post(__rpc_table__, &head->msgid, retval, buf, head->latency);
         if (unlikely(ret)) {
                 ltgbuf_free(buf);
         }

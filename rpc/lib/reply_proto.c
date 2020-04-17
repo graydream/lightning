@@ -25,7 +25,7 @@ void stdrpc_reply_init_prep(const msgid_t *msgid, ltgbuf_t *buf, ltgbuf_t *data,
         net_rep->msgid = *msgid;
         net_rep->crcode = 0;
         net_rep->blocks = 0;
-        net_rep->load = core_latency_get();
+        net_rep->latency = core_latency_get();
         net_rep->time = gettime();
         net_rep->coreid = -1;
 
@@ -61,7 +61,7 @@ void stdrpc_reply_error_prep(const msgid_t *msgid, ltgbuf_t *buf, int _error)
         net_rep->msgid = *msgid;
         net_rep->crcode = 0;
         net_rep->blocks = 0;
-        net_rep->load = core_latency_get();
+        net_rep->latency = core_latency_get();
         net_rep->time = gettime();
         net_rep->coreid = -1;
 
@@ -94,7 +94,7 @@ void stdrpc_reply_error(const sockid_t *sockid, const msgid_t *msgid, int _error
         net_rep->msgid = *msgid;
         net_rep->crcode = 0;
         net_rep->blocks = 0;
-        net_rep->load = core_latency_get();
+        net_rep->latency = core_latency_get();
         net_rep->time = gettime();
         net_rep->coreid = -1;
 

@@ -41,7 +41,7 @@ int rpc_request_prep(ltgbuf_t *buf, const msgid_t *msgid, const void *request,
         net_req->coreid = -1;
         net_req->group = priority;
         net_req->master_magic = ltg_global.master_magic;
-        net_req->load = core_latency_get();
+        net_req->latency = core_latency_get();
         memcpy(net_req->buf, request, reqlen);
 
         if (data) {

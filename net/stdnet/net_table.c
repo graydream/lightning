@@ -54,12 +54,6 @@ static uint32_t __ltime_seq__ = 1;
         } while (0)
 
 
-typedef struct {
-        int64_t load;
-        nid_t nid;
-        diskid_t diskid;
-} section_t;
-
 typedef ltg_net_conn_t entry_t;
 
 typedef struct {

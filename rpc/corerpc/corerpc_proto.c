@@ -113,7 +113,7 @@ static void IO_FUNC __corerpc_reply_handler(const ltg_net_head_t *head, ltgbuf_t
         if (unlikely(retval))
                 ltgbuf_free(buf);
 
-        ret = rpc_table_post(__rpc_table_private__, &head->msgid, retval, buf, head->load);
+        ret = rpc_table_post(__rpc_table_private__, &head->msgid, retval, buf, head->latency);
         if (unlikely(ret)) {
                 ltgbuf_free(buf);
         }

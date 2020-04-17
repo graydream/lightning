@@ -84,6 +84,7 @@ add_library(lightning STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/net/corenet/corenet_hb.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/corenet/rdma_event.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/corenet/corenet.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/net/corenet/loadbalance.c
 
     ${CMAKE_CURRENT_SOURCE_DIR}/rpc/stdrpc/rpc_lib.c
     ${CMAKE_CURRENT_SOURCE_DIR}/rpc/stdrpc/rpc_proto.c

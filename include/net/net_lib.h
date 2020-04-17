@@ -35,7 +35,7 @@ typedef struct  {
         uint32_t group;
         uint32_t coreid;
         uint32_t master_magic;
-        uint64_t load;
+        uint64_t latency;
         char buf[0];
 } ltg_net_head_t ;
 

@@ -195,6 +195,8 @@ int corerpc_send_and_wait(void *core, const char *name, corerpc_op_t *op)
                 GOTO(err_ret, ret);
         }
 
+        loadbalance_update(&op->coreid, rpc_ctx.latency);
+
         ANALYSIS_QUEUE(0, IO_INFO, NULL);
 
         return 0;
@@ -252,7 +254,6 @@ int IO_FUNC corerpc_postwait(const char *name, const coreid_t *coreid, const voi
                 ret = __corerpc_postwait(name, &op);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
-
         } else {
                 ret = stdrpc_request_wait3(name, coreid, request, reqlen,
                                            wbuf, rbuf, msg_type, -1, timeout);
