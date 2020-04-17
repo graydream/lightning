@@ -123,6 +123,7 @@ static void __sche_task_sleep(task_t *task)
         taskctx = &sche->tasks[task->taskid];
         LTG_ASSERT(taskctx->sleeping == 0);
         taskctx->sleeping = 1;
+        taskctx->sleep = 1;
 }
 
 static void __sche_task_wakeup(task_t *task)
@@ -347,8 +348,7 @@ static void IO_FUNC __sche_trampoline(taskctx_t *taskctx)
 {
         sche_t *sche = taskctx->sche;
 #if SCHEDULE_TASKCTX_RUNTIME
-        struct timeval now;
-        uint64_t used;
+        uint64_t used, now;
 #endif
 
         //ANALYSIS_BEGIN(0);
@@ -359,9 +359,6 @@ static void IO_FUNC __sche_trampoline(taskctx_t *taskctx)
         DBUG("start task[%u] %s\n", taskctx->id, taskctx->name);
 #endif
 
-#if SCHEDULE_CHECK_RUNTIME
-        _gettimeofday(&taskctx->rtime, NULL);
-#endif
         LTG_ASSERT(sche->running_task != -1);
 
         taskctx->func(taskctx->arg);
@@ -373,14 +370,15 @@ static void IO_FUNC __sche_trampoline(taskctx_t *taskctx)
 #endif
 
 #if SCHEDULE_TASKCTX_RUNTIME
-        _gettimeofday(&now, NULL);
-        used = _time_used(&taskctx->ctime, &now);
-        sche->c_runtime += used;
+	if (likely(taskctx->sleep == 0)) {
+		now = get_rdtsc();
+		used = now - taskctx->ctime;
+		sche->c_runtime += used;
+	}
 #else
-        //sche->task_count--;
-#endif
         sche->task_count--;
-        
+#endif
+
         __sche_wait_task_resume(sche);
 
         DBUG("free task %s, id [%u][%u]\n", taskctx->name, sche->id, taskctx->id);
@@ -536,6 +534,7 @@ void IO_FUNC sche_task_new(const char *name, func_t func, void *arg, int _group)
         taskctx->sleeping = 0;
         taskctx->wait_begin = 0;
         taskctx->wait_tmo = 0;
+        taskctx->sleep = 0;
         taskctx->sche = sche;
         taskctx->group = group;
         sche->task_count++;
@@ -550,8 +549,8 @@ void IO_FUNC sche_task_new(const char *name, func_t func, void *arg, int _group)
         DBUG("new task[%d] %s count:%d\n", idx, name, sche->task_count);
 
         sche_fingerprint_new(sche, taskctx);
-#ifdef SCHEDULE_TASKCTX_RUNTIME
-        gettimeofday(&taskctx->ctime, NULL);
+#if SCHEDULE_TASKCTX_RUNTIME
+        taskctx->ctime = get_rdtsc();
 #else
         _gettimeofday(&taskctx->ctime, NULL);
 #endif

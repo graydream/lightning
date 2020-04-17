@@ -52,6 +52,6 @@ typedef long long LLD;
 
 #define ENABLE_HUGEPAGE 1
 
-#define ENABLE_ANALYSIS 1
+#define ENABLE_ANALYSIS 0
 
 #endif

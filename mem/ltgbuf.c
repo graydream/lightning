@@ -400,7 +400,7 @@ int ltgbuf_trans_sge(struct ibv_sge *sge, ltgbuf_t *src_buf, ltgbuf_t *dst_buf, 
 
         list_for_each(pos, &dst_buf->list) {
                 seg = (seg_t *)pos;
-
+              
                 sge[num].addr = (uintptr_t)seg->handler.ptr;
                 sge[num].length = seg->len;
                 sge[num].lkey = lkey;
