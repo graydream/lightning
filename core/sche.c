@@ -668,8 +668,9 @@ static int __sche_create(int *eventfd, const char *name, int idx,
 
         if (unlikely(ret))
                 GOTO(err_lock, ret);
-
+#if SCHEDULE_TASKCTX_RUNTIME
         sche->hz = cpu_freq_init();
+#endif
         DINFO("sche hz is %lu\n", sche->hz);
         __sche_array__[idx] = sche;
         if (_sche)
