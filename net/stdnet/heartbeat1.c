@@ -109,7 +109,7 @@ STATIC void __heartbeat_task(void *_ent)
 static void __heartbeat_task_new(entry_t *ent)
 {
         ent->refcount++;
-        sche_task_new("corenet_tcp_close", __heartbeat_task, ent, -1);
+        sche_task_new("heartbeat", __heartbeat_task, ent, -1);
 }
 
 static void __heartbeat_loop(void *_ent)
@@ -125,7 +125,7 @@ static void __heartbeat_loop(void *_ent)
         }
 
         __heartbeat_task_new(ent);
-        sche_task_new("corenet_tcp_close", __heartbeat_loop, ent, -1);
+        sche_task_new("heartbeat", __heartbeat_loop, ent, -1);
 }
 
 int heartbeat_add1(const sockid_t *sockid, const char *name, void *ctx,

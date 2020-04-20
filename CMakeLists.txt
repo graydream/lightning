@@ -6,10 +6,10 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 
 set(CMAKE_C_FLAGS "-std=gnu99 -W -Wall -fPIC -Werror -Wno-array-bounds -Wno-implicit-fallthrough -Werror=return-type -Wno-stringop-truncation -Wno-format-truncation -Wno-format-overflow -Wno-stringop-overflow -Wno-misleading-indentation -Wno-deprecated-declarations -Wno-cast-function-type -Wno-int-in-bool-context -Wno-pointer-compare -D_GNU_SOURCE -D_REENTRANT -D_FILE_OFFSET_BITS=64 -fms-extensions")
 
-SET(CMAKE_C_FLAGS_DEBUG          "$ENV{CFLAGS} -DDEBUG -O0 -g -ggdb -gsplit-dwarf")
-SET(CMAKE_C_FLAGS_RELEASE        "$ENV{CFLAGS} -DDEBUG -O3 -g -ggdb -gsplit-dwarf")
-SET(CMAKE_C_FLAGS_RELWITHDEBINFO "$ENV{CFLAGS} -DDEBUG -O3 -g -ggdb -gsplit-dwarf")
-SET(CMAKE_C_FLAGS_MINSIZEREL     "$ENV{CFLAGS} -DDEBUG -O3 -g -ggdb -gsplit-dwarf")
+SET(CMAKE_C_FLAGS_DEBUG          "$ENV{CFLAGS} -O0 -g -ggdb")
+SET(CMAKE_C_FLAGS_RELEASE        "$ENV{CFLAGS} -O3 -g -ggdb")
+SET(CMAKE_C_FLAGS_RELWITHDEBINFO "$ENV{CFLAGS} -O3 -g -ggdb")
+SET(CMAKE_C_FLAGS_MINSIZEREL     "$ENV{CFLAGS} -O3 -g -ggdb")
 
 message("***************Build for ${CMAKE_BUILD_TYPE}***************")
 
