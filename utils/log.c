@@ -13,6 +13,36 @@
 #include "ltg_utils.h"
 
 static log_t *__log__;
+static int __reopen = 0;
+
+void log_set_reopen(int reopen)
+{
+        __reopen = reopen;
+}
+
+static int __log_reopen(log_t *log)
+{
+        int fd, ret;
+
+        if (!log)
+                return -1;
+
+        if (log->logmode == YLOG_FILE && log->logfd != -1) {
+                (void) close(log->logfd);
+
+                fd = open(log->file, O_APPEND | O_CREAT | O_WRONLY, 0644);
+                if (fd == -1) {
+                        ret = errno;
+                        goto err_ret;
+                }
+
+                log->logfd = fd;
+        }
+
+        return 0;
+err_ret:
+        return ret;
+}
 
 int log_init2(logmode_t logmode, const char *file, int log_max_mbytes)
 {
@@ -103,6 +133,7 @@ int log_destroy(void)
         return 0;
 }
 
+#if 0
 static int __log_rollover(log_t *log)
 {
         int fd, ret;
@@ -139,26 +170,24 @@ static int __log_rollover(log_t *log)
 err_ret:
         return ret;
 }
+#endif
 
 static int __log_write_msg(log_t *log, const char *msg, int msglen)
 {
         int ret;
 
-        if (log->log_max_bytes) {
-                ret = ltg_spin_lock(&log->spin);
+        ret = ltg_spin_lock(&log->spin);
+        if (ret) {
+                goto err_ret;
+        }
+
+        if (__reopen) {
+                ret = __log_reopen(log);
                 if (ret) {
-                        fprintf(stderr, "ltg_spin_lock fail, ret %u", ret);
+                        ret = errno;
                         goto err_ret;
                 }
-
-                if (log->file_size >= log->log_max_bytes) {
-                        ret = __log_rollover(log);
-                        if (ret) {
-                                goto err_ret;
-                        }
-
-                        log->file_size = 0;
-                }
+                __reopen = 0;
         }
 
         ret = write(log->logfd, msg, msglen);
@@ -167,11 +196,7 @@ static int __log_write_msg(log_t *log, const char *msg, int msglen)
                 goto err_ret;
         }
 
-        if (log->log_max_bytes) {
-                log->file_size += msglen;
-
-                ltg_spin_unlock(&log->spin);
-        }
+        ltg_spin_unlock(&log->spin);
 
         return 0;
 err_ret:

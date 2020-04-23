@@ -37,5 +37,6 @@ extern int log_init2(logmode_t, const char *file, int log_max_mbytes);
 extern int log_destroy(void);
 extern int log_write(logtype_t type, const char *msg);
 extern int log_getfd();
+extern void log_set_reopen(int reopen);
 
 #endif
