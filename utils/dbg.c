@@ -159,6 +159,13 @@ err_ret:
         return ret;
 }       
 
+int dmsg_init_misc(const char *name, const char *value,
+                   int (*callback)(const char *buf, uint32_t flag),
+                   uint32_t flag)
+{
+     return __dmsg_init_sub(name, value, callback, flag);
+}
+
 int dmsg_init()
 {
         int ret;
