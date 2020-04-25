@@ -179,8 +179,10 @@ void rdma_handle_event(int fd, int type,
         struct rdma_event_channel rdma_evt_channel;
         struct rdma_cm_id *cm_id;
         rdma_conn_t *handler;
+        struct sockaddr_in *sockaddr;
 
         DINFO("corenet rdma:rdma handle event\n");
+
         ANALYSIS_BEGIN(0);
 
         rdma_evt_channel.fd = fd;
@@ -191,28 +193,40 @@ void rdma_handle_event(int fd, int type,
         ev_type = ev->event;
         cm_id = ev->id;
 
-        CMID_DUMP(cm_id);
+        CMID_DUMP_L(DINFO, cm_id);
 
         handler = cm_id->context;
-        if (handler)
+        if (handler) {
                 handler->nr_get++;
+                RDMA_CONN_DUMP_L(DINFO, handler);
+        }
+
+        sockaddr = (struct sockaddr_in *)(&cm_id->route.addr.dst_addr);
 
         DBUG("iser fd[%d], type:%d, UD-related event:%d, %s, core:%d\n", fd, type,
              ev_type, rdma_event_str(ev_type), core ? ((core_t *)core)->hash : -1);
 
         switch (ev_type) {
         case RDMA_CM_EVENT_CONNECT_REQUEST:
-                DINFO("connect request from %s fd %d\n",
-                      inet_ntoa(((struct sockaddr_in *)(&ev->id->route.addr.dst_addr))->sin_addr),
+                DINFO("connect request from %s:%d fd %d\n",
+                      inet_ntoa(sockaddr->sin_addr),
+                      ntohs(sockaddr->sin_port),
                       fd);
                 rdma_request_op[type].rdma_connect_requtest(ev, core);
                 break;
 
         case RDMA_CM_EVENT_ESTABLISHED:
-                if (type == RDMA_SERVER_EV_FD)
-                        DINFO("%s established on passive side, fd %d\n",
-                              inet_ntoa(((struct sockaddr_in *)(&ev->id->route.addr.dst_addr))->sin_addr),
+                if (type == RDMA_SERVER_EV_FD) {
+                        DINFO("%s:%d established on passive side, fd %d\n",
+                              inet_ntoa(sockaddr->sin_addr),
+                              (sockaddr->sin_port),
                               fd);
+                } else if (type == RDMA_CLIENT_EV_FD) {
+                        DINFO("%s:%d established on client side, fd %d\n",
+                              inet_ntoa(sockaddr->sin_addr),
+                              ntohs(sockaddr->sin_port),
+                              fd);
+                }
                 rdma_request_op[type].rdma_established_requtest(ev, core);
                 break;
 
@@ -220,15 +234,18 @@ void rdma_handle_event(int fd, int type,
         case RDMA_CM_EVENT_REJECTED:
         case RDMA_CM_EVENT_ADDR_CHANGE:
         case RDMA_CM_EVENT_DISCONNECTED:
-                DINFO("%s disconnected request fd %d\n",
-                      inet_ntoa(((struct sockaddr_in *)(&ev->id->route.addr.dst_addr))->sin_addr),
+                DINFO("ev_type %d %s:%d disconnected request fd %d\n",
+                      ev_type,
+                      inet_ntoa(sockaddr->sin_addr),
+                      ntohs(sockaddr->sin_port),
                       fd);
                 rdma_request_op[type].rdma_disconnected_requtest(ev, core);
                 break;
 
         case RDMA_CM_EVENT_TIMEWAIT_EXIT:
-                DINFO("%s timewait exit request fd %d\n",
-                      inet_ntoa(((struct sockaddr_in *)(&ev->id->route.addr.dst_addr))->sin_addr),
+                DINFO("%s:%d timewait exit request fd %d\n",
+                      inet_ntoa(sockaddr->sin_addr),
+                      ntohs(sockaddr->sin_port),
                       fd);
                 rdma_request_op[type].rdma_timewait_exit_requtest(ev, core);
                 if (type == RDMA_CLIENT_EV_FD || type == RDMA_SERVER_EV_FD) {
@@ -267,12 +284,14 @@ void rdma_handle_event(int fd, int type,
                 if (unlikely(ret))
                         DERROR("ack cm event failed, %s\n", rdma_event_str(ev_type));
 
-                if (handler)
+                if (handler) {
                         handler->nr_ack++;
+                        RDMA_CONN_DUMP_L(DINFO, handler);
+                }
         }
 
         ANALYSIS_END(0, 1000 * 1000 * 5, NULL);
-        DINFO("successfully.\n");
+        DINFO("ev_type %d successfully.\n", ev_type);
         return;
 err_ret:
         ANALYSIS_END(0, 1000 * 1000 * 5, NULL);

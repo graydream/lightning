@@ -19,42 +19,100 @@
 #if ENABLE_RDMA
 
 #define CMID_DUMP_L(LEVEL, cmid) do { \
-        LEVEL("cm_id %p verbs %p qp %p pd %p context %p\n", \
+        struct sockaddr_in *__sa = (struct sockaddr_in *)(&(cmid)->route.addr.src_addr); \
+        struct sockaddr_in *__da = (struct sockaddr_in *)(&(cmid)->route.addr.dst_addr); \
+        LEVEL("cmid %p ctx %p local %s:%d verbs %p cq %p/%p chan %p ev %p qp %p pd %p\n", \
                (cmid), \
+               (cmid)->context, \
+               inet_ntoa(__sa->sin_addr), \
+               ntohs(__sa->sin_port), \
                (cmid)->verbs, \
+               (cmid)->send_cq, \
+               (cmid)->recv_cq, \
+               (cmid)->channel, \
+               (cmid)->event, \
                (cmid)->qp, \
-               (cmid)->pd, \
-               (cmid)->context); \
+               (cmid)->pd); \
+        LEVEL("cmid %p ctx %p remote %s:%d verbs %p cq %p/%p chan %p ev %p qp %p pd %p\n", \
+               (cmid), \
+               (cmid)->context, \
+               inet_ntoa(__da->sin_addr), \
+               ntohs(__da->sin_port), \
+               (cmid)->verbs, \
+               (cmid)->send_cq, \
+               (cmid)->recv_cq, \
+               (cmid)->channel, \
+               (cmid)->event, \
+               (cmid)->qp, \
+               (cmid)->pd); \
 } while(0)
 
 #define CMID_DUMP(cmid) CMID_DUMP_L(DBUG, cmid);
 
 #define IBV_MR_DUMP_L(LEVEL, mr) do { \
-        LEVEL("mr %p addr %p len %lu lkey %u rkey %u context %p pd %p\n", \
+        LEVEL("mr %p addr %p len %lu lkey %u rkey %u pd %p context %p\n", \
               (mr), \
               (mr)->addr, \
               (mr)->length, \
               (mr)->lkey, \
               (mr)->rkey, \
-              (mr)->context, \
-              (mr)->pd \
+              (mr)->pd, \
+              (mr)->context \
               ); \
 } while(0)
 
 #define IBV_MR_DUMP(mr) IBV_MR_DUMP_L(DBUG, mr)
 
+#define IBV_QP_DUMP_L(LEVEL, qp) do { \
+        LEVEL("qp %p cq %p/%p qp_num %u state %d type %d pd %p context %p\n", \
+              (qp), \
+              (qp)->send_cq, \
+              (qp)->recv_cq, \
+              (qp)->qp_num, \
+              (qp)->state, \
+              (qp)->qp_type, \
+              (qp)->pd, \
+              (qp)->context \
+              ); \
+} while(0)
+
+#define IBV_QP_DUMP(qp) IBV_QP_DUMP_L(DBUG, qp)
+
+#define IBV_CQ_DUMP_L(LEVEL, cq) do { \
+        LEVEL("cq %p cge %d handle %u context %p\n", \
+              (cq), \
+              (cq)->cqe, \
+              (cq)->handle, \
+              (cq)->context \
+              ); \
+} while(0)
+
+#define IBV_CQ_DUMP(cq) IBV_CQ_DUMP_L(DBUG, cq)
+
 typedef struct {
         struct ibv_context *ibv_verbs;
         struct ibv_cq *cq;
+        struct ibv_pd *pd;
         struct ibv_mr *mr;
         // int ref;
+
+        uint32_t nr_conn;
+
+        uint64_t nr_success;
+        uint64_t nr_flush;
+        uint64_t nr_other;
 } rdma_info_t;
 
 #define RDMA_INFO_DUMP_L(LEVEL, info) do { \
-        LEVEL("rdma_info %p verbs %p cq %p mr %p\n",  \
+        LEVEL("rdma_info %p conn %u nr %ju/%ju/%ju verbs %p cq %p pd %p mr %p\n",  \
                (info), \
+               (info)->nr_conn, \
+               (info)->nr_success, \
+               (info)->nr_flush, \
+               (info)->nr_other, \
                (info)->ibv_verbs, \
                (info)->cq, \
+               (info)->pd, \
                (info)->mr \
                ); \
 } while(0)
@@ -73,37 +131,58 @@ typedef struct {
         core_t *core;
 
         struct rdma_cm_id *cm_id;
+        struct ibv_cq *cq;
+        struct ibv_pd *pd;
         struct ibv_mr *mr;
         struct ibv_mr *iov_mr;
         struct ibv_qp *qp;
-        struct ibv_pd *pd;
-        struct rdma_event_channel *channel;
 
         void *private_mem;
         void *iov_addr;
 
+        // client or server
+        int type;
+        struct rdma_event_channel *channel;
+        rdma_info_t *dev;
+
         uint64_t nr_get;
         uint64_t nr_ack;
+
+        uint64_t nr_success;
+        uint64_t nr_flush;
+        uint64_t nr_other;
 } rdma_conn_t;
 
-#define RDMA_CONN_DUMP_L(LEVEL, conn) do { \
-        LEVEL("rdma_conn[%d] %p chan %p nr %ju/%ju conn %d close %d ref %d/%d cm_id %p qp %p mr %p addr %p core %p\n", \
+#define RDMA_CONN_DUMP_L3(LEVEL, env, conn) do { \
+        struct ibv_cq *cq = (conn)->dev ? (conn)->dev->cq : NULL; \
+        LEVEL("%s: rdma_conn[%d] %p conn %d/%d ref %d/%d ack %ju/%ju nr %ju/%ju/%ju rinfo %p cq %p pd %p cmid %p type %d chan %p qp %p mr %p/%p addr %p core %p\n", \
+               (env), \
                (conn)->node_loc, \
                (conn), \
-               (conn)->channel, \
-               (conn)->nr_get, \
-               (conn)->nr_ack, \
                (conn)->is_connected, \
                (conn)->is_closing, \
                (conn)->ref, \
                (conn)->qp_ref, \
+               (conn)->nr_get, \
+               (conn)->nr_ack, \
+               (conn)->nr_success, \
+               (conn)->nr_flush, \
+               (conn)->nr_other, \
+               (conn)->dev, \
+               cq, \
+               (conn)->pd, \
                (conn)->cm_id, \
+               (conn)->type, \
+               (conn)->channel, \
                (conn)->qp, \
+               (conn)->mr, \
                (conn)->iov_mr, \
                (conn)->iov_addr, \
                (conn)->core \
                ); \
 } while(0)
+
+#define RDMA_CONN_DUMP_L(LEVEL, conn) RDMA_CONN_DUMP_L3(LEVEL, "", conn)
 
 #define RDMA_CONN_DUMP(conn) RDMA_CONN_DUMP_L(DBUG, conn);
 
@@ -309,8 +388,8 @@ int corenet_rdma_add(core_t *core, sockid_t *sockid, void *ctx,
 
 void corenet_rdma_close(rdma_conn_t *rdma_handler, const char *caller);
 
-void corenet_rdma_put(rdma_conn_t *rdma_handler);
-void corenet_rdma_get(rdma_conn_t *rdma_handler, int n);
+void corenet_rdma_put(rdma_conn_t *rdma_handler, const char *caller, int verbose);
+void corenet_rdma_get(rdma_conn_t *rdma_handler, int n, const char *caller, int verbose);
 
 void corenet_rdma_check();
 

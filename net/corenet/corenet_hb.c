@@ -24,6 +24,20 @@ static int __corenet_hb_connected(void *_ctx)
         hb_ctx_t *ctx = _ctx;
 
         LTG_ASSERT(ctx->sockid.sd != -1);
+
+#if 0
+        long int r = _random();
+        if (r % 3 == 1) {
+                DWARN("for rdma: sockid %d seq %ju coreid %s/%d.%d\n",
+                      ctx->sockid.sd,
+                      ctx->seq,
+                      netable_rname(&ctx->coreid.nid),
+                      ctx->coreid.nid.id,
+                      ctx->coreid.idx);
+                return 0;
+        }
+#endif
+
         return corenet_maping_connected(&ctx->coreid.nid, &ctx->sockid);
 }
 

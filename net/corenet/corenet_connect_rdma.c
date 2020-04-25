@@ -41,6 +41,8 @@ int corenet_rdma_connect(uint32_t addr, uint32_t port, sockid_t *sockid)
         int ret;
         core_t *core = core_self();
 
+        port = ntohs(port);
+
         DINFO("ip %s port %d\n", _inet_ntoa(addr), port);
 
         ANALYSIS_BEGIN(0);

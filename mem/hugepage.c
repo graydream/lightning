@@ -174,7 +174,7 @@ void *hugepage_private_init(int hash, int sockid)
         
         LTG_ASSERT(addr);
         
-        DINFO("hash %d beigin init private hugepage%p\n", hash, addr);
+        DINFO("hash %d head addr %p\n", hash, addr);
         head = (hugepage_head_t *)addr;
 
         __hugepage_head_init(head, NULL, addr, PRIVATE_HP_COUNT, sockid);

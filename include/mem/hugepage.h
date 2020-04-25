@@ -12,7 +12,9 @@
 
 int hugepage_init(int daemon, uint64_t coremask, int nr_huge);
 void *hugepage_private_init(int hash, int sockid);
-void get_global_private_mem(void **private_mem, uint64_t *private_mem_size);
+
 extern int hugepage_getfree(void **addr, uint64_t *phyaddr);
+
+void get_global_private_mem(void **private_mem, uint64_t *private_mem_size);
 
 #endif

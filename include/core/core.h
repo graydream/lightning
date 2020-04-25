@@ -107,6 +107,19 @@ typedef struct __core {
         void *tls[LTG_TLS_MAX_KEEP];
 } core_t;
 
+#define CORE_DUMP_L(LEVEL, core) do { \
+        LEVEL("core %p name %s hash %d sche_idx %d flag %d\n", \
+              (core), \
+              (core)->name, \
+              (core)->hash, \
+              (core)->sche_idx, \
+              (core)->flag \
+              ); \
+} while(0)
+
+#define CORE_DUMP(core) CORE_DUMP_L(DBUG, core)
+
+
 //typedef void (*poller_t)(core_t *core, void *ctx);
 #define CORE_FLAG_PASV 0x0001
 #define CORE_FLAG_POLLING 0x0002

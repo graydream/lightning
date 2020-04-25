@@ -22,14 +22,16 @@ typedef struct {
 
 typedef sock_t sockid_t;
 
-#define SOCKID_DUMP(sockid) do { \
-        DBUG("sock %s/%d type %d seq %d rdma %p\n", \
+#define SOCKID_DUMP_L(LEVEL, sockid) do { \
+        LEVEL("sock %s/%d seq %u type %d rdma %p\n", \
               _inet_ntoa((sockid)->addr), \
               (sockid)->sd, \
-              (sockid)->type, \
               (sockid)->seq, \
+              (sockid)->type, \
               (sockid)->rdma_handler); \
 } while (0)
+
+#define SOCKID_DUMP(sockid) SOCKID_DUMP_L(DBUG, sockid)
 
 typedef struct {
         net_handle_type_t type;
