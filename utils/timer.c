@@ -344,6 +344,9 @@ int timer_insert(const char *name, void *ctx, func_t func, suseconds_t usec)
         ltimer_t *timer;
         entry_t *ent;
 
+        LTG_ASSERT(func);
+        LTG_ASSERT(ctx);
+        
         timer = core_tls_get(NULL, VARIABLE_TIMER);
         if (likely(timer)) {
                 DBUG("timer insert %s %ju\n", name, usec);

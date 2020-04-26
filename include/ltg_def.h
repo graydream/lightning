@@ -54,4 +54,6 @@ typedef long long LLD;
 
 #define ENABLE_ANALYSIS 0
 
+#define SCHEDULE_TASKCTX_RUNTIME 1
+
 #endif

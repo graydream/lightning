@@ -21,7 +21,11 @@ typedef struct __task_t {
         int16_t taskid;
         int16_t scheid;
         uint32_t fingerprint;
-        struct  timeval tv;
+#if SCHEDULE_TASKCTX_RUNTIME
+        uint64_t tv;
+#else
+        struct timeval tv;
+#endif
 } task_t;
 
 #pragma pack(8)
