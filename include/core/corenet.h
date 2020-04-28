@@ -14,8 +14,6 @@
 
 #define ENABLE_RDMA 1
 
-#define ENABLE_TCP_THREAD 0
-
 #if ENABLE_RDMA
 
 #define CMID_DUMP_L(LEVEL, cmid) do { \
