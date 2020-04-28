@@ -92,4 +92,49 @@ uint64_t cpu_freq_init();
 #define LLIB_DIRNOCREATE 0
 
 
+/**
+ * @brief 每一时刻对应一个指标计数器
+ */
+typedef struct {
+        struct timeval t;
+        uint64_t count1;
+} timepoint_t;
+
+typedef struct {
+        char name[MAX_NAME_LEN];
+        timepoint_t p1;
+        timepoint_t p2;
+        int64_t interval;
+        uint64_t speed;
+
+        ltg_spinlock_t spin;
+} timerange_t;
+
+typedef int (*timerange_func)(timerange_t *range, int64_t interval, void *context);
+
+int timerange_create(timerange_t **range, const char *name, int64_t interval);
+int timerange_destroy(timerange_t **range);
+
+int timerange_init(timerange_t *range, const char *name, int64_t interval);
+int timerange_update(timerange_t *range, uint64_t count, timerange_func func, void *context);
+
+#if 1
+
+#define DBT_L(LEVEL, format, a...)                                      \
+        do {                                                            \
+                char __bt__[MAX_BUF_LEN];                               \
+                calltrace(__bt__, MAX_BUF_LEN);                         \
+                D_MSG(LEVEL, "DBT: " format " backtrace : %s\n", ## a, __bt__); \
+        } while (0)
+
+#define DBT(format, a...) DBT_L(__D_BUG, format, ##a)
+
+#else
+
+#define DBT_L(LEVEL, format, a...)
+
+#define DBT(format, a...)
+
+#endif
+
 #endif

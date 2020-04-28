@@ -500,6 +500,7 @@ rdma_req_t *build_post_send_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
         sr->opcode = IBV_WR_SEND;
         sr->send_flags = IBV_SEND_SIGNALED;
 
+        RDMA_REQ_DUMP_L(DBUG, req);
         return req;
 }
 
@@ -552,6 +553,7 @@ rdma_req_t  *build_rdma_read_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
                 tail->next = NULL;
         }
 
+        RDMA_REQ_DUMP_L(DBUG, req);
         return req;
 }
 
@@ -610,6 +612,7 @@ rdma_req_t *build_rdma_write_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
         /*send message after RDMA_WRITE*/
         tail->next = msg_sr;
 
+        RDMA_REQ_DUMP_L(DBUG, req);
         return req;
 }
 
@@ -635,6 +638,8 @@ __corenet_rdma_handle_wc(struct ibv_wc *wc, __corenet_t *corenet)
         node = &__corenet_rdma__->array[rdma_handler->node_loc];
 
         rdma_handler->nr_success++;
+
+        RDMA_REQ_DUMP_L(DBUG, req);
 
         switch (req->mode) {
         case RDMA_RECV_MSG:

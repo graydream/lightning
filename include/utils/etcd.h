@@ -37,35 +37,40 @@ typedef struct{
 } etcd_lock_t;
 
 int etcd_mkdir(const char *prefix, const char *dir, int ttl);
+int etcd_del_dir(const char *prefix, const char *_key, int recursive);
+
 int etcd_readdir(const char *_key, char *buf, int *buflen);
+
+int etcd_del(const char *prefix, const char *_key);
+int etcd_del2(char *key);
 
 int etcd_list1(const char *prefix, const char *_key, etcd_node_t **_node);
 int etcd_list(const char *_key, etcd_node_t **_node);
-int etcd_del(const char *prefix, const char *_key);
-int etcd_del2(char *key);
-int etcd_del_dir(const char *prefix, const char *_key, int recursive);
 
 int etcd_create_text(const char *prefix, const char *_key, const char *_value, int ttl);
-int etcd_get_text (const char *prefix, const char *_key, char *value, int *idx);
+int etcd_set_text(const char *prefix, const char *_key, const char *_value,
+                  int flag, int ttl);
 int etcd_update_text(const char *prefix, const char *_key, const char *_value, int  *idx, int ttl);
+int etcd_get_text (const char *prefix, const char *_key, char *value, int *idx);
 
 int etcd_create(const char *prefix, const char *_key, const void *_value, int valuelen, int ttl);
-int etcd_get_bin(const char *prefix, const char *_key, void *_value, int *_valuelen, int *idx);
+int etcd_set_bin(const char *prefix, const char *_key, const void *_value,
+                 int valuelen, int flag, int ttl);
 int etcd_update(const char *prefix, const char *_key, const void *_value, int valuelen,
                 int *idx, int ttl);
+int etcd_get_bin(const char *prefix, const char *_key, void *_value, int *_valuelen, int *idx);
 
 int etcd_lock_init(etcd_lock_t *lock, const char *prefix, const char *key, int ttl, uint32_t magic, int update);
 int etcd_lock(etcd_lock_t *lock);
 int etcd_unlock(etcd_lock_t *lock);
-int etcd_locker(etcd_lock_t *lock, char *locker, nid_t *nid, uint32_t *_magic, int *idx);
-int etcd_lock_watch(etcd_lock_t *lock, char *value, nid_t *nid, uint32_t *magic, int *idx);
+
+// master
 int etcd_lock_health(etcd_lock_t *lock);
 
-int etcd_init();
+// slave
+int etcd_locker(etcd_lock_t *lock, char *locker, nid_t *nid, uint32_t *_magic, int *idx);
+int etcd_lock_watch(etcd_lock_t *lock, char *value, nid_t *nid, uint32_t *magic, int *idx);
 
-int etcd_set_bin(const char *prefix, const char *_key, const void *_value,
-                 int valuelen, int flag, int ttl);
-int etcd_set_text(const char *prefix, const char *_key, const char *_value,
-                  int flag, int ttl);
+int etcd_init();
 
 #endif

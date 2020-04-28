@@ -10,25 +10,65 @@
 
 #define __ETCD_SRV__  "127.0.0.1:2379"
 
+#define ETCD_TRACE 1
+
 extern ltgconf_t ltgconf_global;
 
+static timerange_t *__tr_get = NULL;
+static timerange_t *__tr_set = NULL;
+
+static inline timerange_t *tr_get()
+{
+        int ret;
+
+        if (unlikely(__tr_get == NULL)) {
+                ret = timerange_create(&__tr_get, "etcd_get", 1000 * 1000);
+                if (unlikely(ret))
+                        UNIMPLEMENTED(__DUMP__);
+        }
+
+        return __tr_get;
+}
+
+static inline timerange_t *tr_set()
+{
+        int ret;
+
+        if (unlikely(__tr_set == NULL)) {
+                ret = timerange_create(&__tr_set, "etcd_set", 1000 * 1000);
+                if (unlikely(ret))
+                        UNIMPLEMENTED(__DUMP__);
+        }
+
+        return __tr_set;
+}
+
 static int __etcd_open_str(char *server, etcd_session *_sess);
-static int __etcd_get__(const char *srv, const char *key, etcd_node_t **result, int consistent);
+static int __etcd_get__(const char *srv, const char *key, etcd_node_t **result,
+                        int consistent);
+
 
 static int  __etcd_set__(const char *key, const char *value,
-                           const etcd_prevcond_t *precond, etcd_set_flag flag, unsigned int ttl)
+                         const etcd_prevcond_t *precond, etcd_set_flag flag,
+                         unsigned int ttl)
 {
         int ret;
         etcd_session sess;
         char *host;
 
-        DBUG("write %s\n", key);
+#if ETCD_TRACE
+        DBT_L(__D_INFO, "key %s flag %d ttl %u value %s\n", key, flag, ttl, value);
+#else
+        DBUG("key %s flag %d ttl %u value %s\n", key, flag, ttl, value);
+#endif
 
         host = strdup(__ETCD_SRV__);
         ret = __etcd_open_str(host, &sess);
         if (ret) {
                 GOTO(err_ret, ret);
         }
+
+        timerange_update(tr_set(), 1, NULL, NULL);
 
         ret = etcd_set(sess, (void *)key, (void *)value, (void *)precond, flag,
                        ttl, ltgconf_global.rpc_timeout / 2);
@@ -62,13 +102,19 @@ static int __etcd_get__(const char *srv, const char *key, etcd_node_t **result, 
         etcd_node_t *node;
         char *host;
 
-        DBUG("read %s\n", key);
+#if ETCD_TRACE
+        DBT_L(__D_INFO, "srv %s key %s consistent %d\n", srv, key, consistent);
+#else
+        DBUG("srv %s key %s consistent %d\n", srv, key, consistent);
+#endif
         
         host = strdup(srv);
         ret = __etcd_open_str(host, &sess);
         if (ret) {
                 GOTO(err_ret, ret);
         }
+
+        timerange_update(tr_get(), 1, NULL, NULL);
                 
         ret = etcd_get(sess, (void *)key, ltgconf_global.rpc_timeout / 2, &node, consistent);
         if(ret != ETCD_OK){
@@ -116,7 +162,8 @@ err_ret:
 }
 
 static int __etcd_set(const char *key, const char *value,
-                      const etcd_prevcond_t *precond, etcd_set_flag flag, unsigned int ttl)
+                      const etcd_prevcond_t *precond, etcd_set_flag flag,
+                      unsigned int ttl)
 {
         int ret;
 
@@ -156,6 +203,7 @@ static int __etcd_get_request(va_list ap)
         const char *key = va_arg(ap, const char *);
         etcd_node_t **result = va_arg(ap, etcd_node_t **);
         int consistent = va_arg(ap, int);
+
         etcd_node_t *node = NULL;
 
         va_end(ap);
@@ -186,8 +234,9 @@ static int __etcd_get(const char *key, etcd_node_t **result, int consistent)
         ANALYSIS_BEGIN(0);
 
         if (likely(sche_running())) {
-                ret = sche_newthread(SCHE_THREAD_ETCD, _random(), FALSE, "etcd_get", -1, __etcd_get_request,
-                                key, result, consistent);
+                ret = sche_newthread(SCHE_THREAD_ETCD, _random(), FALSE, "etcd_get",
+                                     -1, __etcd_get_request,
+                                     key, result, consistent);
                 if (unlikely(ret)) {
                         //LTG_ASSERT(ret == ENOKEY);
                         GOTO(err_ret, ret);
@@ -262,7 +311,8 @@ static int __etcd_del(etcd_session sess, char *key)
 
         LTG_ASSERT(sess);
         if (likely(sche_running())) {
-                ret = sche_newthread(SCHE_THREAD_ETCD, _random(), FALSE, "etcd_del", -1, __etcd_del_request,
+                ret = sche_newthread(SCHE_THREAD_ETCD, _random(), FALSE, "etcd_del",
+                                     -1, __etcd_del_request,
                                 sess, key);
                 if (unlikely(ret)) {
                         GOTO(err_ret, ret);
@@ -685,6 +735,13 @@ int etcd_list(const char *_key, etcd_node_t **_node)
         etcd_node_t *node = NULL;
 
         snprintf(key, MAX_NAME_LEN, "/%s/%s", ltgconf_global.system_name, _key);
+
+#if ETCD_TRACE
+        DBT_L(__D_INFO, "key %s\n", key);
+#else
+        DBUG("key %s\n", key);
+#endif
+
         ret = __etcd_get(key, &node, 0);
         if(ret){
                 GOTO(err_ret, ret);
@@ -707,8 +764,17 @@ int etcd_list1(const char *prefix, const char *_key, etcd_node_t **_node)
         etcd_node_t *node = NULL;
 
         snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
+
+#if ETCD_TRACE
+        DBT_L(__D_INFO, "key %s\n", key);
+#else
+        DBUG("key %s\n", key);
+#endif
+
         ret = __etcd_get(key, &node, 0);
         if(ret){
+                if (ret == ENOKEY)
+                        goto err_ret;
                 GOTO(err_ret, ret);
         }
 
@@ -768,6 +834,7 @@ retry:
                 used = gettime() - begin;
 
                 if (ret == EAGAIN) {
+                        usleep(200 * 1000);
                         goto retry;
                 } else {
                         DWARN("update lock %s ttl %u fail, used %u, ret %u\n",
@@ -992,6 +1059,7 @@ int etcd_lock_watch(etcd_lock_t *lock, char *locker, nid_t *nid, uint32_t *magic
 
         ret = __etcd_get(lock->key, &node, 1);
         if(ret){
+                // TODO EAGAIN
                 GOTO(err_close, ret);
         }
 
@@ -1042,6 +1110,12 @@ int etcd_del2(char *key)
         etcd_session  sess;
         char *host;
 
+#if ETCD_TRACE
+        DBT_L(__D_INFO, "key %s\n", key);
+#else
+        DBUG("key %s\n", key);
+#endif
+
         // LTG_ASSERT(sche_self() == 0);
 
         host = strdup(__ETCD_SRV__);
@@ -1050,7 +1124,6 @@ int etcd_del2(char *key)
                 GOTO(err_ret, ret);
         }
 
-        DBUG("remove %s\n", key);
         ret = __etcd_del(sess, key);
         if (ret) {
                 GOTO(err_close, ret);
@@ -1127,7 +1200,7 @@ int etcd_init()
         ret = __etcd_ops_register();
         if (unlikely(ret))
                 GOTO(err_ret, ret);
-        
+
         return 0;
 err_ret:
         return ret;

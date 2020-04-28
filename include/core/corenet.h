@@ -201,11 +201,13 @@ typedef struct {
 } rdma_req_t;
 
 #define RDMA_REQ_DUMP_L(LEVEL, req) do { \
-        LEVEL("rdma_req %p m %u ref %u h %p\n", \
+        LEVEL("rdma_req %p m %u h %p ref %u buf %ju used %d\n", \
                (req), \
                (req)->mode, \
+               (req)->rdma_handler, \
                (req)->ref, \
-               (req)->rdma_handler \
+               (req)->msg_buf.len, \
+               (req)->msg_buf.used \
         ); \
 } while(0)
 
