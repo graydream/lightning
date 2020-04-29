@@ -1070,10 +1070,13 @@ int timerange_update(timerange_t *range, uint64_t count1, timerange_func func, v
         if (interval >= range->interval) {
                 LTG_ASSERT(range->p2.count1 >= range->p1.count1);
 
-                DINFO("name %s interval %jd speed %4ju p1 %ju p2 %ju\n",
+                range->speed = (range->p2.count1 - range->p1.count1) * 1000 * 1000 / interval;
+
+                DINFO("name %s[%p] interval %jd speed %4ju p1 %ju p2 %ju\n",
                       range->name,
+                      range,
                       interval,
-                      (range->p2.count1 - range->p1.count1) * 1000 * 1000 / interval,
+                      range->speed,
                       range->p1.count1,
                       range->p2.count1);
 
