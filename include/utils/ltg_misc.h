@@ -118,7 +118,7 @@ int timerange_destroy(timerange_t **range);
 int timerange_init(timerange_t *range, const char *name, int64_t interval);
 int timerange_update(timerange_t *range, uint64_t count, timerange_func func, void *context);
 
-#if 1
+#if 0
 
 #define DBT_L(LEVEL, format, a...)                                      \
         do {                                                            \
