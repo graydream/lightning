@@ -11,7 +11,7 @@
 #define DBG_SUBSYS S_LTG_UTILS
 
 #include "ltg_utils.h"
-#include "core/sche.h"
+#include "core/core.h"
 #include "utils/fnotify.h"
 
 int __d_info__ = __D_INFO;
