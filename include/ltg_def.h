@@ -54,6 +54,8 @@ typedef long long LLD;
 
 #define ENABLE_ANALYSIS 0
 
+#define ENABLE_TCP_THREAD 0
+
 #define SCHEDULE_TASKCTX_RUNTIME 1
 
 #endif

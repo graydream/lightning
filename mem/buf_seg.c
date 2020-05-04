@@ -11,18 +11,6 @@
 #include "ltg_utils.h"
 #include "core/sche.h"
 
-#if 0
-#define DBT(format, a...)                                               \
-        do {                                                            \
-                char __bt__[MAX_BUF_LEN];                               \
-                calltrace(__bt__, MAX_BUF_LEN);                         \
-                D_MSG(__D_INFO, "DBT: " format " backtrace : %s\n", ## a, __bt__); \
-        } while (0)
-
-#else
-#define DBT(format, a...)
-#endif
-
 /*shared*/
 static void __seg_free_head(seg_t *seg, int sys)
 {

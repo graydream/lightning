@@ -19,6 +19,7 @@
 #include "utils/fnotify.h"
 #include "utils/etcd.h"
 #include "utils/ltg_global.h"
+#include "utils/plock.h"
 #include "ltg_mem.h"
 
 #endif

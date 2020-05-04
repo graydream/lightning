@@ -1017,3 +1017,79 @@ out:
 err_ret:
         return ret;
 }
+
+int timerange_create(timerange_t **range, const char *name, int64_t interval)
+{
+        int ret;
+        timerange_t *_range;
+
+        ret = ltg_malloc((void **)&_range, sizeof(timerange_t));
+        if (unlikely(ret))
+                UNIMPLEMENTED(__DUMP__);
+
+        timerange_init(_range, name, interval);
+
+        *range = _range;
+        return 0;
+}
+
+int timerange_destroy(timerange_t **range)
+{
+        ltg_free((void **)range);
+        return 0;
+}
+
+int timerange_init(timerange_t *range, const char *name, int64_t interval)
+{
+        strcpy(range->name, name);
+        range->interval = interval;
+        range->speed = 0;
+
+        _gettimeofday(&range->p1.t, NULL);
+        range->p1.count1 = 0;
+
+        _gettimeofday(&range->p2.t, NULL);
+        range->p2.count1 = 0;
+
+        ltg_spin_init(&range->spin);
+
+        return 0;
+}
+
+int timerange_update(timerange_t *range, uint64_t count1, timerange_func func, void *context)
+{
+        int ret;
+        _gettimeofday(&range->p2.t, NULL);
+        range->p2.count1 += count1;
+
+        ret = ltg_spin_lock(&range->spin);
+        if (unlikely(ret))
+                UNIMPLEMENTED(__DUMP__);
+
+        int64_t interval = _time_used(&range->p1.t, &range->p2.t);
+        if (interval >= range->interval) {
+                LTG_ASSERT(range->p2.count1 >= range->p1.count1);
+
+                range->speed = (range->p2.count1 - range->p1.count1) * 1000 * 1000 / interval;
+
+                DINFO("name %s[%p] interval %jd speed %4ju p1 %ju p2 %ju\n",
+                      range->name,
+                      range,
+                      interval,
+                      range->speed,
+                      range->p1.count1,
+                      range->p2.count1);
+
+                if (func) {
+                        func(range, interval, context);
+                }
+
+                range->p1 = range->p2;
+
+                ltg_spin_unlock(&range->spin);
+                return 1;
+        }
+
+        ltg_spin_unlock(&range->spin);
+        return 0;
+}
