@@ -235,10 +235,10 @@ void sche_id(int *sid, int *taskid)
 #else
 void sche_id(int *sid, int *taskid)
 {
-        sche_t *sche = sche_self();
-        if (sche) {
-                *sid = sche->id;
-                *taskid = sche->running_task;
+        core_t *core = core_self();
+        if (core) {
+                *sid = core->hash;
+                *taskid = core->sche->running_task;
         } else {
                 *sid = -1;
                 *taskid = -1;
