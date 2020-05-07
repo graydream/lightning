@@ -159,7 +159,8 @@ void corenet_tcp_check()
 }
 
 static int __corenet_add(corenet_tcp_t *corenet, const sockid_t *sockid, void *ctx,
-                         core_exec exec, func_t reset, func_t check, func_t recv, const char *name)
+                         core_exec exec, func_t reset, func_t check, func_t recv,
+                         const char *name)
 {
         int ret, event, sd;
         struct epoll_event ev;
