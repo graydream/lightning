@@ -483,14 +483,14 @@ inline int ltgbuf_init(ltgbuf_t *buf, int size)
         do {
                 min = _min(left, BUFFER_SEG_SIZE);
 
-#if 0
-                seg = seg_huge_create(buf, min);
-#else
-                if (likely(min < 256 * 1024))
+                if (likely(ltgconf_global.rdma)) {
                         seg = seg_huge_create(buf, min);
-                else
-                        seg = seg_sys_create(buf, min);
-#endif
+                } else {
+                        if (likely(min < 256 * 1024))
+                                seg = seg_huge_create(buf, min);
+                        else
+                                seg = seg_sys_create(buf, min);
+                }
 
                 seg_add_tail(buf, seg);
                 left -= min;
