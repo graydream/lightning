@@ -457,10 +457,6 @@ int core_init(uint64_t mask, int flag)
                 ret = corenet_maping_init();
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
-
-                ret = loadbalance_init();
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
         } else {
                 ret = core_event_init();
                 if (unlikely(ret))

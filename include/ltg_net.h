@@ -12,7 +12,6 @@
 #include "net/net_events.h"
 #include "net/conn.h"
 #include "net/heartbeat.h"
-#include "net/loadbalance.h"
 
 #endif
 

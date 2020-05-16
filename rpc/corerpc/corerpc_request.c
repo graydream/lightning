@@ -196,11 +196,7 @@ static int __corerpc_send_and_wait(void *core, const char *name, corerpc_op_t *o
                 GOTO(err_ret, ret);
         }
 
-#if 0
-        loadbalance_update(&op->coreid, rpc_ctx.latency);
-#endif
         *latency = rpc_ctx.latency;
-        
 
         ANALYSIS_QUEUE(0, IO_INFO, NULL);
 
