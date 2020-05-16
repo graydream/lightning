@@ -163,7 +163,8 @@ err_ret:
         return ret;
 }
 
-int corerpc_send_and_wait(void *core, const char *name, corerpc_op_t *op)
+static int __corerpc_send_and_wait(void *core, const char *name, corerpc_op_t *op,
+                                   uint64_t *latency)
 {
         int ret;
         rpc_ctx_t rpc_ctx;
@@ -195,7 +196,11 @@ int corerpc_send_and_wait(void *core, const char *name, corerpc_op_t *op)
                 GOTO(err_ret, ret);
         }
 
+#if 0
         loadbalance_update(&op->coreid, rpc_ctx.latency);
+#endif
+        *latency = rpc_ctx.latency;
+        
 
         ANALYSIS_QUEUE(0, IO_INFO, NULL);
 
@@ -207,7 +212,7 @@ err_ret:
         return ret;
 }
 
-int IO_FUNC __corerpc_postwait(const char *name, corerpc_op_t *op)
+int IO_FUNC __corerpc_postwait(const char *name, corerpc_op_t *op, uint64_t *latency)
 {
         int ret;
         core_t *core = core_self();
@@ -221,7 +226,7 @@ int IO_FUNC __corerpc_postwait(const char *name, corerpc_op_t *op)
         DBUG("send to %s/%d, sd %u\n", netable_rname(&op->coreid.nid),
              op->coreid.idx, op->sockid.sd);
 
-        ret = corerpc_send_and_wait(core, name, op);
+        ret = __corerpc_send_and_wait(core, name, op, latency);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
         }
@@ -239,6 +244,7 @@ int IO_FUNC corerpc_postwait(const char *name, const coreid_t *coreid, const voi
 {
         int ret;
         corerpc_op_t op;
+        uint64_t latency;
 
         op.coreid = *coreid;
         op.request = request;
@@ -251,7 +257,7 @@ int IO_FUNC corerpc_postwait(const char *name, const coreid_t *coreid, const voi
         op.timeout = timeout;
 
         if (likely(ltgconf_global.daemon && corerpc_inited)) {
-                ret = __corerpc_postwait(name, &op);
+                ret = __corerpc_postwait(name, &op, &latency);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
         } else {
@@ -301,6 +307,43 @@ err_ret:
         return ret;
 }
 
+int IO_FUNC corerpc_postwait2(const char *name, const coreid_t *coreid,
+                              const void *request, int reqlen,
+                              const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
+                              uint64_t *latency, int msg_type, int msg_size,
+                              int group, int timeout)
+{
+        int ret;
+        corerpc_op_t op;
+
+        op.coreid = *coreid;
+        op.request = request;
+        op.reqlen = reqlen;
+        op.wbuf = wbuf;
+        op.rbuf = rbuf;
+        op.group = group;
+        op.msg_type = msg_type;
+        op.msg_size = msg_size;
+        op.timeout = timeout;
+
+        if (likely(ltgconf_global.daemon && corerpc_inited)) {
+                ret = __corerpc_postwait(name, &op, latency);
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+        } else {
+                ret = stdrpc_request_wait3(name, coreid, request, reqlen,
+                                           wbuf, rbuf, msg_type, -1, timeout);
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+
+                *latency = 0;
+        }
+
+        return 0;
+err_ret:
+        return ret;
+}
+
 int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
                           const sockid_t *sockid, const void *request,
                           int reqlen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
@@ -308,6 +351,7 @@ int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
 {
         int ret;
         corerpc_op_t op;
+        uint64_t latency;
 
         op.coreid = *coreid;
         op.request = request;
@@ -322,7 +366,7 @@ int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
         
         if (likely(ltgconf_global.daemon)) {
                 core_t *core = core_self();
-                ret = corerpc_send_and_wait(core, name, &op);
+                ret = __corerpc_send_and_wait(core, name, &op, &latency);
                 if (unlikely(ret)) {
                         GOTO(err_ret, ret);
                 }

@@ -76,7 +76,7 @@ static uint64_t __loadbalance_random(loadbalance_t *loadbalance)
 {
         int idx = (loadbalance->ridx++) + (loadbalance->lidx++);
         
-        return __rand__[idx  % __RANDOM__];
+        return __rand__[(idx * 10)  % __RANDOM__];
 }
 
 
@@ -124,14 +124,14 @@ static int __loadbalance_get(loadbalance_t *loadbalance, const section_t *sec, i
         loadinfo[0] = 0;
         for (i = 1; i <= count; i++) {
                 loadinfo[i] = sec[i - 1].latency;
-                if (loadinfo[i] < 10)
-                        loadinfo[i] = 10;
+                if (loadinfo[i] < 1)
+                        loadinfo[i] = 1;
 
-                max = max > loadinfo[i] ? max : loadinfo[i];
+                max = _max(max, loadinfo[i]);
         }
 
         for (i = 1; i <= count; i++) {
-                loadinfo[i] =  ((max  * 1000 * 1000) / loadinfo[i]);
+                loadinfo[i] =  ((max  * 1000) / loadinfo[i]);
         }
 
         for (i = 1; i <= count; i++) {
@@ -141,10 +141,12 @@ static int __loadbalance_get(loadbalance_t *loadbalance, const section_t *sec, i
         rand = __loadbalance_random(loadbalance) % (int)(loadinfo[count]);
 
         for (i = 0; i < count; i++) {
-                if (rand >= loadinfo[i] && rand < loadinfo[i + 1]) {
+                if (rand >= loadinfo[i] && rand <= loadinfo[i + 1]) {
                         return i;
                 }
         }
+
+        LTG_ASSERT(0);
 
         return 0;
 }
