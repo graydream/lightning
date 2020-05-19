@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/vfs.h>
-#include <ustat.h>
 #include <sys/socket.h>
 #include <sys/sendfile.h>
 #include <unistd.h>

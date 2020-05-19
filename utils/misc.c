@@ -10,8 +10,6 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/vfs.h>
-#include <ustat.h>
-#include <openssl/sha.h>
 #include <stdarg.h>
 #include <ctype.h>
 #include <sys/wait.h>
