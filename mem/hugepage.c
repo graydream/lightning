@@ -205,7 +205,7 @@ static void __hugepage_init_public(hugepage_head_t *head, void *public, int daem
 
         for (int i = 0; i < PUBLIC_HP_COUNT; i++) {
                 hpage = &head->hgpages[i];
-                __hugepage_init(hpage, pos,  -1, i, daemon & use_huge);
+                __hugepage_init(hpage, pos,  -1, i, daemon && use_huge);
                 list_add_tail(&hpage->list, &head->hugepage_free_list);
                 pos += HUGEPAGE_SIZE;
         }
