@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
-set(CMAKE_C_FLAGS "-std=gnu99 -W -Wall -fPIC -Werror -Wno-array-bounds -Wno-implicit-fallthrough -Werror=return-type -Wno-stringop-truncation -Wno-format-truncation -Wno-format-overflow -Wno-stringop-overflow -Wno-misleading-indentation -Wno-deprecated-declarations -Wno-cast-function-type -Wno-int-in-bool-context -Wno-pointer-compare -D_GNU_SOURCE -D_REENTRANT -D_FILE_OFFSET_BITS=64 -fms-extensions")
+set(CMAKE_C_FLAGS "-std=gnu99 -W -Wall -fPIC -Werror -Wno-array-bounds -Wno-restrict -Wno-implicit-fallthrough -Werror=return-type -Wno-stringop-truncation -Wno-format-truncation -Wno-format-overflow -Wno-stringop-overflow -Wno-misleading-indentation -Wno-deprecated-declarations -Wno-cast-function-type -Wno-int-in-bool-context -Wno-pointer-compare -D_GNU_SOURCE -D_REENTRANT -D_FILE_OFFSET_BITS=64 -fms-extensions")
 
 SET(CMAKE_C_FLAGS_DEBUG          "$ENV{CFLAGS} -O0 -g -ggdb")
 SET(CMAKE_C_FLAGS_RELEASE        "$ENV{CFLAGS} -O3 -g -ggdb")
@@ -24,6 +24,13 @@ message("lightning: install directory ${CMAKE_INSTALL_PREFIX}, use -D CMAKE_INST
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+
+if(${CMAKE_BUILD_TYPE} STREQUAL DEBUG)
+  message("***************Build for debug***************")
+  add_definitions("-DLTG_CMAKE_DEBUG=1")
+else()
+  add_definitions("-DLTG_CMAKE_DEBUG=0")
+endif()
 
 add_library(lightning STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/utils/plock.c

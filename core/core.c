@@ -195,6 +195,7 @@ void IO_FUNC core_worker_run(core_t *core)
 
 #if ENABLE_ANALYSIS
         analysis_merge(core);
+#else
 #endif
 
 #if SCHE_ANALYSIS

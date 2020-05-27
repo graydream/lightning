@@ -52,7 +52,11 @@ typedef long long LLD;
 
 #define ENABLE_HUGEPAGE 1
 
+#if LTG_CMAKE_DEBUG
+#define ENABLE_ANALYSIS 1
+#else
 #define ENABLE_ANALYSIS 0
+#endif
 
 #define ENABLE_TCP_THREAD 0
 
