@@ -27,10 +27,16 @@ include_directories(
 
 if(${CMAKE_BUILD_TYPE} STREQUAL DEBUG)
   message("***************Build for debug***************")
-  add_definitions("-DLTG_CMAKE_DEBUG=1")
+  set(LTG_CMAKE_DEBUG 1)
 else()
-  add_definitions("-DLTG_CMAKE_DEBUG=0")
+  set(LTG_CMAKE_DEBUG 0)
 endif()
+
+configure_file (
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/ltg_cmake.h.ini"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/ltg_cmake.h"
+)
+
 
 add_library(lightning STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/utils/plock.c
