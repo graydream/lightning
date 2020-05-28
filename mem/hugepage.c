@@ -409,6 +409,9 @@ int hugepage_getfree(void **_addr, uint64_t *phyaddr)
 
 void get_global_private_mem(void **private_mem, uint64_t *private_mem_size)
 {
+        if (__hugepage__ == NULL)
+                return ;
+
         *private_mem = __hugepage__->start_addr;
         *private_mem_size = ((uint64_t)__hugepage__->hugepage_count) * HUGEPAGE_SIZE;
 }
