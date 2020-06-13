@@ -876,6 +876,8 @@ int ltg_thread_create(thread_func fn, void *arg, const char *name)
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
+        (void) pthread_setname_np(th, name);
+        
         DINFO("thread %s started\n", name);
 
         return 0;

@@ -36,9 +36,9 @@ STATIC void __plock_check(plock_t *rwlock)
 {
         if (unlikely(rwlock->thread == -1)) {
                 rwlock->thread = sche_getid();
-                YASSERT(rwlock->thread >= gloconf.main_loop_threads);
+                LTG_ASSERT(rwlock->thread >= gloconf.main_loop_threads);
         } else {
-                YASSERT(rwlock->thread == sche_getid());
+                LTG_ASSERT(rwlock->thread == sche_getid());
         }
 }
 #endif
@@ -60,7 +60,7 @@ int plock_init(plock_t *rwlock, const char *name)
         rwlock->count = 0;
         if (name) {
                 if (strlen(name) > MAX_LOCK_NAME - 1)
-                        YASSERT(0);
+                        LTG_ASSERT(0);
 
                 strcpy(rwlock->name, name);
         } else {

@@ -362,7 +362,9 @@ static int __core_create(core_t **_core, const char *name, int hash, int flag)
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
-        ret = ltg_thread_create(__core_worker, core, "__core_worker");
+        char tname[MAX_NAME_LEN];
+        snprintf(tname, sizeof(tname), "%s[%u]", core->name, core->hash);
+        ret = ltg_thread_create(__core_worker, core, tname);
         if (ret == -1) {
                 ret = errno;
                 GOTO(err_free, ret);
