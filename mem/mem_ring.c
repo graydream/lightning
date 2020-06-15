@@ -45,7 +45,7 @@ typedef struct {
 static mem_ring_head_t *__mem_ring__;
 static __thread mem_ring_head_t *__mem_ring_private__ = NULL;
 
-static int __mem_ring_new__(mem_ring_head_t *head, mem_ring_t **_hpage)
+static int __mem_ring_new__(mem_ring_head_t *head)
 {
         int ret;
         mem_ring_t *hpage;
@@ -67,8 +67,6 @@ static int __mem_ring_new__(mem_ring_head_t *head, mem_ring_t **_hpage)
         hpage->status = LINKED;
         hpage->head = head;
         list_add_tail(&hpage->list, &head->free_list);
-
-        *_hpage = hpage;
         
         return 0;
 err_free:
@@ -90,34 +88,35 @@ inline static int __mem_ring_new(mem_ring_head_t *head, uint32_t size,
 
 retry:
         if (unlikely(list_empty(&head->free_list))){
-                ret = __mem_ring_new__(head, &hpage);
+                ret = __mem_ring_new__(head);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
 
-                DINFO("new ring, %p used %u\n", hpage, head->used);
-        } else {
-                hpage = list_entry(head->free_list.next, mem_ring_t, list);
+                DINFO("new ring %p used %u\n", head, head->used);
+        }
 
-                if (hpage->ref == 0) {
-                        LTG_ASSERT(hpage->offset == 0);
-                }
+        hpage = list_entry(head->free_list.next, mem_ring_t, list);
+
+        if (hpage->ref == 0) {
+                LTG_ASSERT(hpage->offset == 0);
+        }
                 
-                if (unlikely(hpage->offset + alloc_size > HUGEPAGE_SIZE)) {
-                        list_del(&hpage->list);
+        if (unlikely(hpage->offset + alloc_size > HUGEPAGE_SIZE)) {
+                list_del(&hpage->list);
 #if ENABLE_RING_TRACE
-                        list_add_tail(&hpage->list, &head->used_list);
-                        head->time = gettime();
+                list_add_tail(&hpage->list, &head->used_list);
+                head->time = gettime();
+                LTG_ASSERT(head->time);
 #endif
-                        head->used++;
-                        hpage->status = DELETE;
+                head->used++;
+                hpage->status = DELETE;
 
-                        DBUG("use ring, %p used %u, size %u, offset %u ref %d\n",
-                              hpage, head->used, alloc_size, hpage->offset, hpage->ref);
+                DBUG("use ring %p used %u, size %u, offset %u ref %d\n",
+                      head, head->used, alloc_size, hpage->offset, hpage->ref);
 
-                        LTG_ASSERT(hpage->ref);
+                LTG_ASSERT(hpage->ref);
                         
-                        goto retry;
-                }
+                goto retry;
         }
 
         hpage->ref++;
@@ -197,11 +196,11 @@ static void __mem_ring_local_free(mem_handler_t *mem_handler)
                 head->used--;
 #if ENABLE_RING_TRACE
                 list_del(&hpage->list);
-                head->time = 0;
+                head->time = gettime();
 #endif
                 list_add_tail(&hpage->list, &head->free_list);
 
-                DBUG("put ring, %p used %u\n", hpage, head->used);
+                DBUG("put ring %p used %u\n", head, head->used);
         }
 }
 
@@ -328,7 +327,7 @@ err_ret:
         return ret;
 }
 
-void __mem_ring_scan__(core_t *core, mem_ring_head_t *head)
+static void __mem_ring_scan__(core_t *core, mem_ring_head_t *head)
 {
         struct list_head *pos;
         mem_ring_t *hpage;
@@ -339,9 +338,12 @@ void __mem_ring_scan__(core_t *core, mem_ring_head_t *head)
                 hpage = (void *)pos;
 
                 if (now - head->time > 30) {
-                        DWARN("%s[%d] used ring %p, ref %d, status %d, seq[%d], used %d\n",
-                              core->name, core->hash, hpage, hpage->ref,
-                              hpage->status, seq, now - head->time);
+                        DWARN("%s[%d] ring %p used %u,"
+                              " page %p ref %d, status %d, seq[%d],"
+                              " last update %d %d, offset %u\n",
+                              core->name, core->hash, head, head->used,
+                              hpage, hpage->ref, hpage->status, seq,
+                              now - head->time, head->time, hpage->offset);
                         seq++;
                 }
         }
@@ -356,7 +358,9 @@ inline static void __mem_ring_scan(void *_core, void *var, void *_head)
 
         mem_ring_head_t *head = _head;
 
-        __mem_ring_scan__(_core, head);
+        if (head->used) {
+                __mem_ring_scan__(_core, head);
+        }
 
         return;
 }
