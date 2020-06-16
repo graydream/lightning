@@ -185,7 +185,7 @@ static int __log_write_msg(log_t *log, const char *msg, int msglen)
                 ret = __log_reopen(log);
                 if (ret) {
                         ret = errno;
-                        goto err_ret;
+                        goto err_lock;
                 }
                 __reopen = 0;
         }
@@ -193,12 +193,14 @@ static int __log_write_msg(log_t *log, const char *msg, int msglen)
         ret = write(log->logfd, msg, msglen);
         if (ret < 0) {
                 ret = errno;
-                goto err_ret;
+                goto err_lock;
         }
 
         ltg_spin_unlock(&log->spin);
 
         return 0;
+err_lock:
+        ltg_spin_unlock(&log->spin);
 err_ret:
         return ret;
 }

@@ -17,7 +17,7 @@ void stdrpc_reply1(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf)
         DBUG("reply msgid (%d, %x) %s, len %u\n", msgid->idx, msgid->figerprint,
               _inet_ntoa(sockid->addr), _buf->len);
 
-        stdrpc_reply_init_prep(msgid, &buf, _buf, 1);
+        stdrpc_reply_init_prep(msgid, &buf, _buf, 0, 1);
 
         sock2nh(&nh, sockid);
         ret = sdevent_queue(&nh, &buf);

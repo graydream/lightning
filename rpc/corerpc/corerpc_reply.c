@@ -18,11 +18,13 @@ void IO_FUNC corerpc_reply_rdma(void *ctx, void *arg)
         (void) ctx;
 
         if (likely(reply->err == 0)) {
-                stdrpc_reply_init_prep(msgid, &reply_buf, reply->buf, 0);
+                stdrpc_reply_init_prep(msgid, &reply_buf, reply->buf,
+                                       reply->latency, 0);
 
                 ret = corenet_rdma_send(reply->sockid, &reply_buf,
                                         (void **)msgid->data_prop.remote_addr,
-                                        msgid->data_prop.rkey, 0, build_rdma_write_req);
+                                        msgid->data_prop.rkey, 0,
+                                        build_rdma_write_req);
                 if (unlikely(ret)) {
                         DERROR("corenet rdma post send reply fail ret:%d\n", ret);
                         ltgbuf_free(&reply_buf);
@@ -47,7 +49,8 @@ void IO_FUNC corerpc_reply_tcp(void *ctx, void *arg)
         (void) ctx;
 
         if (likely(reply->err == 0)) {
-                stdrpc_reply_init_prep(msgid, &reply_buf, reply->buf, 1);
+                stdrpc_reply_init_prep(msgid, &reply_buf, reply->buf,
+                                       reply->latency, 1);
                 
                 ret = corenet_tcp_send(NULL, reply->sockid, &reply_buf);
                 if (unlikely(ret))
@@ -67,6 +70,7 @@ void IO_FUNC corerpc_reply_buffer(const sockid_t *sockid, const msgid_t *msgid, 
         sockop_reply_t reply;
 
         reply.err = 0;
+        reply.latency = 0;
         reply.msgid = msgid;
         reply.buf = buf;
         reply.sockid = sockid;
@@ -85,6 +89,34 @@ void IO_FUNC corerpc_reply(const sockid_t *sockid, const msgid_t *msgid,
 
         corerpc_reply_buffer(sockid, msgid, &buf);
 }
+
+void IO_FUNC corerpc_reply_buffer1(const sockid_t *sockid, const msgid_t *msgid,
+                                   ltgbuf_t *buf, uint64_t latency)
+{
+
+        sockop_reply_t reply;
+
+        reply.err = 0;
+        reply.latency = latency;
+        reply.msgid = msgid;
+        reply.buf = buf;
+        reply.sockid = sockid;
+
+        sockid->reply(NULL, &reply);
+}
+
+void IO_FUNC corerpc_reply1(const sockid_t *sockid, const msgid_t *msgid,
+                            const void *_buf, int len, uint64_t latency)
+{
+        ltgbuf_t buf;
+
+        ltgbuf_init(&buf, 0);
+        if (unlikely(len))
+                ltgbuf_copy(&buf, _buf, len);
+
+        corerpc_reply_buffer1(sockid, msgid, &buf, latency);
+}
+
 
 void corerpc_reply_error(const sockid_t *sockid, const msgid_t *msgid, int _error)
 {

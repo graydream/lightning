@@ -10,8 +10,6 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <sys/vfs.h>
-#include <ustat.h>
-#include <openssl/sha.h>
 #include <stdarg.h>
 #include <ctype.h>
 #include <sys/wait.h>
@@ -878,6 +876,10 @@ int ltg_thread_create(thread_func fn, void *arg, const char *name)
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
+        char tname[MAX_NAME_LEN];
+        snprintf(tname, MAX_BUF_LEN, "%s_%s", ltgconf_global.service_name, name);
+        (void) pthread_setname_np(th, tname);
+        
         DINFO("thread %s started\n", name);
 
         return 0;
@@ -1072,7 +1074,7 @@ int timerange_update(timerange_t *range, uint64_t count1, timerange_func func, v
 
                 range->speed = (range->p2.count1 - range->p1.count1) * 1000 * 1000 / interval;
 
-                DINFO("name %s[%p] interval %jd speed %4ju p1 %ju p2 %ju\n",
+                DBUG("name %s[%p] interval %jd speed %4ju p1 %ju p2 %ju\n",
                       range->name,
                       range,
                       interval,

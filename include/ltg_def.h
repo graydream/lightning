@@ -1,6 +1,8 @@
 #ifndef __LTG_DEF_H__
 #define __LTG_DEF_H__
 
+#include "ltg_cmake.h"
+
 #define LTG_TLS_MAX 256
 
 #define LTG_MSG_MAX 256
@@ -52,7 +54,13 @@ typedef long long LLD;
 
 #define ENABLE_HUGEPAGE 1
 
+#if LTG_CMAKE_DEBUG
+#define ENABLE_LTG_DEBUG 1
+#define ENABLE_ANALYSIS 1
+#else
+#define ENABLE_LTG_DEBUG 0
 #define ENABLE_ANALYSIS 0
+#endif
 
 #define ENABLE_TCP_THREAD 0
 

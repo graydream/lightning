@@ -195,6 +195,7 @@ void IO_FUNC core_worker_run(core_t *core)
 
 #if ENABLE_ANALYSIS
         analysis_merge(core);
+#else
 #endif
 
 #if SCHE_ANALYSIS
@@ -361,7 +362,9 @@ static int __core_create(core_t **_core, const char *name, int hash, int flag)
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
-        ret = ltg_thread_create(__core_worker, core, "__core_worker");
+        char tname[MAX_NAME_LEN];
+        snprintf(tname, sizeof(tname), "%s[%u]", core->name, core->hash);
+        ret = ltg_thread_create(__core_worker, core, tname);
         if (ret == -1) {
                 ret = errno;
                 GOTO(err_free, ret);
@@ -455,10 +458,6 @@ int core_init(uint64_t mask, int flag)
                         GOTO(err_ret, ret);
                 
                 ret = corenet_maping_init();
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
-
-                ret = loadbalance_init();
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
         } else {

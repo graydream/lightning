@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
-set(CMAKE_C_FLAGS "-std=gnu99 -W -Wall -fPIC -Werror -Wno-array-bounds -Wno-implicit-fallthrough -Werror=return-type -Wno-stringop-truncation -Wno-format-truncation -Wno-format-overflow -Wno-stringop-overflow -Wno-misleading-indentation -Wno-deprecated-declarations -Wno-cast-function-type -Wno-int-in-bool-context -Wno-pointer-compare -D_GNU_SOURCE -D_REENTRANT -D_FILE_OFFSET_BITS=64 -fms-extensions")
+set(CMAKE_C_FLAGS "-std=gnu99 -W -Wall -fPIC -Werror -Wno-array-bounds -Wno-restrict -Wno-implicit-fallthrough -Werror=return-type -Wno-stringop-truncation -Wno-format-truncation -Wno-format-overflow -Wno-stringop-overflow -Wno-misleading-indentation -Wno-deprecated-declarations -Wno-cast-function-type -Wno-int-in-bool-context -Wno-pointer-compare -D_GNU_SOURCE -D_REENTRANT -D_FILE_OFFSET_BITS=64 -fms-extensions")
 
 SET(CMAKE_C_FLAGS_DEBUG          "$ENV{CFLAGS} -O0 -g -ggdb")
 SET(CMAKE_C_FLAGS_RELEASE        "$ENV{CFLAGS} -O3 -g -ggdb")
@@ -17,13 +17,26 @@ message("***************Build for ${CMAKE_BUILD_TYPE}***************")
 
 execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/get_version.sh ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(CMAKE_C_LIBS lightning pthread crypt crypto uuid ssl isal z m curl yajl rdmacm yaml numa ibverbs)
+set(CMAKE_C_LIBS lightning pthread uuid m curl yajl rdmacm yaml numa ibverbs)
 
 message("lightning: install directory ${CMAKE_INSTALL_PREFIX}, use -D CMAKE_INSTALL_PREFIX=<dir> replace it")
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+
+if(${CMAKE_BUILD_TYPE} STREQUAL DEBUG)
+  message("***************Build for debug***************")
+  set(LTG_CMAKE_DEBUG 1)
+else()
+  set(LTG_CMAKE_DEBUG 0)
+endif()
+
+configure_file (
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/ltg_cmake.h.ini"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/ltg_cmake.h"
+)
+
 
 add_library(lightning STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/utils/plock.c
@@ -86,7 +99,6 @@ add_library(lightning STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/net/corenet/corenet_hb.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/corenet/rdma_event.c
     ${CMAKE_CURRENT_SOURCE_DIR}/net/corenet/corenet.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/net/corenet/loadbalance.c
 
     ${CMAKE_CURRENT_SOURCE_DIR}/rpc/stdrpc/rpc_lib.c
     ${CMAKE_CURRENT_SOURCE_DIR}/rpc/stdrpc/rpc_proto.c

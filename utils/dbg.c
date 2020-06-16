@@ -11,7 +11,7 @@
 #define DBG_SUBSYS S_LTG_UTILS
 
 #include "ltg_utils.h"
-#include "core/sche.h"
+#include "core/core.h"
 #include "utils/fnotify.h"
 
 int __d_info__ = __D_INFO;
@@ -242,10 +242,14 @@ void sche_id(int *sid, int *taskid)
 #else
 void sche_id(int *sid, int *taskid)
 {
-        sche_t *sche = sche_self();
-        if (sche) {
-                *sid = sche->id;
-                *taskid = sche->running_task;
+        core_t *core = core_self();
+        if (core) {
+                *sid = core->hash;
+                if (core->sche) {
+                        *taskid = core->sche->running_task;
+                } else {
+                        *taskid = -1;
+                }
         } else {
                 *sid = -1;
                 *taskid = -1;

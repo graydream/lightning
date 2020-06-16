@@ -2,6 +2,8 @@
 #define __LTG_H__
 
 #include "3part.h"
+#include "ltg_cmake.h"
+#include "ltg_def.h"
 #include "ltg_utils.h"
 #include "ltg_mem.h"
 #include "ltg_net.h"

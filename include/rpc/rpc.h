@@ -22,7 +22,8 @@ void stdrpc_reply_error_prep(const msgid_t *msgid, ltgbuf_t *buf, int _error);
 void stdrpc_reply(const sockid_t *sockid, const msgid_t *msgid,
                const void *_buf, int len);
 void stdrpc_reply1(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf);
-void stdrpc_reply_init_prep(const msgid_t *msgid, ltgbuf_t *buf, ltgbuf_t *data, int flag);
+void stdrpc_reply_init_prep(const msgid_t *msgid, ltgbuf_t *buf, ltgbuf_t *data,
+                            uint64_t latency, int flag);
 
 /* rpc_xnect.c */
 int rpc_getinfo(char *infobuf, uint32_t *infobuflen);

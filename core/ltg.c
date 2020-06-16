@@ -157,7 +157,9 @@ static int __ltg_init_stage2(const char *name)
                         GOTO(err_ret, ret);
         }
 
+#if 0
         main_loop_start();
+#endif
         
         DINFO("stage2 inited\n");
         
