@@ -28,10 +28,11 @@ typedef long long LLD;
 #define FALSE 0
 #endif
 
-#define BUFFER_SEG_SIZE (2 * 1024 * 1024)
 #define RDMA_MESSAGE_SIZE 512
 
+
 #define IO_MAX (1024 * 1024 * 4)
+#define BUFFER_SEG_SIZE IO_MAX
 
 #define MAX_SGE  (IO_MAX / BUFFER_SEG_SIZE + 1)
 #define RDMA_INFO_SIZE 1024

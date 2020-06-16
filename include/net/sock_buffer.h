@@ -8,7 +8,7 @@
 #include "ltg_utils.h"
 #include "ltg_net.h"
 
-#define SOCK_IOV_MAX (1024)
+#define SOCK_IOV_MAX (128)
 
 struct sockstate
 {

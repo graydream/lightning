@@ -25,11 +25,11 @@ typedef enum {
 
 typedef struct {
         struct list_head list;
-        uint64_t phyaddr;
         void     *vaddr;
         int      ref;
         int      offset;
         void     *head;
+        uint32_t  size;
         page_status status;
 } mem_ring_t;
 
@@ -45,18 +45,20 @@ typedef struct {
 static mem_ring_head_t *__mem_ring__;
 static __thread mem_ring_head_t *__mem_ring_private__ = NULL;
 
-static int __mem_ring_new__(mem_ring_head_t *head)
+static int __mem_ring_new__(mem_ring_head_t *head, mem_ring_t **_hpage, uint32_t *size)
 {
         int ret;
         mem_ring_t *hpage;
         void *vaddr;
-        uint64_t phyaddr;
+        uint32_t new_size;
+
+        new_size =  _align_up(*size, HUGEPAGE_SIZE);
 
         ret = huge_mem_alloc1((void **)&hpage, sizeof(*hpage));
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        ret = hugepage_getfree((void **)&vaddr, &phyaddr);
+        ret = hugepage_getfree((void **)&vaddr, &new_size);
         if (unlikely(ret))
                 GOTO(err_free, ret);
 
@@ -65,9 +67,13 @@ static int __mem_ring_new__(mem_ring_head_t *head)
         hpage->ref = 0;
         hpage->offset = 0;
         hpage->status = LINKED;
+        hpage->size = new_size;
         hpage->head = head;
         list_add_tail(&hpage->list, &head->free_list);
         
+        *_hpage = hpage;
+        *size = new_size;
+
         return 0;
 err_free:
         huge_mem_free1((void **)&hpage);
@@ -75,48 +81,81 @@ err_ret:
         return ret;
 }
 
-inline static int __mem_ring_new(mem_ring_head_t *head, uint32_t size,
+inline static mem_ring_t *__hpage_list_find(mem_ring_head_t *head, uint32_t alloc_size)
+{
+        struct list_head *pos;
+        mem_ring_t *hpage = NULL;
+
+        list_for_each(pos, &head->free_list){
+                hpage = list_entry(pos, mem_ring_t, list);
+                if (hpage->offset + alloc_size <= hpage->size)
+                        return hpage;
+        }
+
+        return NULL;
+}
+
+inline static int __mem_ring_new(mem_ring_head_t *head, uint32_t *size,
                                  mem_handler_t *mem_handler)
 {
-        int ret;
+        int ret, new_page = 0;
         mem_ring_t *hpage;
-        uint32_t alloc_size;
-
-        alloc_size = _align_up(size, PAGE_SIZE);
-        LTG_ASSERT(alloc_size <= HUGEPAGE_SIZE);
-        LTG_ASSERT((alloc_size % PAGE_SIZE) == 0);
+        uint32_t alloc_size = *size;
 
 retry:
-        if (unlikely(list_empty(&head->free_list))){
-                ret = __mem_ring_new__(head);
+        if (unlikely(list_empty(&head->free_list) || new_page)){
+                ret = __mem_ring_new__(head, &hpage, &alloc_size);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
 
                 DINFO("new ring %p used %u\n", head, head->used);
-        }
+        } else {
+                alloc_size = _align_up(*size, PAGE_SIZE);
+                hpage = list_entry(head->free_list.next, mem_ring_t, list);
 
-        hpage = list_entry(head->free_list.next, mem_ring_t, list);
+                if (hpage->ref == 0) {
+                        LTG_ASSERT(hpage->offset == 0);
+                }
 
-        if (hpage->ref == 0) {
-                LTG_ASSERT(hpage->offset == 0);
-        }
-                
-        if (unlikely(hpage->offset + alloc_size > HUGEPAGE_SIZE)) {
-                list_del(&hpage->list);
+                if (alloc_size > hpage->size) {
+                        hpage = __hpage_list_find(head, alloc_size);
+                        if (hpage == NULL) {
+                                new_page = 1;
+                                goto retry;
+                        }
+
+                } else if (unlikely(hpage->offset + alloc_size > hpage->size)) {
+                        list_del(&hpage->list);
 #if ENABLE_RING_TRACE
-                list_add_tail(&hpage->list, &head->used_list);
-                head->time = gettime();
-                LTG_ASSERT(head->time);
+                        list_add_tail(&hpage->list, &head->used_list);
+                        head->time = gettime();
 #endif
-                head->used++;
-                hpage->status = DELETE;
+                        head->used++;
+                        hpage->status = DELETE;
 
-                DBUG("use ring %p used %u, size %u, offset %u ref %d\n",
-                      head, head->used, alloc_size, hpage->offset, hpage->ref);
+                        DBUG("use ring, %p used %u, size %u, offset %u ref %d\n",
+                                        hpage, head->used, alloc_size, hpage->offset, hpage->ref);
 
-                LTG_ASSERT(hpage->ref);
-                        
-                goto retry;
+                        LTG_ASSERT(hpage->ref);
+                        goto retry;
+
+                }else if (unlikely(hpage->offset + alloc_size > HUGEPAGE_SIZE)) {
+                        list_del(&hpage->list);
+#if ENABLE_RING_TRACE
+                        list_add_tail(&hpage->list, &head->used_list);
+                        head->time = gettime();
+                        LTG_ASSERT(head->time);
+#endif
+                        head->used++;
+                        hpage->status = DELETE;
+
+                        DBUG("use ring %p used %u, size %u, offset %u ref %d\n",
+                                        head, head->used, alloc_size, hpage->offset, hpage->ref);
+
+                        LTG_ASSERT(hpage->ref);
+
+                        goto retry;
+                }
         }
 
         hpage->ref++;
@@ -129,12 +168,14 @@ retry:
         DBUG("hpage %p vaddr %p offset %u, ref %d\n", hpage,
               hpage->vaddr, hpage->offset, hpage->ref);
 
+        *size = alloc_size;
+
         return 0;
 err_ret:
         return ret;
 }
 
-int mem_ring_new(uint32_t size, mem_handler_t *mem_handler)
+int mem_ring_new(uint32_t *size, mem_handler_t *mem_handler)
 {
         int ret;
         mem_ring_head_t *head;
@@ -370,8 +411,9 @@ int mem_ring_private_init(int corehash)
 {
         int ret;
         mem_ring_head_t *head;
+        uint32_t size = HUGEPAGE_SIZE;
 
-        ret = hugepage_getfree((void **)&head, NULL);
+        ret = hugepage_getfree((void **)&head, &size);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
         

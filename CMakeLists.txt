@@ -62,6 +62,8 @@ add_library(lightning STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/utils/fnotify.c
     ${CMAKE_CURRENT_SOURCE_DIR}/utils/ltg_errno.c
 
+    ${CMAKE_CURRENT_SOURCE_DIR}/mem/huge_posix.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/mem/huge_buddy.c
     ${CMAKE_CURRENT_SOURCE_DIR}/mem/malloc.c
     ${CMAKE_CURRENT_SOURCE_DIR}/mem/mem_ring.c
     ${CMAKE_CURRENT_SOURCE_DIR}/mem/hugepage.c
