@@ -876,7 +876,9 @@ int ltg_thread_create(thread_func fn, void *arg, const char *name)
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        (void) pthread_setname_np(th, name);
+        char tname[MAX_NAME_LEN];
+        snprintf(tname, MAX_BUF_LEN, "%s_%s", ltgconf_global.service_name, name);
+        (void) pthread_setname_np(th, tname);
         
         DINFO("thread %s started\n", name);
 
