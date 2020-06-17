@@ -21,7 +21,7 @@ typedef struct {
 
 static hugepage_head_t *__hugepage__ = NULL;
 static __thread hugepage_head_t *__private_huge__ = NULL;
-
+struct mem_alloc *hugepage_alloc_ops = NULL;
 static int __use_huge__ = 0;
 static int PRIVATE_HP_COUNT = 0;
 
@@ -96,7 +96,6 @@ static void __hugepage_init(void *addr, int sockid)
 void *hugepage_private_init(int hash, int sockid)
 {
         hugepage_head_t *head;
-        hugepage_t      *hpage;
         int i ;
 
         void *addr = __hugepage__->private_hp_head[hash];
@@ -113,9 +112,7 @@ void *hugepage_private_init(int hash, int sockid)
 
         for (i = 0; i < PRIVATE_HP_COUNT; i++) {
                 addr += HUGEPAGE_SIZE;
-                hpage = &head->hgpages[i];
                 __hugepage_init(addr, sockid);
-                //hpage->head = head;
         }
 
         head->hash = hash;
@@ -127,22 +124,19 @@ void *hugepage_private_init(int hash, int sockid)
         return head;
 }
 
-static void __hugepage_init_public(hugepage_head_t *head, void *public, int daemon, int use_huge)
+static void __hugepage_init_public(hugepage_head_t *head, void *public)
 {
-        hugepage_t *hpage;
         void *pos = public;
 
         DINFO("hp_count %d\n", PUBLIC_HP_COUNT);
 
         for (int i = 0; i < PUBLIC_HP_COUNT; i++) {
-                hpage = &head->hgpages[i];
                 __hugepage_init(pos,  -1);
                 pos += HUGEPAGE_SIZE;
         }
 
         __hugepage__ = head;
 
-        HUGEPAGE_HEAD_DUMP(head);
 }
 
 static void __hugepage_init_private(hugepage_head_t *head, void *private)
@@ -277,6 +271,17 @@ int hugepage_getfree(void **_addr, uint32_t *size)
         return 0;
 err_ret:
         return ret;
+}
+
+int suzaku_mem_alloc_register(struct mem_alloc *alloc_ops)
+{
+        DINFO("register ops %p %p\n", alloc_ops, hugepage_alloc_ops);
+        if (hugepage_alloc_ops != NULL)
+                LTG_ASSERT(0);
+
+        hugepage_alloc_ops = alloc_ops;
+
+        return 0;
 }
 
 void get_global_private_mem(void **private_mem, uint64_t *private_mem_size)

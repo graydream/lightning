@@ -246,7 +246,7 @@ static seg_t *__seg_huge_trans(ltgbuf_t *buf, seg_t *seg)
         return newseg;
 }
 
-inline seg_t *seg_huge_create(ltgbuf_t *buf, uint32_t size)
+inline seg_t *seg_huge_create(ltgbuf_t *buf, uint32_t *size)
 {
         int ret;
         uint32_t newsize = *size;

@@ -62,7 +62,6 @@ static int __mem_ring_new__(mem_ring_head_t *head, mem_ring_t **_hpage, uint32_t
         if (unlikely(ret))
                 GOTO(err_free, ret);
 
-        hpage->phyaddr = phyaddr;
         hpage->vaddr = vaddr;
         hpage->ref = 0;
         hpage->offset = 0;
@@ -139,22 +138,6 @@ retry:
                         LTG_ASSERT(hpage->ref);
                         goto retry;
 
-                }else if (unlikely(hpage->offset + alloc_size > HUGEPAGE_SIZE)) {
-                        list_del(&hpage->list);
-#if ENABLE_RING_TRACE
-                        list_add_tail(&hpage->list, &head->used_list);
-                        head->time = gettime();
-                        LTG_ASSERT(head->time);
-#endif
-                        head->used++;
-                        hpage->status = DELETE;
-
-                        DBUG("use ring %p used %u, size %u, offset %u ref %d\n",
-                                        head, head->used, alloc_size, hpage->offset, hpage->ref);
-
-                        LTG_ASSERT(hpage->ref);
-
-                        goto retry;
                 }
         }
 
@@ -162,7 +145,6 @@ retry:
         mem_handler->head = hpage;
         mem_handler->pool = head;
         mem_handler->ptr = hpage->vaddr + hpage->offset;
-        mem_handler->phyaddr = hpage->phyaddr + hpage->offset;
         hpage->offset += alloc_size;
 
         DBUG("hpage %p vaddr %p offset %u, ref %d\n", hpage,

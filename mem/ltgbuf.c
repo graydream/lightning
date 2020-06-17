@@ -830,7 +830,7 @@ uint32_t ltgbuf_crc(const ltgbuf_t *buf, uint32_t offset, uint32_t size)
 int ltgbuf_appendzero(ltgbuf_t *buf, int size)
 {
         int left;
-        uint32_t newsize = size
+        uint32_t newsize = size;
         seg_t *seg;
 
         LTG_ASSERT(size >= 0);
@@ -1088,7 +1088,7 @@ int ltgbuf_compress2(ltgbuf_t *buf, uint32_t max_seg_len)
                 while (seg_left) {
                         if (idx2 == 0) {
                                 size = _min(left, max_seg_len);
-                                seg2 = seg_huge_create(buf, size);
+                                seg2 = seg_huge_create(buf, &size);
                                 if (seg2 == NULL) {
                                         ret = ENOMEM;
                                         GOTO(err_ret, ret);
