@@ -98,12 +98,13 @@ void *hugepage_private_init(int hash, int sockid)
         hugepage_head_t *head;
         int i ;
 
+        if (__hugepage__ == NULL)
+                return NULL;
+
         void *addr = __hugepage__->private_hp_head[hash];
         
         LTG_ASSERT(addr);
 
-        if (__hugepage__ == NULL)
-                return NULL;
         
         DINFO("hash %d head addr %p\n", hash, addr);
         head = (hugepage_head_t *)addr;
