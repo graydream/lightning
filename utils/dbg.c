@@ -243,6 +243,7 @@ void sche_id(int *sid, int *taskid)
 void sche_id(int *sid, int *taskid)
 {
         core_t *core = core_self();
+        sche_t *sche = sche_self();
         if (core) {
                 *sid = core->hash;
                 if (core->sche) {
@@ -250,6 +251,10 @@ void sche_id(int *sid, int *taskid)
                 } else {
                         *taskid = -1;
                 }
+
+        } else if (sche) {
+                *sid = sche->id;
+                *taskid = sche->running_task;
         } else {
                 *sid = -1;
                 *taskid = -1;

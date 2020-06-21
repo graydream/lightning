@@ -109,7 +109,7 @@ int corenet_hb_add(const coreid_t *coreid, const sockid_t *sockid)
 
         LTG_ASSERT(sockid->sd != -1);
         
-        tmo = 1000 * 1000 * ltgconf_global.hb_timeout;
+        tmo = (1000 * 1000 * ltgconf_global.hb_timeout) / ltgconf_global.hb_retry;
         snprintf(name, MAX_NAME_LEN, "%s/%d", netable_rname(&coreid->nid),
                  coreid->idx);
         

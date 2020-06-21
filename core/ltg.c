@@ -105,6 +105,10 @@ static int __ltg_init_stage1(const nid_t *nid, const char *name)
                 net_setnid(nid);
         }
 
+        ret = timer_init(0);
+        if (ret)
+                GOTO(err_ret, ret);
+        
         ret = sche_init();
         if (unlikely(ret))
                 GOTO(err_ret, ret);
@@ -116,7 +120,7 @@ static int __ltg_init_stage1(const nid_t *nid, const char *name)
                 if (unlikely(ret))             
                         GOTO(err_ret, ret);            
         }
-        
+
         ret = core_init(ltgconf_global.coremask, ltgconf_global.coreflag);
         if (ret)
                 GOTO(err_ret, ret);
@@ -157,9 +161,7 @@ static int __ltg_init_stage2(const char *name)
                         GOTO(err_ret, ret);
         }
 
-#if 0
         main_loop_start();
-#endif
         
         DINFO("stage2 inited\n");
         
@@ -175,7 +177,6 @@ int ltg_init(const ltgconf_t *ltgconf, const ltg_netconf_t *ltgnet_manage,
 
         memcpy(&ltgconf_global, ltgconf, sizeof(*ltgconf));
 
-        ltgconf_global.lease_timeout =  _max(3, ltgconf->rpc_timeout / 3); 
         ltg_netconf_global.count = 0;
 
         for (int i = 0; i < ltgnet_conf->count; i++) {

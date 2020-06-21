@@ -34,24 +34,7 @@
 #define DBG_SUBSYS S_LTG_UTILS
 #include "utils/ltg_dbg.h"
 
-#if 0
-#define DBUG_LTG_ETCD
-#endif
-
-
-#ifdef DBUG_LTG_ETCD
-#include "ltg_conf.h"
-#include "ltg_misc.h"
-#include "ltg_conf.h"
-#include "macros.h"
-#include "ltg_id.h"
-#include "base64_urlsafe.h"
-#include "ltg_utils.h"
-#include "sche.h"
-#include "analysis.h"
-#include "etcd-api.h"
-#include "etcd.h"
-#endif
+#define ENABLE_ETCD_DBUG 0
 
 #define DEFAULT_ETCD_PORT       2379
 #define SL_DELIM                "\n\r\t ,;"
@@ -71,25 +54,30 @@ static long parse_http_code(long http_code)
 	long ret = 0;
 
 	switch(http_code) {
-		case 200:  //http is ok
-			ret = ETCD_OK;
-			break;
+        case 200:  //http is ok
+                ret = ETCD_OK;
+                break;
 
         case 201:  //http is ok,create new one
-			ret = ETCD_OK;
-			break;
+                ret = ETCD_OK;
+                break;
 
-		case 404:
-			ret = ETCD_ENOENT;
-			break;
+        case 400:
+                ret = ETCD_INVALID;
+                break;
 
-		case 412:
-			ret = ETCD_PREVCONT;
-			break;
+        case 404:
+                ret = ETCD_ENOENT;
+                break;
 
-		default:
-			ret = ETCD_PROTOCOL_ERROR;
-			break;
+        case 412:
+                ret = ETCD_PREVCONT;
+                break;
+
+        default:
+                DWARN("http code %d\n", http_code);
+                ret = ETCD_PROTOCOL_ERROR;
+                break;
 	}
 
 	return ret;
@@ -355,7 +343,7 @@ etcd_get_one(_etcd_session *session, const char *key, etcd_server *srv, const ch
         curl_res = curl_easy_perform(curl);
         if (curl_res != CURLE_OK) {
                 // print_curl_error("perform",curl_res);
-                DWARN("http code: %d\n", curl_res);
+                DBUG("http code: %d\n", curl_res);
                 if (curl_res == CURLE_OPERATION_TIMEDOUT) {
                         res = ETCD_TIMEOUT;
                 }
@@ -367,7 +355,7 @@ etcd_get_one(_etcd_session *session, const char *key, etcd_server *srv, const ch
 	if(CURLE_OK == curl_res )
 	{
 		res = parse_http_code(retcode);
-#ifdef DBUG_LTG_ETCD
+#if ENABLE_ETCD_DBUG
                 if (res != ETCD_OK)
                 {
                         DWARN("get error, http ret code: %ld, url %s\n", retcode, url);
@@ -432,7 +420,7 @@ etcd_result etcd_get(etcd_session session_as_void, char *key, long timeout,
         return res;
 }
 
-etcd_result etcd_watch(etcd_session session_as_void, char *pfx, const int *index_in, etcd_node_t **ppnode, int timeout){
+etcd_result etcd_watch(etcd_session session_as_void, const char *pfx, const int *index_in, etcd_node_t **ppnode, int timeout){
         _etcd_session   *session   = session_as_void;
         etcd_server     *srv;
         etcd_result     res = ETCD_ERR;
@@ -453,7 +441,7 @@ etcd_result etcd_watch(etcd_session session_as_void, char *pfx, const int *index
 
         if (index_in) {
                 if (asprintf(&path,"%s?wait=true&recursive=true&waitIndex=%d",
-                                        pfx,*index_in) < 0) {
+                             pfx,*index_in) < 0) {
                         return ETCD_ERR;
                 }
         } else {
@@ -476,9 +464,12 @@ etcd_result etcd_watch(etcd_session session_as_void, char *pfx, const int *index
                 }
         }
 
+#if 0
         if (*ppnode == NULL && res != ETCD_TIMEOUT) {
+                DWARN("ppnode NULL\n");
                 res = ETCD_PROTOCOL_ERROR;
         }
+#endif
 
         free(path);
         return res;
@@ -788,7 +779,7 @@ etcd_set_one (_etcd_session *session, const char *key, const char *value,
         if(CURLE_OK == curl_res )
         {
                 res = parse_http_code(retcode);
-#ifdef DBUG_LTG_ETCD
+#if ENABLE_ETCD_DBUG
         if (res != ETCD_OK)
         {
                 DWARN("set error, http ret code: %ld\n", retcode);

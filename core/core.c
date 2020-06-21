@@ -298,6 +298,8 @@ static int __core_worker_init(core_t *core)
 
         //core_register_tls(VARIABLE_CORE, private_mem);
 
+        DINFO("%s[%d] inited\n", core->name, core->hash);
+        
         sem_post(&core->sem);
 
         return 0;
@@ -310,7 +312,7 @@ static void * IO_FUNC __core_worker(void *_args)
         int ret;
         core_t *core = _args;
 
-        DINFO("start %s idx %d\n", core->name, core->hash);
+        DINFO("%s[%d] init\n", core->name, core->hash);
 
         ret = __core_worker_init(core);
         if (unlikely(ret))

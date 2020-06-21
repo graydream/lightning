@@ -140,8 +140,6 @@ STATIC int __stdrpc_request_wait__(const char *name, ltgbuf_t *rbuf,
 {
         int ret;
 
-        ANALYSIS_BEGIN(0);
-        
         if (sche_running()) {
                 DBUG("%s yield wait\n", name);
                 ret = sche_yield(name, NULL, ctx);
@@ -170,12 +168,8 @@ STATIC int __stdrpc_request_wait__(const char *name, ltgbuf_t *rbuf,
                 LTG_ASSERT(ctx->buf.len == 0);
         }
                 
-        
-        ANALYSIS_END(0, IO_INFO, name);
-
         return 0;
 err_ret:
-        ANALYSIS_END(0, IO_INFO, NULL);
         return ret;
 }
 
@@ -192,6 +186,11 @@ STATIC int __stdrpc_request_wait(const char *name, const net_handle_t *nh,
         const nid_t *nid;
 
         if (nh->type == NET_HANDLE_PERSISTENT) {
+                if (!netable_connected(&nh->u.nid)) {
+                        ret = ENONET;
+                        GOTO(err_ret, ret);
+                }
+        
                 ret = netable_getsock(&nh->u.nid, &sockid);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);

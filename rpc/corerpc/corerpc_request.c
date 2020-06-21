@@ -68,8 +68,6 @@ STATIC int __corerpc_wait__(const char *name, ltgbuf_t *rbuf,
 {
         int ret;
 
-        ANALYSIS_BEGIN(0);
-
         DBUG("%s yield wait\n", name);
         ret = sche_yield(name, rbuf, ctx);
         if (unlikely(ret)) {
@@ -78,11 +76,8 @@ STATIC int __corerpc_wait__(const char *name, ltgbuf_t *rbuf,
 
         DBUG("%s yield resume\n", name);
 
-        ANALYSIS_QUEUE(0, IO_INFO, NULL);
-
         return 0;
 err_ret:
-        ANALYSIS_END(0, IO_INFO, name);
         return ret;
 }
 
@@ -215,6 +210,11 @@ int IO_FUNC __corerpc_postwait(const char *name, corerpc_op_t *op, uint64_t *lat
 
         ANALYSIS_BEGIN(0);
 
+        if (!netable_connected(&op->coreid.nid)) {
+                ret = ENONET;
+                GOTO(err_ret, ret);
+        }
+        
         ret = corenet_maping(core, &op->coreid, &op->sockid);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
@@ -275,6 +275,8 @@ int IO_FUNC corerpc_postwait1(const char *name, const coreid_t *coreid,
         int ret, replen;
         ltgbuf_t *rbuf, tmp;
 
+        ANALYSIS_BEGIN(0);
+        
         if (reply) {
                 replen = *_replen;
                 ltgbuf_init(&tmp, replen);
@@ -295,11 +297,14 @@ int IO_FUNC corerpc_postwait1(const char *name, const coreid_t *coreid,
                 ltgbuf_free(rbuf);
         }
 
+        ANALYSIS_END(0, IO_INFO, name);
+        
         return 0;
 err_ret:
         if (rbuf) {
                 ltgbuf_free(rbuf);
         }
+        ANALYSIS_END(0, IO_INFO, name);
         return ret;
 }
 

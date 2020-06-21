@@ -300,11 +300,11 @@ STATIC int __sdevent_write__(event_node_t *node, event_t *ev)
                 GOTO(err_ret, ret);
         }
 
-        ANALYSIS_END(0, 1000 * 10, NULL);
+        ANALYSIS_END(0, IO_INFO, NULL);
         
         return 0;
 err_ret:
-        ANALYSIS_END(0, 1000 * 10, NULL);
+        ANALYSIS_END(0, IO_INFO, NULL);
         return ret;
 }
 

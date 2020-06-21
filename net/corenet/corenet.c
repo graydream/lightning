@@ -269,7 +269,7 @@ static int __corenet_getaddr____(const core_t *core, uint32_t port,
                         addr->info[count] = info->info[i];
                         count++;
                 } else {
-                        ret = __corenet_get_numaid(addr->info[i].addr, &numaid);
+                        ret = __corenet_get_numaid(info->info[i].addr, &numaid);
                         if (ret)
                                 continue;
 

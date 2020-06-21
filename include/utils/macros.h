@@ -7,8 +7,8 @@
 
 #include "ltg_def.h"
 
-#define IO_WARN ((ltgconf_global.rpc_timeout) * 1000 * 1000)
-#define IO_INFO (1000 * 1000)
+#define IO_WARN (1000 * 1000)
+#define IO_INFO (1000 * 500)
 
 #if 1
 #define IO_FUNC  __attribute__((section(".xiop")))
@@ -115,9 +115,9 @@
                 if (used##mark > (__usec)) {                            \
                         time_t __now__##mark = gettime();                         \
                         __warn__##mark = __now__##mark;                 \
-                        if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout * 2) { \
+                        if (used##mark > IO_WARN * 2) {                     \
                                 DERROR("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
-                        } else if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) { \
+                        } else if (used##mark > IO_WARN) { \
                                 DWARN("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         } else {                                        \
                                 DINFO("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
@@ -142,9 +142,9 @@
                 if (used##mark > (__usec)) {                            \
                         time_t __now__##mark = gettime();               \
                         __warn__##mark = __now__##mark;                 \
-                        if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout * 2) { \
+                        if (used##mark > IO_WARN * 2) {                     \
                                 DERROR("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
-                        } else if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) { \
+                        } else if (used##mark > IO_WARN) {              \
                                 DWARN("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         } else {                                        \
                                 DINFO_PERF("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
@@ -160,7 +160,7 @@
                 used##mark = _time_used(&t1##mark, &t2##mark);          \
                 core_latency_update(used##mark);                        \
                 if (used##mark > (__usec)) {                            \
-                        if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) { \
+                        if (used##mark > IO_WARN) {                     \
                                 DWARN_PERF("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         } else {                                        \
                                 DINFO_PERF("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
@@ -204,7 +204,7 @@
 #else
 #define USLEEP_RETRY(__err_ret__, __ret__, __labal__, __retry__, __max__, __sleep__) \
         if ((__retry__)  < __max__) {                                   \
-                if (__retry__ % 10 == 0 && __retry__ > 1) {             \
+                if (__retry__ % 5 == 0 && __retry__ > 3) {             \
                         DINFO("retry %u/%u\n", (__retry__), __max__);   \
                 }                                                       \
                 sche_task_sleep("none", __sleep__);                      \

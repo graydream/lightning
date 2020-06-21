@@ -76,7 +76,7 @@ static int __sock_connect(net_handle_t *nh, const sock_info_t *info,
         int ret;
         char buf[MAX_BUF_LEN];
 
-        LTG_ASSERT(timeout < 30);
+        LTG_ASSERT(timeout <= 1000 * 1000 && timeout >= 100 * 1000);
 
         ret = sock_info2sock(nh, info, 0, timeout);
         if (unlikely(ret)) {
@@ -100,7 +100,7 @@ static int __sock_connect(net_handle_t *nh, const sock_info_t *info,
         }
 
         if (ltgconf_global.daemon) {
-                ret = sock_poll_sd(nh->u.sd.sd, timeout * 1000 * 1000, POLLIN);
+                ret = sock_poll_sd(nh->u.sd.sd, timeout, POLLIN);
                 if (unlikely(ret))
                         GOTO(err_fd, ret);
 
@@ -139,6 +139,7 @@ int net_connect(net_handle_t *sock, const ltg_net_info_t *info, int timeout)
         uint32_t infolen;
         char buf[MAX_BUF_LEN];
 
+        LTG_ASSERT(timeout <= 1000 * 1000 && timeout >= 100 * 1000);
         LTG_ASSERT(!sche_running());
 
         infolen = MAX_BUF_LEN;

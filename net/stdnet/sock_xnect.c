@@ -81,6 +81,8 @@ int sock_info2sock(net_handle_t *nh, const sock_info_t *info, int nonblock, int 
         int ret;
         struct sockaddr_in sin;
 
+        LTG_ASSERT(timeout <= 1000 * 1000 && timeout >= 100 * 1000);
+        
         memset(&sin, 0, sizeof(sin));
         sin.sin_family = AF_INET;
 

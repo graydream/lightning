@@ -114,7 +114,9 @@ STATIC void *__main_loop_worker(void *_args)
 
         sem_post(&worker->sem);
 
-        main_loop_hold();        
+#if 0
+        main_loop_hold();
+#endif
 
         while (1) {
                 DBUG("running thread %u, epoll_fd %u, eventfd %u\n",

@@ -53,7 +53,7 @@ err_ret:
         return ret;
 }
 
-static int __conn_scan__()
+int conn_scan()
 {
         int ret, i;
         etcd_node_t *list = NULL, *node;
@@ -88,13 +88,45 @@ err_ret:
         return ret;
 }
 
+inline static int __conn_watch(int idx, void *arg)
+{
+        int ret;
+        
+        (void) arg;
+
+        static int __idx__ = 0;
+        if (__idx__ < idx) {
+                __idx__ = idx;
+                DINFO("new conn idx %d\n", idx);
+        }
+        
+        ret = conn_scan();
+        if (ret) {
+                GOTO(err_ret, ret);
+        }
+
+        return 0;
+err_ret:
+        return ret;
+}
+
 static void *__conn_scan(void *arg)
 {
         (void) arg;
-        
+
         while (1) {
+#if 1
+                int ret;
+
+                ret = etcd_watch_dir(ETCD_NETWORK, "manage", 60,
+                                     __conn_watch, NULL);
+                if (unlikely(ret)) {
+                        continue;
+                }
+#else
                 sleep(10);
-                __conn_scan__();
+                conn_scan();
+#endif
         }
 
         pthread_exit(NULL);

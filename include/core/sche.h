@@ -271,7 +271,7 @@ int sche_stat(int *sid, int *taskid, int *runable, int *wait_task,
 
 
 int sche_request(sche_t *sche, int group, func_t exec, void *buf, const char *name);
-void sche_task_new(const char *name, func_t func, void *arg, int group);
+int sche_task_new(const char *name, func_t func, void *arg, int group);
 task_t sche_task_get();
 void sche_task_given(task_t *task);
 int sche_task_get1(sche_t *sche, task_t *task);
@@ -341,35 +341,6 @@ void sche_fingerprint_new(sche_t *sche, taskctx_t *taskctx);
 int sche_task_run(int group, func_va_t exec, ...);
 int sche_getid();
 void sche_unyielding(int unyielding);
-
-#if 1
-
-# define SCHEDULE_LEASE_SET()                          \
-        do {                                                            \
-                sche_value_set(TASK_VALUE_LEASE, gettime());        \
-        } while (0)
-
-# define SCHEDULE_LEASE_CHECK(label, __ret__)                           \
-        do {                                                            \
-                uint32_t __lease__, diff; \
-                sche_value_get(TASK_VALUE_LEASE, &__lease__);       \
-                LTG_ASSERT(__lease__);                                     \
-                diff = gettime() - __lease__;                          \
-                if (__lease__!= -1 && diff > ltgconf_global.lease_timeout) {   \
-                        __ret__ = ETIMEDOUT;                            \
-                        DERROR("Process leaving via %s ret %d lease %u timeout %u %u\n", \
-                               #label, __ret__, __lease__, ltgconf_global.lease_timeout, diff); \
-                        goto label;                                     \
-                }                                                       \
-        } while (0)
-
-
-#else
-
-# define SCHEDULE_LEASE_SET()
-# define SCHEDULE_LEASE_CHECK(label, __ret__)
-
-#endif
 
 #define SCHE_ANALYSIS 0
 

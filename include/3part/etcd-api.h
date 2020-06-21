@@ -15,6 +15,7 @@ typedef enum {
         ETCD_ERR,                /* anything we can't easily categorize */
     	ETCD_ENOENT,		/*  no such file when get interface */
         ETCD_PREVCONT,           /* set or get, when prevcontition is not equal */
+        ETCD_INVALID,            /*invalid argument*/
         ETCD_TIMEOUT,
 } etcd_result;
 
@@ -139,7 +140,7 @@ int free_etcd_node(etcd_node_t *node);
  * the next.  It's entirely legitimate to point both at the same variable.
  */
 
-etcd_result etcd_watch (etcd_session session, char *pfx, const int *index_in, etcd_node_t **ppnode, int timeout);
+etcd_result etcd_watch (etcd_session session, const char *pfx, const int *index_in, etcd_node_t **ppnode, int timeout);
 
 
 /*

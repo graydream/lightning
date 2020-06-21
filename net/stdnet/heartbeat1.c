@@ -102,7 +102,7 @@ STATIC void __heartbeat_task(void *_ent)
                      _inet_ntoa(ent->sockid.addr), (LLU)ent->sent, (LLU)ent->reply);
         }
         
-        ANALYSIS_END(0, 1000 * 100, NULL);
+        ANALYSIS_END(0, IO_INFO, NULL);
         ent->refcount--;
 }
 
@@ -156,7 +156,7 @@ int heartbeat_add1(const sockid_t *sockid, const char *name, void *ctx,
         ent->reply = 0;
         strcpy(ent->name, name);
 
-        DINFO("add heartbeat %s/%s, timeout %f, sock (%d, %d)\n", ent->name,
+        DINFO("add heartbeat %s/%s, timeout %.4fs, sock (%d, %d)\n", ent->name,
               _inet_ntoa(ent->sockid.addr), (float)timeout / 1000 / 1000,
               sockid->sd, sockid->seq);
 
