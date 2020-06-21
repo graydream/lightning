@@ -335,8 +335,9 @@ int mem_ring_init()
 {
         int ret;
         mem_ring_head_t *head;
+        uint32_t size = HUGEPAGE_SIZE
 
-        ret = hugepage_getfree((void **)&head, NULL);
+        ret = hugepage_getfree((void **)&head, &size);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
         

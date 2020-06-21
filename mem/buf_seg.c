@@ -29,7 +29,7 @@ static seg_t *__seg_alloc_head(ltgbuf_t *buf, uint32_t size, int sys)
 {
         seg_t *seg;
 
-        LTG_ASSERT(size <= BUFFER_SEG_SIZE);
+//        LTG_ASSERT(size <= BUFFER_SEG_SIZE);
 
         if (likely(buf->used < SEG_KEEP)) {
                 seg = &buf->array[buf->used];
