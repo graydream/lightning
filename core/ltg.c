@@ -175,7 +175,6 @@ int ltg_init(const ltgconf_t *ltgconf, const ltg_netconf_t *ltgnet_manage,
 
         memcpy(&ltgconf_global, ltgconf, sizeof(*ltgconf));
 
-        ltgconf_global.lease_timeout =  _max(3, ltgconf->rpc_timeout / 3); 
         ltg_netconf_global.count = 0;
 
         for (int i = 0; i < ltgnet_conf->count; i++) {

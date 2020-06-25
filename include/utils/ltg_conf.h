@@ -38,7 +38,6 @@ typedef struct {
         int solomode;
         int performance_analysis;
         int nofile_max;
-        int lease_timeout;
         int hb_timeout;
         int hb_retry;
 } ltgconf_t;

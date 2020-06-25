@@ -63,6 +63,7 @@ int etcd_get_bin(const char *prefix, const char *_key, void *_value, int *_value
 int etcd_lock_init(etcd_lock_t *lock, const char *prefix, const char *key, int ttl, uint32_t magic, int update);
 int etcd_lock(etcd_lock_t *lock);
 int etcd_unlock(etcd_lock_t *lock);
+int etcd_watch1(const char *prefix, const char *_key, int *idx);
 
 // master
 int etcd_lock_health(etcd_lock_t *lock);

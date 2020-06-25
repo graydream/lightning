@@ -1253,3 +1253,41 @@ int etcd_set_bin(const char *prefix, const char *_key, const void *_value,
 err_ret:
         return ret;
 }
+
+
+int etcd_watch1(const char *prefix, const char *_key, int *idx)
+{
+        int ret;
+        etcd_node_t  *node = NULL;
+        etcd_session  sess;
+        char *host;
+        char key[MAX_PATH_LEN];
+
+        LTG_ASSERT(sche_self() == 0);
+
+        host = strdup(__ETCD_SRV__);
+        ret = __etcd_open_str(host, &sess);
+        if (ret) {
+                GOTO(err_ret, ret);
+        }
+
+        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name,
+                 prefix, _key);
+        
+        ret = etcd_watch(sess, key, idx, &node, 0);
+        if(ret != ETCD_OK){
+                ret = EPERM;
+                GOTO(err_close, ret);
+        }
+
+        etcd_close_str(sess);
+        free_etcd_node(node);
+        ltg_free1(host);
+        
+        return 0;
+err_close:
+        etcd_close_str(sess);
+err_ret:
+        ltg_free1(host);
+        return ret;
+}
