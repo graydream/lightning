@@ -81,7 +81,8 @@ int heartbeat_add(const sockid_t *sockid, const nid_t *nid, suseconds_t tmo, tim
                              __netable_hb_send,
                              __netable_hb_close,
                              __netable_hb_free,
-                             tmo, ltgconf_global.hb_retry);
+                             tmo / ltgconf_global.hb_retry,
+                             ltgconf_global.hb_retry);
         if (unlikely(ret))
                 GOTO(err_free, ret);
 

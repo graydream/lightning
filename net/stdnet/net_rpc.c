@@ -158,7 +158,7 @@ static int __net_srv_hello2(const sockid_t *sockid, const msgid_t *msgid, ltgbuf
                        &seq, NULL,
                        NULL);
 
-        stdrpc_reply(sockid, msgid, NULL, 0);
+        corerpc_reply(sockid, msgid, NULL, 0);
 
         ANALYSIS_END(0, 1000 * 100, NULL);
         
@@ -187,6 +187,8 @@ int net_rpc_hello1(const sockid_t *sockid, uint64_t seq)
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
+        DBUG("corenet hello success\n");
+
         ANALYSIS_END(0, 1000 * 500, NULL);
 
         return 0;
@@ -214,6 +216,8 @@ int net_rpc_hello2(const coreid_t *coreid, const sockid_t *sockid, uint64_t seq)
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
+        DBUG("corenet hello success\n");
+        
         ANALYSIS_END(0, 1000 * 500, NULL);
 
         return 0;
