@@ -271,7 +271,7 @@ int sche_stat(int *sid, int *taskid, int *runable, int *wait_task,
 
 
 int sche_request(sche_t *sche, int group, func_t exec, void *buf, const char *name);
-void sche_task_new(const char *name, func_t func, void *arg, int group);
+int sche_task_new(const char *name, func_t func, void *arg, int group);
 task_t sche_task_get();
 void sche_task_given(task_t *task);
 int sche_task_get1(sche_t *sche, task_t *task);

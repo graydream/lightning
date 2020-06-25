@@ -158,7 +158,7 @@ static int __net_srv_hello2(const sockid_t *sockid, const msgid_t *msgid, ltgbuf
                        &seq, NULL,
                        NULL);
 
-        corerpc_reply(sockid, msgid, NULL, 0);
+        stdrpc_reply(sockid, msgid, NULL, 0);
 
         ANALYSIS_END(0, 1000 * 100, NULL);
         

@@ -494,9 +494,9 @@ static void *__sche_task_new(sche_t *sche)
         return stack;
 }
 
-void IO_FUNC sche_task_new(const char *name, func_t func, void *arg, int _group)
+int IO_FUNC sche_task_new(const char *name, func_t func, void *arg, int _group)
 {
-        int ret, idx = 0, group;
+        int ret, group;
         sche_t *sche = sche_self();
         taskctx_t *taskctx;
 
@@ -546,7 +546,7 @@ void IO_FUNC sche_task_new(const char *name, func_t func, void *arg, int _group)
         taskctx->ref_count = 0;
 #endif
 
-        DBUG("new task[%d] %s count:%d\n", idx, name, sche->task_count);
+        DBUG("new task[%d] %s count:%d\n", taskctx->id, name, sche->task_count);
 
         sche_fingerprint_new(sche, taskctx);
 #if SCHEDULE_TASKCTX_RUNTIME
@@ -557,6 +557,8 @@ void IO_FUNC sche_task_new(const char *name, func_t func, void *arg, int _group)
         count_list_add_tail(&taskctx->hook, &sche->runable[taskctx->group]);
 
         __sche_makecontext(sche, taskctx);
+
+        return taskctx->id;
 }
 
 #define REQUEST_SEM 1
