@@ -1254,7 +1254,6 @@ err_ret:
         return ret;
 }
 
-
 int etcd_watch1(const char *prefix, const char *_key, int *idx)
 {
         int ret;
@@ -1280,6 +1279,104 @@ int etcd_watch1(const char *prefix, const char *_key, int *idx)
                 GOTO(err_close, ret);
         }
 
+        etcd_close_str(sess);
+        free_etcd_node(node);
+        ltg_free1(host);
+        
+        return 0;
+err_close:
+        etcd_close_str(sess);
+err_ret:
+        ltg_free1(host);
+        return ret;
+}
+
+int etcd_watch_text(const char *prefix, const char *_key, char *value, int *idx)
+{
+        int ret;
+        etcd_node_t *node = NULL;
+        etcd_session sess;
+        char *host;
+        char key[MAX_PATH_LEN];
+
+        LTG_ASSERT(sche_self() == 0);
+
+        host = strdup(__ETCD_SRV__);
+        ret = __etcd_open_str(host, &sess);
+        if (ret) {
+                GOTO(err_ret, ret);
+        }
+
+        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name,
+                 prefix, _key);
+        
+        ret = etcd_watch(sess, key, idx, &node, 0);
+        if(ret != ETCD_OK){
+                DWARN("watch %s/%d res %d\n", key, *idx, ret);
+                ret = EAGAIN;
+                GOTO(err_close, ret);
+        }
+
+        free_etcd_node(node);
+
+        ret = etcd_get(sess, (void *)key, ltgconf_global.rpc_timeout / 2,
+                       &node, 1);
+        if(ret != ETCD_OK){
+                if (ret == ETCD_ENOENT) {
+                        ret = ENOKEY;
+                } else {
+                        ret = EAGAIN;
+                }
+
+                GOTO(err_close, ret);
+        }
+
+        DBUG("%s %d %d %d %s\n", key, node->dir, node->modifiedIndex,
+             node->num_node, node->value);
+        
+        strcpy(value, node->value);
+        *idx = node->modifiedIndex;
+        
+        free_etcd_node(node);
+        etcd_close_str(sess);
+
+        ltg_free1(host);
+        
+        return 0;
+err_close:
+        etcd_close_str(sess);
+err_ret:
+        ltg_free1(host);
+        return ret;
+}
+
+int etcd_watch_dir(const char *prefix, int *idx)
+{
+        int ret;
+        etcd_node_t  *node = NULL;
+        etcd_session  sess;
+        char *host;
+        char key[MAX_PATH_LEN];
+
+        LTG_ASSERT(sche_self() == 0);
+
+        host = strdup(__ETCD_SRV__);
+        ret = __etcd_open_str(host, &sess);
+        if (ret) {
+                GOTO(err_ret, ret);
+        }
+
+        snprintf(key, MAX_NAME_LEN, "/%s/%s", ltgconf_global.system_name,
+                 prefix);
+        
+        ret = etcd_watch(sess, key, idx, &node, 0);
+        if(ret != ETCD_OK){
+                ret = EPERM;
+                GOTO(err_close, ret);
+        }
+
+        LTG_ASSERT(node->dir);
+        
         etcd_close_str(sess);
         free_etcd_node(node);
         ltg_free1(host);
