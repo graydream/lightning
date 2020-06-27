@@ -111,7 +111,7 @@ static void *__conn_scan(void *arg)
         (void) arg;
 
         while (1) {
-#if 1
+#if 0
                 int ret;
 
                 ret = etcd_watch_dir(ETCD_NETWORK, "manage", 60,
