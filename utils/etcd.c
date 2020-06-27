@@ -1256,6 +1256,7 @@ err_ret:
         return ret;
 }
 
+#if 1
 int etcd_watch1(const char *prefix, const char *_key, int *idx)
 {
         int ret;
@@ -1335,49 +1336,8 @@ err_ret:
         ltg_free1(host);
         return ret;
 }
+#endif
 
-int etcd_watch_dir(const char *prefix, int *idx)
-{
-        int ret;
-        etcd_node_t  *node = NULL;
-        etcd_session  sess;
-        char *host;
-        char key[MAX_PATH_LEN];
-
-        LTG_ASSERT(sche_self() == 0);
-
-        host = strdup(__ETCD_SRV__);
-        ret = __etcd_open_str(host, &sess);
-        if (ret) {
-                GOTO(err_ret, ret);
-        }
-
-        snprintf(key, MAX_NAME_LEN, "/%s/%s", ltgconf_global.system_name,
-                 prefix);
-        
-        ret = etcd_watch(sess, key, idx, &node, 0);
-        if(ret != ETCD_OK){
-                ret = EPERM;
-                GOTO(err_close, ret);
-        }
-
-        DINFO("key %s idx %d\n", key, node->modifiedIndex);
-        
-        //LTG_ASSERT(node->dir);
-        
-        etcd_close_str(sess);
-        free_etcd_node(node);
-        ltg_free1(host);
-        
-        return 0;
-err_close:
-        etcd_close_str(sess);
-err_ret:
-        ltg_free1(host);
-        return ret;
-}
-
-#if 1
 static int __etcd_watch_key(const char *key, char *value, int timeout, int *idx)
 {
         int ret;
@@ -1393,15 +1353,12 @@ static int __etcd_watch_key(const char *key, char *value, int timeout, int *idx)
                 GOTO(err_ret, ret);
         }
 
+        DBUG("%s idx %d\n", key, *idx);
+        
         ret = etcd_watch(sess, key, idx, &node, timeout);
         if(ret != ETCD_OK){
-                DWARN("watch %s/%d res %d\n", key, *idx, ret);
-                if (ret == ETCD_TIMEOUT) {
-                        ret = ETIMEDOUT;
-                } else {
-                        ret = EAGAIN;
-                }
-
+                DBUG("watch %s/%d res %d\n", key, *idx, ret);
+                ret = EAGAIN;
                 GOTO(err_close, ret);
         }
 
@@ -1445,12 +1402,7 @@ retry:
                 int idx = etcd_idx + 1;
                 ret = __etcd_watch_key(key, value, timeout, &idx);
                 if (ret) {
-                        if (ret == ETIMEDOUT) {
-                                DINFO("watch key %s timeout\n", key);
-                        } else {
-                                DWARN("watch key %s errno %d\n", ret);
-                        }
-
+                        DBUG("watch key %s timeout\n", key);
                         goto retry;
                 }
 
@@ -1466,4 +1418,94 @@ err_ret:
         return ret;
 }
 
+#if 1
+static int __etcd_watch_dir(const char *prefix, int timeout, int *idx)
+{
+        int ret;
+        etcd_node_t  *node = NULL;
+        etcd_session  sess;
+        char *host;
+        char key[MAX_PATH_LEN];
+
+        LTG_ASSERT(sche_self() == 0);
+
+        host = strdup(__ETCD_SRV__);
+        ret = __etcd_open_str(host, &sess);
+        if (ret) {
+                GOTO(err_ret, ret);
+        }
+
+        snprintf(key, MAX_NAME_LEN, "/%s/%s", ltgconf_global.system_name,
+                 prefix);
+        
+        ret = etcd_watch(sess, key, idx, &node, timeout);
+        if(ret != ETCD_OK){
+                ret = EAGAIN;
+                GOTO(err_close, ret);
+        }
+
+        DINFO("key %s idx %d\n", key, node->modifiedIndex);
+
+        *idx = node->modifiedIndex;
+        
+        etcd_close_str(sess);
+        free_etcd_node(node);
+        ltg_free1(host);
+        
+        return 0;
+err_close:
+        etcd_close_str(sess);
+err_ret:
+        ltg_free1(host);
+        return ret;
+}
+
+int etcd_watch_dir(const char *prefix, const char *_key, int timeout,
+                   etcd_dir_func_t func, void *arg)
+{
+        int ret, etcd_idx;
+        char key[MAX_PATH_LEN];
+        etcd_node_t  *list = NULL;
+
+retry:
+        snprintf(key, MAX_NAME_LEN, "%s/%s", prefix, _key);
+
+        ret = etcd_list(key, &list);
+        if (ret)
+                GOTO(err_ret, ret);
+
+        etcd_idx = 0;
+        for (int i = 0; i < list->num_node; i++) {
+                etcd_node_t *node = list->nodes[i];
+                etcd_idx = _max(etcd_idx, node->modifiedIndex);
+        }
+
+        free_etcd_node(list);
+        
+        ret = func(etcd_idx, arg);
+        if (ret)
+                GOTO(err_ret, ret);
+
+        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name,
+                 prefix, _key);
+        
+        while (1) {
+                int idx = etcd_idx + 1;
+                ret = __etcd_watch_dir(key, timeout, &idx);
+                if (ret) {
+                        DBUG("watch key %s timeout\n", key);
+                        goto retry;
+                }
+
+                ret = func(idx, arg);
+                if (ret)
+                        GOTO(err_ret, ret);
+
+                etcd_idx = idx;
+        }
+
+        return 0;
+err_ret:
+        return ret;
+}
 #endif

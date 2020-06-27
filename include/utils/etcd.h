@@ -37,6 +37,7 @@ typedef struct{
 } etcd_lock_t;
 
 typedef int (*etcd_func_t)(const char *value, int idx, void *arg);
+typedef int (*etcd_dir_func_t)(int idx, void *arg);
 
 int etcd_mkdir(const char *prefix, const char *dir, int ttl);
 int etcd_del_dir(const char *prefix, const char *_key, int recursive);
@@ -65,12 +66,16 @@ int etcd_get_bin(const char *prefix, const char *_key, void *_value, int *_value
 int etcd_lock_init(etcd_lock_t *lock, const char *prefix, const char *key, int ttl, uint32_t magic, int update);
 int etcd_lock(etcd_lock_t *lock);
 int etcd_unlock(etcd_lock_t *lock);
+#if 1
 int etcd_watch_text(const char *prefix, const char *_key, char *value, int *idx);
-int etcd_watch_dir(const char *prefix, int *idx);
 int etcd_watch1(const char *prefix, const char *_key, int *idx);
+#endif
+//int etcd_watch_dir(const char *prefix, int *idx);
 int etcd_watch_key(const char *prefix, const char *_key, int timeout,
                    etcd_func_t func, void *arg);
 
+int etcd_watch_dir(const char *prefix, const char *_key, int timeout,
+                   etcd_dir_func_t func, void *arg);
 
 // master
 int etcd_lock_health(etcd_lock_t *lock);

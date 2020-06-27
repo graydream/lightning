@@ -88,13 +88,36 @@ err_ret:
         return ret;
 }
 
+static int __conn_watch(int idx, void *arg)
+{
+        int ret;
+        
+        (void) arg;
+
+        DINFO("new conn idx %d\n", idx);
+        
+        ret = __conn_scan__(&idx);
+        if (ret) {
+                GOTO(err_ret, ret);
+        }
+
+        return 0;
+err_ret:
+        return ret;
+}
+
 static void *__conn_scan(void *arg)
 {
+        int ret;
+
         (void) arg;
-        
+
         while (1) {
-                sleep(10);
-                __conn_scan__();
+                ret = etcd_watch_dir(ETCD_NETWORK, "manage", 60,
+                                     __conn_watch, NULL);
+                if (unlikely(ret)) {
+                        continue;
+                }
         }
 
         pthread_exit(NULL);
