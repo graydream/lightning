@@ -1360,7 +1360,12 @@ static int __etcd_watch_key(const char *key, char *value, int timeout, const int
         ret = etcd_watch(sess, key, idx_in, &node, timeout);
         if(ret != ETCD_OK){
                 //DBUG("watch %s/%d res %d\n", key, *idx, ret);
-                ret = EAGAIN;
+                if (ret == ETCD_TIMEOUT) {
+                        ret = ETIMEDOUT;
+                } else {
+                        ret = EAGAIN;
+                }
+
                 GOTO(err_close, ret);
         }
 
@@ -1388,15 +1393,29 @@ int etcd_watch_key(const char *prefix, const char *_key, int timeout,
         int ret, etcd_idx = 0;
         char key[MAX_PATH_LEN], value[MAX_BUF_LEN];
 
+retry:
+        ret = etcd_get_text(prefix, _key, value, &etcd_idx);
+        if (ret)
+                GOTO(err_ret, ret);
+
+        ret = func(value, etcd_idx, arg);
+        if (ret)
+                GOTO(err_ret, ret);
+
         snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name,
                  prefix, _key);
-
+        
         while (1) {
                 int idx = etcd_idx + 1;
                 ret = __etcd_watch_key(key, value, timeout,
-                                       etcd_idx == 0 ? NULL : &idx, &idx);
+                                       &idx, &idx);
                 if (ret) {
-                        GOTO(err_ret, ret);
+                        if (ret == ETIMEDOUT) {
+                                DINFO("%s timeout\n", key);
+                                goto retry;
+                        } else {
+                                GOTO(err_ret, ret);
+                        }
                 }
 
                 ret = func(value, idx, arg);
@@ -1411,7 +1430,8 @@ err_ret:
         return ret;
 }
 
-static int __etcd_watch_dir(const char *key, int timeout, int *idx_in, int *idx_out)
+static int __etcd_watch_dir(const char *key, int timeout, int *idx_in,
+                            int *idx_out)
 {
         int ret;
         etcd_node_t  *node = NULL;
@@ -1426,17 +1446,23 @@ static int __etcd_watch_dir(const char *key, int timeout, int *idx_in, int *idx_
                 GOTO(err_ret, ret);
         }
 
-        DBUG("key %s idx %d\n", key, idx_in ? *idx_in : -1);
+        DINFO("key %s idx %d\n", key, idx_in ? *idx_in : -1);
         
         ret = etcd_watch(sess, key, idx_in, &node, timeout);
         if(ret != ETCD_OK){
-                ret = EAGAIN;
+                if (ret == ETCD_TIMEOUT) {
+                        ret = ETIMEDOUT;
+                } else {
+                        ret = EAGAIN;
+                }
+
                 GOTO(err_close, ret);
         }
         
-        DBUG("key %s %s idx %d %d\n", key, node->key, idx_in ? *idx_in : -1, node->modifiedIndex);
+        DINFO("key %s %s idx %d %d\n", key, node->key,
+             idx_in ? *idx_in : -1, node->modifiedIndex);
 
-        *idx_out = node->modifiedIndex;
+        *idx_out = _max(idx_in ? *idx_in : 0, node->modifiedIndex);
         
         etcd_close_str(sess);
         free_etcd_node(node);
@@ -1456,15 +1482,43 @@ int etcd_watch_dir(const char *prefix, const char *_key, int timeout,
         int ret, etcd_idx = 0;
         char key[MAX_PATH_LEN];
 
+#if 1
+        etcd_node_t  *list = NULL;
+
+retry:
+        snprintf(key, MAX_NAME_LEN, "%s/%s", prefix, _key);
+
+        ret = etcd_list(key, &list);
+        if (ret)
+                GOTO(err_ret, ret);
+
+        etcd_idx = 0;
+        for (int i = 0; i < list->num_node; i++) {
+               etcd_node_t *node = list->nodes[i];
+               etcd_idx = _max(etcd_idx, node->modifiedIndex);
+        }
+
+        free_etcd_node(list);
+        
+        ret = func(etcd_idx, arg);
+        if (ret)
+                GOTO(err_ret, ret);
+#endif   
+
         snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name,
                  prefix, _key);
-
+        
         while (1) {
                 int idx = etcd_idx + 1;
                 ret = __etcd_watch_dir(key, timeout,
                                        etcd_idx == 0 ? NULL : &idx, &idx);
                 if (ret) {
-                        GOTO(err_ret, ret);
+                        if (ret == ETIMEDOUT) {
+                                DINFO("%s timeout\n", key);
+                                goto retry;
+                        } else {
+                                GOTO(err_ret, ret);
+                        }
                 }
 
                 ret = func(idx, arg);
