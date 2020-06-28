@@ -1256,89 +1256,8 @@ err_ret:
         return ret;
 }
 
-#if 1
-int etcd_watch1(const char *prefix, const char *_key, int *idx)
-{
-        int ret;
-        etcd_node_t  *node = NULL;
-        etcd_session  sess;
-        char *host;
-        char key[MAX_PATH_LEN];
-
-        LTG_ASSERT(sche_self() == 0);
-
-        host = strdup(__ETCD_SRV__);
-        ret = __etcd_open_str(host, &sess);
-        if (ret) {
-                GOTO(err_ret, ret);
-        }
-
-        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name,
-                 prefix, _key);
-        
-        ret = etcd_watch(sess, key, idx, &node, 0);
-        if(ret != ETCD_OK){
-                ret = EPERM;
-                GOTO(err_close, ret);
-        }
-
-        etcd_close_str(sess);
-        free_etcd_node(node);
-        ltg_free1(host);
-        
-        return 0;
-err_close:
-        etcd_close_str(sess);
-err_ret:
-        ltg_free1(host);
-        return ret;
-}
-
-int etcd_watch_text(const char *prefix, const char *_key, char *value, int *idx)
-{
-        int ret;
-        etcd_node_t *node = NULL;
-        etcd_session sess;
-        char *host;
-        char key[MAX_PATH_LEN];
-
-        LTG_ASSERT(sche_self() == 0);
-
-        host = strdup(__ETCD_SRV__);
-        ret = __etcd_open_str(host, &sess);
-        if (ret) {
-                GOTO(err_ret, ret);
-        }
-
-        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name,
-                 prefix, _key);
-        
-        ret = etcd_watch(sess, key, idx, &node, 0);
-        if(ret != ETCD_OK){
-                DWARN("watch %s/%d res %d\n", key, *idx, ret);
-                ret = EAGAIN;
-                GOTO(err_close, ret);
-        }
-
-        DINFO("%s idx %d %s\n", key, node->modifiedIndex, node->value);
-        
-        strcpy(value, node->value);
-        *idx = node->modifiedIndex;
-        free_etcd_node(node);
-        etcd_close_str(sess);
-
-        ltg_free1(host);
-        
-        return 0;
-err_close:
-        etcd_close_str(sess);
-err_ret:
-        ltg_free1(host);
-        return ret;
-}
-#endif
-
-static int __etcd_watch_key(const char *key, char *value, int timeout, const int *idx_in, int *idx_out)
+static int __etcd_watch_key(const char *key, char *value, int timeout,
+                            const int *idx_in, int *idx_out)
 {
         int ret;
         etcd_node_t *node = NULL;
@@ -1362,6 +1281,10 @@ static int __etcd_watch_key(const char *key, char *value, int timeout, const int
                 //DBUG("watch %s/%d res %d\n", key, *idx, ret);
                 if (ret == ETCD_TIMEOUT) {
                         ret = ETIMEDOUT;
+                } else if (ret == ETCD_ENOENT) {
+                        ret = ENOENT;
+                } else if (ret == ETCD_INVALID) {
+                        ret = EINVAL;
                 } else {
                         ret = EAGAIN;
                 }
@@ -1411,8 +1334,12 @@ retry:
                                        &idx, &idx);
                 if (ret) {
                         if (ret == ETIMEDOUT) {
-                                DINFO("%s timeout\n", key);
+                                DBUG("%s timeout\n", key);
                                 goto retry;
+                        } else if (ret == EINVAL) {
+                                etcd_idx++;
+                                DWARN("skip %s idx %d\n", key, idx);
+                                continue;
                         } else {
                                 GOTO(err_ret, ret);
                         }
@@ -1446,12 +1373,16 @@ static int __etcd_watch_dir(const char *key, int timeout, int *idx_in,
                 GOTO(err_ret, ret);
         }
 
-        DINFO("key %s idx %d\n", key, idx_in ? *idx_in : -1);
+        DBUG("key %s idx %d\n", key, idx_in ? *idx_in : -1);
         
         ret = etcd_watch(sess, key, idx_in, &node, timeout);
         if(ret != ETCD_OK){
                 if (ret == ETCD_TIMEOUT) {
                         ret = ETIMEDOUT;
+                } else if (ret == ETCD_ENOENT) {
+                        ret = ENOENT;
+                } else if (ret == ETCD_INVALID) {
+                        ret = EINVAL;
                 } else {
                         ret = EAGAIN;
                 }
@@ -1459,7 +1390,7 @@ static int __etcd_watch_dir(const char *key, int timeout, int *idx_in,
                 GOTO(err_close, ret);
         }
         
-        DINFO("key %s %s idx %d %d\n", key, node->key,
+        DBUG("key %s %s idx %d %d\n", key, node->key,
              idx_in ? *idx_in : -1, node->modifiedIndex);
 
         *idx_out = _max(idx_in ? *idx_in : 0, node->modifiedIndex);
@@ -1514,8 +1445,12 @@ retry:
                                        etcd_idx == 0 ? NULL : &idx, &idx);
                 if (ret) {
                         if (ret == ETIMEDOUT) {
-                                DINFO("%s timeout\n", key);
+                                DBUG("%s timeout\n", key);
                                 goto retry;
+                        } else if (ret == EINVAL) {
+                                etcd_idx++;
+                                DBUG("skip %s idx %d\n", key, idx);
+                                continue;
                         } else {
                                 GOTO(err_ret, ret);
                         }

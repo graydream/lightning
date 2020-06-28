@@ -15,6 +15,7 @@ typedef enum {
         ETCD_ERR,                /* anything we can't easily categorize */
     	ETCD_ENOENT,		/*  no such file when get interface */
         ETCD_PREVCONT,           /* set or get, when prevcontition is not equal */
+        ETCD_INVALID,            /*invalid argument*/
         ETCD_TIMEOUT,
 } etcd_result;
 

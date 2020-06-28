@@ -22,7 +22,7 @@ int findplace(struct skiplist *slist, const void *key, struct skiplist_node **bt
         if (found)
                 *found = 0;
 
-        DBUG("maxlevel %u, curlevel %d\n", slist->maxlevel, slist->curlevel);
+        //DBUG("maxlevel %u, curlevel %d\n", slist->maxlevel, slist->curlevel);
         for (i = slist->maxlevel - 1; i > slist->curlevel; i--)
                 btlist[i] = slist->head;
 
@@ -65,7 +65,7 @@ int findplace(struct skiplist *slist, const void *key, struct skiplist_node **bt
 #ifdef SKIPLIST_BUG
 out:
 #endif
-        DBUG("ret %d\n", ret);
+        //DBUG("ret %d\n", ret);
         if (found && ret == 0)
                 *found = 1;
 
