@@ -53,7 +53,7 @@ err_ret:
         return ret;
 }
 
-static int __conn_scan__()
+int conn_scan()
 {
         int ret, i;
         etcd_node_t *list = NULL, *node;
@@ -96,7 +96,7 @@ inline static int __conn_watch(int idx, void *arg)
 
         DINFO("new conn idx %d\n", idx);
         
-        ret = __conn_scan__();
+        ret = conn_scan();
         if (ret) {
                 GOTO(err_ret, ret);
         }
@@ -111,7 +111,7 @@ static void *__conn_scan(void *arg)
         (void) arg;
 
         while (1) {
-#if 0
+#if 1
                 int ret;
 
                 ret = etcd_watch_dir(ETCD_NETWORK, "manage", 60,
@@ -121,7 +121,7 @@ static void *__conn_scan(void *arg)
                 }
 #else
                 sleep(10);
-                __conn_scan__();
+                conn_scan();
 #endif
         }
 
