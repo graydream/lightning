@@ -23,7 +23,7 @@ static int __tcp_connect(int s, const struct sockaddr *sin, socklen_t addrlen,
         int  ret, flags, err;
         socklen_t len;
 
-        LTG_ASSERT(timeout < 30);
+        LTG_ASSERT(timeout <= 1000 * 1000 && timeout >= 100 * 1000);
         /*
          * fill in sockaddr_in structure
          */
@@ -49,7 +49,7 @@ static int __tcp_connect(int s, const struct sockaddr *sin, socklen_t addrlen,
         } else
                 goto out;
 
-        ret = sock_poll_sd(s, timeout * 1000 * 1000, POLLOUT);
+        ret = sock_poll_sd(s, timeout, POLLOUT);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
         }
@@ -425,6 +425,8 @@ int tcp_sock_connect(net_handle_t *nh, struct sockaddr_in *sin, int nonblock,
 {
         int ret, sd;
 
+        LTG_ASSERT(timeout <= 1000 * 1000 && timeout >= 100 * 1000);
+        
         sd = socket(PF_INET, SOCK_STREAM, 0);
         if (sd == -1) {
                 ret = errno;

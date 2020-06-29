@@ -171,7 +171,7 @@ static int __network_connect(entry_t *ent, const ltg_net_info_t *info)
                 goto out;
         }
         
-        ret = net_connect(&sock, info, 1);
+        ret = net_connect(&sock, info, 100 * 1000);
         if (unlikely(ret)) {
                 DBUG("connect to %s fail ret %u %s\n", info->name,
                      ret, strerror(ret));
