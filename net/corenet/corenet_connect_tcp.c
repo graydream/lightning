@@ -59,7 +59,7 @@ int corenet_tcp_connect(const coreid_t *coreid, uint32_t addr, uint32_t port,
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        ret = tcp_sock_connect(&nh, &sin, 0, 3, 0);
+        ret = tcp_sock_connect(&nh, &sin, 0, 1, 0);
         if (unlikely(ret)) {
                 DINFO("try to connect %s:%u (%u) %s\n", inet_ntoa(sin.sin_addr),
                       ntohs(port), ret, strerror(ret));

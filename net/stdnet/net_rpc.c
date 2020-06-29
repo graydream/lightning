@@ -180,7 +180,7 @@ int net_rpc_hello1(const sockid_t *sockid, uint64_t seq)
         _opaque_encode(req->buf, &count, &seq, sizeof(seq), NULL);
 
         sock2nh(&nh, sockid);
-        ret = stdrpc_request_wait_sock("net_rpc_hb", &nh,
+        ret = stdrpc_request_wait_sock("hello1", &nh,
                                        req, sizeof(*req) + count,
                                        NULL, NULL,
                                        MSG_NET, 0, ltgconf_global.hb_timeout);
@@ -209,7 +209,7 @@ int net_rpc_hello2(const coreid_t *coreid, const sockid_t *sockid, uint64_t seq)
         req->op = NET_RPC_HELLO2;
         _opaque_encode(req->buf, &count, &seq, sizeof(seq), NULL);
 
-        ret = corerpc_postwait_sock("hello", coreid, sockid,
+        ret = corerpc_postwait_sock("hello2", coreid, sockid,
                                     req, sizeof(*req) + count, NULL,
                                     NULL, MSG_NET, -1, -1,
                                     ltgconf_global.hb_timeout);

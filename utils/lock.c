@@ -323,7 +323,7 @@ retry:
         }
 
 success:
-        ANALYSIS_END(0, 1000 * 50, NULL);
+        ANALYSIS_END(0, IO_WARN, NULL);
 
         return 0;
 err_lock:

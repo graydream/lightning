@@ -394,7 +394,8 @@ int tcp_sock_accept(net_handle_t *nh, int srv_sd, int tuning, int nonblock)
         memset(&sin, 0, sizeof(sin));
         alen = sizeof(struct sockaddr_in);
 
-        sd = __tcp_accept(srv_sd, (struct sockaddr *)&sin, &alen, ltgconf_global.rpc_timeout / 2);
+        sd = __tcp_accept(srv_sd, (struct sockaddr *)&sin, &alen,
+                          ltgconf_global.rpc_timeout / 2);
         if (sd < 0) {
 	        ret = -sd;
                 DERROR("srv_sd %d, %u\n", srv_sd, ret);

@@ -7,8 +7,8 @@
 
 #include "ltg_def.h"
 
-#define IO_WARN ((ltgconf_global.rpc_timeout) * 1000 * 1000)
-#define IO_INFO (1000 * 1000)
+#define IO_WARN (1000 * 1000)
+#define IO_INFO (1000 * 500)
 
 #if 1
 #define IO_FUNC  __attribute__((section(".xiop")))

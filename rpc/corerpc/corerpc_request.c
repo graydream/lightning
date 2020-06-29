@@ -275,6 +275,8 @@ int IO_FUNC corerpc_postwait1(const char *name, const coreid_t *coreid,
         int ret, replen;
         ltgbuf_t *rbuf, tmp;
 
+        ANALYSIS_BEGIN(0);
+        
         if (reply) {
                 replen = *_replen;
                 ltgbuf_init(&tmp, replen);
@@ -295,11 +297,14 @@ int IO_FUNC corerpc_postwait1(const char *name, const coreid_t *coreid,
                 ltgbuf_free(rbuf);
         }
 
+        ANALYSIS_END(0, IO_INFO, name);
+        
         return 0;
 err_ret:
         if (rbuf) {
                 ltgbuf_free(rbuf);
         }
+        ANALYSIS_END(0, IO_INFO, name);
         return ret;
 }
 

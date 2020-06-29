@@ -48,6 +48,8 @@ static int __netable_hb_close(void *_ctx)
         sdevent_close(&nh);
         netable_close(&ctx->nid, "timeout at hb", &ctx->ltime);
 
+        rpc_table_reset(__rpc_table__, &ctx->sockid, &ctx->nid);
+        
         return 0;
 }
 
