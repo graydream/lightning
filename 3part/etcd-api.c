@@ -343,7 +343,7 @@ etcd_get_one(_etcd_session *session, const char *key, etcd_server *srv, const ch
         curl_res = curl_easy_perform(curl);
         if (curl_res != CURLE_OK) {
                 // print_curl_error("perform",curl_res);
-                DWARN("http code: %d\n", curl_res);
+                DBUG("http code: %d\n", curl_res);
                 if (curl_res == CURLE_OPERATION_TIMEDOUT) {
                         res = ETCD_TIMEOUT;
                 }

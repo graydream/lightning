@@ -1256,6 +1256,25 @@ err_ret:
         return ret;
 }
 
+static int __etcd_get_index(int *idx)
+{
+        int ret;
+        char buf[MAX_BUF_LEN];
+
+        ret = etcd_set_text("misc", "test", "test", O_CREAT, 0);
+        if (ret)
+                GOTO(err_ret, ret);
+        
+        ret = etcd_get_text("misc", "test", buf, idx);
+        if (ret)
+                GOTO(err_ret, ret);
+
+
+        return 0;
+err_ret:
+        return ret;
+}
+
 static int __etcd_watch_key(const char *key, char *value, int timeout,
                             const int *idx_in, int *idx_out)
 {
@@ -1284,7 +1303,20 @@ static int __etcd_watch_key(const char *key, char *value, int timeout,
                 } else if (ret == ETCD_ENOENT) {
                         ret = ENOENT;
                 } else if (ret == ETCD_INVALID) {
-                        ret = EINVAL;
+                        int idx;
+                        ret = __etcd_get_index(&idx);
+                        if (ret)
+                                GOTO(err_ret, ret);
+
+                        ret = __etcd_get(key, &node, 1);
+                        if (ret)
+                                GOTO(err_ret, ret);
+
+                        DINFO("skip %s idx %d -> %d\n", key, *idx_in, idx);
+                        
+                        *idx_out = _max(idx, node->modifiedIndex);
+
+                        goto out;
                 } else {
                         ret = EAGAIN;
                 }
@@ -1293,9 +1325,11 @@ static int __etcd_watch_key(const char *key, char *value, int timeout,
         }
 
         DBUG("%s idx %d %s\n", key, node->modifiedIndex, node->value);
-        
-        strcpy(value, node->value);
+
         *idx_out = node->modifiedIndex;
+
+out:
+        strcpy(value, node->value);
         
         free_etcd_node(node);
         etcd_close_str(sess);
@@ -1313,33 +1347,31 @@ err_ret:
 int etcd_watch_key(const char *prefix, const char *_key, int timeout,
                    etcd_func_t func, void *arg)
 {
-        int ret, etcd_idx = 0;
+        int ret, etcd_idx = 0, idx = 0;
         char key[MAX_PATH_LEN], value[MAX_BUF_LEN];
 
 retry:
-        ret = etcd_get_text(prefix, _key, value, &etcd_idx);
+        ret = etcd_get_text(prefix, _key, value, &idx);
         if (ret)
                 GOTO(err_ret, ret);
 
-        ret = func(value, etcd_idx, arg);
+        ret = func(value, idx, arg);
         if (ret)
                 GOTO(err_ret, ret);
 
+        etcd_idx = _max(etcd_idx, idx);
+        
         snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name,
                  prefix, _key);
         
         while (1) {
-                int idx = etcd_idx + 1;
+                idx = etcd_idx + 1;
                 ret = __etcd_watch_key(key, value, timeout,
                                        &idx, &idx);
                 if (ret) {
                         if (ret == ETIMEDOUT) {
                                 DBUG("%s timeout\n", key);
                                 goto retry;
-                        } else if (ret == EINVAL) {
-                                etcd_idx++;
-                                DWARN("skip %s idx %d\n", key, idx);
-                                continue;
                         } else {
                                 GOTO(err_ret, ret);
                         }
@@ -1382,7 +1414,16 @@ static int __etcd_watch_dir(const char *key, int timeout, int *idx_in,
                 } else if (ret == ETCD_ENOENT) {
                         ret = ENOENT;
                 } else if (ret == ETCD_INVALID) {
-                        ret = EINVAL;
+                        int idx;
+                        ret = __etcd_get_index(&idx);
+                        if (ret)
+                                GOTO(err_ret, ret);
+
+                        DINFO("skip %s idx %d -> %d\n", key, *idx_in, idx);
+                        
+                        *idx_out = idx;
+
+                        goto out;
                 } else {
                         ret = EAGAIN;
                 }
@@ -1394,9 +1435,11 @@ static int __etcd_watch_dir(const char *key, int timeout, int *idx_in,
              idx_in ? *idx_in : -1, node->modifiedIndex);
 
         *idx_out = _max(idx_in ? *idx_in : 0, node->modifiedIndex);
-        
-        etcd_close_str(sess);
+
         free_etcd_node(node);
+
+out:
+        etcd_close_str(sess);
         ltg_free1(host);
         
         return 0;
@@ -1410,7 +1453,7 @@ err_ret:
 int etcd_watch_dir(const char *prefix, const char *_key, int timeout,
                    etcd_dir_func_t func, void *arg)
 {
-        int ret, etcd_idx = 0;
+        int ret, etcd_idx = 0, idx = 0;
         char key[MAX_PATH_LEN];
 
 #if 1
@@ -1423,15 +1466,12 @@ retry:
         if (ret)
                 GOTO(err_ret, ret);
 
-        etcd_idx = 0;
-        for (int i = 0; i < list->num_node; i++) {
-               etcd_node_t *node = list->nodes[i];
-               etcd_idx = _max(etcd_idx, node->modifiedIndex);
-        }
+        idx = list->modifiedIndex;
+        etcd_idx = _max(etcd_idx, idx);
 
         free_etcd_node(list);
         
-        ret = func(etcd_idx, arg);
+        ret = func(idx, arg);
         if (ret)
                 GOTO(err_ret, ret);
 #endif   
@@ -1440,17 +1480,12 @@ retry:
                  prefix, _key);
         
         while (1) {
-                int idx = etcd_idx + 1;
-                ret = __etcd_watch_dir(key, timeout,
-                                       etcd_idx == 0 ? NULL : &idx, &idx);
+                idx = etcd_idx + 1;
+                ret = __etcd_watch_dir(key, timeout, &idx, &idx);
                 if (ret) {
                         if (ret == ETIMEDOUT) {
                                 DBUG("%s timeout\n", key);
                                 goto retry;
-                        } else if (ret == EINVAL) {
-                                etcd_idx++;
-                                DBUG("skip %s idx %d\n", key, idx);
-                                continue;
                         } else {
                                 GOTO(err_ret, ret);
                         }

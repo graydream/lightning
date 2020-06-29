@@ -95,7 +95,7 @@ inline static int __conn_watch(int idx, void *arg)
         (void) arg;
 
         static int __idx__ = 0;
-        if (__idx__ != idx) {
+        if (__idx__ < idx) {
                 __idx__ = idx;
                 DINFO("new conn idx %d\n", idx);
         }
