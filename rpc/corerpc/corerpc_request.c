@@ -68,8 +68,6 @@ STATIC int __corerpc_wait__(const char *name, ltgbuf_t *rbuf,
 {
         int ret;
 
-        ANALYSIS_BEGIN(0);
-
         DBUG("%s yield wait\n", name);
         ret = sche_yield(name, rbuf, ctx);
         if (unlikely(ret)) {
@@ -78,11 +76,8 @@ STATIC int __corerpc_wait__(const char *name, ltgbuf_t *rbuf,
 
         DBUG("%s yield resume\n", name);
 
-        ANALYSIS_QUEUE(0, IO_INFO, NULL);
-
         return 0;
 err_ret:
-        ANALYSIS_END(0, IO_INFO, name);
         return ret;
 }
 
