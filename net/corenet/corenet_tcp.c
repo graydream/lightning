@@ -455,7 +455,7 @@ static int __corenet_tcp_recv__(corenet_node_t *node, int toread)
         ltgbuf_merge(&node->recv_buf, &buf);
         DBUG("new recv %u, left %u\n", buf.len, node->recv_buf.len);
 
-        ANALYSIS_QUEUE(0, 10 * 1000, NULL);
+        ANALYSIS_QUEUE(0, IO_INFO, NULL);
 
         return 0;
 err_free:

@@ -102,7 +102,7 @@ STATIC void __heartbeat_task(void *_ent)
                      _inet_ntoa(ent->sockid.addr), (LLU)ent->sent, (LLU)ent->reply);
         }
         
-        ANALYSIS_END(0, 1000 * 100, NULL);
+        ANALYSIS_END(0, IO_INFO, NULL);
         ent->refcount--;
 }
 
