@@ -204,7 +204,7 @@
 #else
 #define USLEEP_RETRY(__err_ret__, __ret__, __labal__, __retry__, __max__, __sleep__) \
         if ((__retry__)  < __max__) {                                   \
-                if (__retry__ % 10 == 0 && __retry__ > 1) {             \
+                if (__retry__ % 5 == 0 && __retry__ > 3) {             \
                         DINFO("retry %u/%u\n", (__retry__), __max__);   \
                 }                                                       \
                 sche_task_sleep("none", __sleep__);                      \

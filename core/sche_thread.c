@@ -209,7 +209,7 @@ int sche_thread_init()
         memset(tp->threads, 0x0, sizeof(tp->threads));
 
         memset(sche_ops, 0x0, sizeof(*sche_ops) * SCHE_THREAD_MAX);
-        ret = sche_thread_ops_register(&misc_ops, misc_ops.type, 3);
+        ret = sche_thread_ops_register(&misc_ops, misc_ops.type, 7);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 

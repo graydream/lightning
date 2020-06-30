@@ -24,7 +24,7 @@ int main_loop_event(int sd, int event, int op);
         do {                                        \
             int __i__ = 0;                          \
             while (__main_loop_hold__ && ltgconf_global.daemon) {       \
-                    sleep(1);                                   \
+                    sleep(1);                                           \
                     DINFO("main_loop_hold %u\n", __i__++);      \
             }                                                   \
         } while (0);
