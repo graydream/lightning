@@ -210,6 +210,11 @@ int IO_FUNC __corerpc_postwait(const char *name, corerpc_op_t *op, uint64_t *lat
 
         ANALYSIS_BEGIN(0);
 
+        if (!netable_connected(&op->coreid.nid)) {
+                ret = ENONET;
+                GOTO(err_ret, ret);
+        }
+        
         ret = corenet_maping(core, &op->coreid, &op->sockid);
         if (unlikely(ret))
                 GOTO(err_ret, ret);

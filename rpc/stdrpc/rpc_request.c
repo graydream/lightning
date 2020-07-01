@@ -186,6 +186,11 @@ STATIC int __stdrpc_request_wait(const char *name, const net_handle_t *nh,
         const nid_t *nid;
 
         if (nh->type == NET_HANDLE_PERSISTENT) {
+                if (!netable_connected(&nh->u.nid)) {
+                        ret = ENONET;
+                        GOTO(err_ret, ret);
+                }
+        
                 ret = netable_getsock(&nh->u.nid, &sockid);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
