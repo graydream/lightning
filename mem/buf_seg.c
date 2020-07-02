@@ -29,7 +29,7 @@ static seg_t *__seg_alloc_head(ltgbuf_t *buf, uint32_t size, int sys)
 {
         seg_t *seg;
 
-        LTG_ASSERT(size <= BUFFER_SEG_SIZE);
+//        LTG_ASSERT(size <= BUFFER_SEG_SIZE);
 
         if (likely(buf->used < SEG_KEEP)) {
                 seg = &buf->array[buf->used];
@@ -246,25 +246,30 @@ static seg_t *__seg_huge_trans(ltgbuf_t *buf, seg_t *seg)
         return newseg;
 }
 
-inline seg_t *seg_huge_create(ltgbuf_t *buf, uint32_t size)
+inline seg_t *seg_huge_create(ltgbuf_t *buf, uint32_t *size)
 {
         int ret;
+        uint32_t newsize = *size;
         seg_t *seg;
 
-        seg = __seg_alloc_head(buf, size, 0);
+        seg = __seg_alloc_head(buf, *size, 0);
         if (unlikely(!seg))
                 return NULL;
 
         mem_handler_t handler;
-        ret = mem_ring_new(size, &handler);
+        ret = mem_ring_new(&newsize, &handler);
         if (unlikely(ret)) {
                 GOTO(err_free, ret);
+        }
+
+        if (newsize < *size) {
+                seg->len = newsize;
+                *size = newsize;
         }
 
         seg->huge.pool = handler.pool;
         seg->huge.head = handler.head;
         seg->handler.ptr = handler.ptr;
-        seg->handler.phyaddr = handler.phyaddr;
                 
         DBUG("ptr %p %u\n", seg->handler.ptr, seg->len);
         LTG_ASSERT(seg->handler.ptr);
@@ -282,9 +287,9 @@ err_free:
 
 #else
 
-inline seg_t *seg_huge_create(ltgbuf_t *buf, uint32_t size)
+inline seg_t *seg_huge_create(ltgbuf_t *buf, uint32_t *size)
 {
-        return seg_sys_create(buf, size);
+        return seg_sys_create(buf, *size);
 }
 
 static seg_t *__seg_huge_share(ltgbuf_t *buf, seg_t *src)

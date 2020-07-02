@@ -6,5 +6,5 @@
 #include "mem/mem_ring.h"
 #include "mem/ltg_malloc.h"
 #include "mem/ltgbuf.h"
-
+#include "mem/buddy.h"
 #endif

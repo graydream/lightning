@@ -462,9 +462,11 @@ static void *__sche_task_new(sche_t *sche)
 
         if (core_self() && ltgconf_global.daemon && ENABLE_HUGEPAGE){
                 if (sche->task_hpage == NULL) {
-                        int ret = hugepage_getfree((void **)&vaddr, NULL);
+                        uint32_t size = HUGEPAGE_SIZE;
+                        int ret = hugepage_getfree((void **)&vaddr, &size);
                         LTG_ASSERT(ret == 0);
-                        
+                        LTG_ASSERT(size == HUGEPAGE_SIZE);
+
                         sche->task_hpage = vaddr;
                         sche->task_hpage_offset = 0;
 

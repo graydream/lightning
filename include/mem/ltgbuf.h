@@ -112,7 +112,7 @@ uint32_t ltgbuf_crc(const ltgbuf_t *buf, uint32_t _off, uint32_t size);
 extern int ltgbuf_appendzero(ltgbuf_t *buf, int size);
 extern int ltgbuf_writefile(const ltgbuf_t *buf, int fd, uint64_t offset);
 
-void *ltgbuf_head(ltgbuf_t *buf);
+void *ltgbuf_head(const ltgbuf_t *buf);
 int ltgbuf_get(const ltgbuf_t *pack, void *buf, uint32_t len);
 int ltgbuf_get1(const ltgbuf_t *pack, void *buf, uint32_t offset, uint32_t len);
 
@@ -141,7 +141,7 @@ int ltgbuf_initwith(ltgbuf_t *buf, void *data, int size, void *arg, int (*cb)(vo
 int ltgbuf_rdma_popmsg(ltgbuf_t *buf, void *dist, uint32_t len);
 int ltgbuf_nvme_init2(nvmeio_t *io, uint32_t size, uint64_t offset, ltgbuf_t *buf);
 
-seg_t *seg_huge_create(ltgbuf_t *buf, uint32_t size);
+seg_t *seg_huge_create(ltgbuf_t *buf, uint32_t *size);
 seg_t *seg_sys_create(ltgbuf_t *buf, uint32_t size);
 seg_t *seg_ext_create(ltgbuf_t *buf, void *data, uint32_t size,
                       void *arg, int (*cb)(void *arg));

@@ -322,6 +322,7 @@ STATIC int __ltgbuf_appendmem(ltgbuf_t *buf, const void *src, uint32_t len, int 
         seg_t *seg;
 
         (void) glob;
+        uint32_t size = len;
 
         DBUG("append len %u\n", len);
 
@@ -331,9 +332,10 @@ STATIC int __ltgbuf_appendmem(ltgbuf_t *buf, const void *src, uint32_t len, int 
         if (unlikely(glob)) {
                 seg = seg_sys_create(buf, len);
         } else {
-                seg = seg_huge_create(buf, len);
+                seg = seg_huge_create(buf, &size);
         }
-
+      
+        LTG_ASSERT(size == len);
         //DINFO("append seg %p, ptr %p\n", seg, seg->handler.ptr);
         memcpy(seg->handler.ptr, src, len);
 
@@ -466,6 +468,7 @@ inline int IO_FUNC ltgbuf_initwith(ltgbuf_t *buf, void *data, int size,
 inline int ltgbuf_init(ltgbuf_t *buf, int size)
 {
         seg_t *seg;
+        uint32_t newsize = size;
 
         LTG_ASSERT(size >= 0 && size < (1024 * 1024 * 100));
 
@@ -477,23 +480,16 @@ inline int ltgbuf_init(ltgbuf_t *buf, int size)
 
         ANALYSIS_BEGIN(0);
 
-        int left, min;
+        int left;
         //int coreid = __coreid();
         left = size;
         do {
-                min = _min(left, BUFFER_SEG_SIZE);
-
-                if (likely(ltgconf_global.rdma)) {
-                        seg = seg_huge_create(buf, min);
-                } else {
-                        if (likely(min < 256 * 1024))
-                                seg = seg_huge_create(buf, min);
-                        else
-                                seg = seg_sys_create(buf, min);
-                }
+                
+                seg = seg_huge_create(buf, &newsize);
 
                 seg_add_tail(buf, seg);
-                left -= min;
+                left -= newsize;
+                newsize = left;
         } while (unlikely(left > 0));
 
         BUFFER_CHECK(buf);
@@ -833,7 +829,8 @@ uint32_t ltgbuf_crc(const ltgbuf_t *buf, uint32_t offset, uint32_t size)
 
 int ltgbuf_appendzero(ltgbuf_t *buf, int size)
 {
-        int left, min;
+        int left;
+        uint32_t newsize = size;
         seg_t *seg;
 
         LTG_ASSERT(size >= 0);
@@ -841,13 +838,13 @@ int ltgbuf_appendzero(ltgbuf_t *buf, int size)
 
         left = size;
         while (left > 0) {
-                min = left < BUFFER_SEG_SIZE ? left : BUFFER_SEG_SIZE;
 
-                seg = seg_huge_create(buf, min);
+                seg = seg_huge_create(buf, &newsize);
                 LTG_ASSERT(seg);
-                memset(seg->handler.ptr, 0x0, min);
+                memset(seg->handler.ptr, 0x0, newsize);
                 seg_add_tail(buf, seg);
-                left -= min;
+                left -= newsize;
+                newsize = left;
         }
 
         BUFFER_CHECK(buf);
@@ -888,7 +885,7 @@ err_ret:
         return ret;
 }
 
-void *ltgbuf_head(ltgbuf_t *buf)
+void *ltgbuf_head(const ltgbuf_t *buf)
 {
         BUFFER_CHECK(buf);
 
@@ -1072,7 +1069,7 @@ int ltgbuf_trans3(struct iovec *_iov, int *_iov_count, ltgbuf_t *buf, size_t iov
 int ltgbuf_compress2(ltgbuf_t *buf, uint32_t max_seg_len)
 {
         int ret;
-        uint32_t idx1 = 0, idx2 = 0, len = 0, left, seg_left;
+        uint32_t idx1 = 0, idx2 = 0, len = 0, left, seg_left, size;
         struct list_head *pos, *n, list;
         seg_t *seg1, *seg2 = NULL;
 
@@ -1081,6 +1078,7 @@ int ltgbuf_compress2(ltgbuf_t *buf, uint32_t max_seg_len)
         INIT_LIST_HEAD(&list);
 
         left = buf->len;
+        size = left;
         list_for_each_safe(pos, n, &buf->list) {
                 seg1 = (seg_t *)pos;
                 seg_left = seg1->len;
@@ -1089,11 +1087,15 @@ int ltgbuf_compress2(ltgbuf_t *buf, uint32_t max_seg_len)
 
                 while (seg_left) {
                         if (idx2 == 0) {
-                                seg2 = seg_huge_create(buf, _min(left, max_seg_len));
+                                size = _min(left, max_seg_len);
+                                seg2 = seg_huge_create(buf, &size);
                                 if (seg2 == NULL) {
                                         ret = ENOMEM;
                                         GOTO(err_ret, ret);
                                 }
+
+                                LTG_ASSERT(size == _min(left, max_seg_len));
+
                                 list_add_tail(&seg2->hook, &list);
                         }
 
