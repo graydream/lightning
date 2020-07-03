@@ -141,6 +141,11 @@ static inline void __sche_check_running_used(sche_t *sche, taskctx_t *taskctx, u
 
 static inline void __sche_check_yield_used(sche_t *sche, taskctx_t *taskctx, uint64_t used)
 {
+        /* notice: time_used is seconds */
+        if (unlikely(taskctx->sleeping)) {
+                return;
+        }
+
         if (unlikely(used > (uint64_t)1000 * 1000 * (ltgconf_global.rpc_timeout * 4))) {
                 __sche_backtrace__(sche->name, sche->id, taskctx->id, sche->scan_seq);
                 uint64_t used1;

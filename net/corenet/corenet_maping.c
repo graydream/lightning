@@ -273,8 +273,7 @@ err_close:
                 EXIT(EAGAIN);
                 UNIMPLEMENTED(__DUMP__);
         } else {
-                DERROR("connect to %s fail\n",
-                       netable_rname(nid));
+                DBUG("connect to %s fail\n", netable_rname(nid));
         }
 err_ret:
         return ret;
