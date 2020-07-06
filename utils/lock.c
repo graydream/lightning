@@ -75,7 +75,7 @@ int ltg_rwlock_destroy(ltg_rwlock_t *rwlock)
         lock_wait_t *lock_wait = NULL;
         struct list_head list, *pos, *n;
 
-        DWARN("destroy %p\n", rwlock);
+        //DWARN("destroy %p\n", rwlock);
 
         INIT_LIST_HEAD(&list);
         ret = ltg_spin_lock(&rwlock->spin);
