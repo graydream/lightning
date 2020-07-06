@@ -326,7 +326,7 @@ STATIC int __ltgbuf_appendmem(ltgbuf_t *buf, const void *src, uint32_t len, int 
 
         DBUG("append len %u\n", len);
 
-        LTG_ASSERT(len <= BUFFER_SEG_SIZE);
+        //LTG_ASSERT(len <= BUFFER_SEG_SIZE);
 
         BUFFER_CHECK(buf);
         if (unlikely(glob)) {
