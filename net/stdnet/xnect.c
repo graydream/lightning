@@ -70,8 +70,8 @@ err_ret:
         return -ret;
 }
 
-static int __sock_connect(net_handle_t *nh, const sock_info_t *info,
-                          const void *infobuf, uint32_t infolen, int timeout)
+static int __sock_connect(net_handle_t *nh, const sock_info_t *info, const nid_t *peerid,
+                          const void *localinfo, uint32_t infolen, int timeout)
 {
         int ret;
         char buf[MAX_BUF_LEN];
@@ -85,37 +85,39 @@ static int __sock_connect(net_handle_t *nh, const sock_info_t *info,
 
         DBUG("conneted sd %u\n", nh->u.sd.sd);
 
-        if (infobuf) {
-                ret = _send(nh->u.sd.sd, (void *)infobuf, infolen,
-                            MSG_NOSIGNAL | MSG_DONTWAIT);
-                if (ret < 0) {
-                        ret = -ret;
-                        GOTO(err_fd, ret);
-                } else if ((uint32_t)ret != infolen) {
-                        ret = EBADF;
-                        DWARN("bad sd %u\n", nh->u.sd.sd);
-                        GOTO(err_fd, ret);
-                }
-
+        ret = _send(nh->u.sd.sd, (void *)localinfo, infolen,
+                    MSG_NOSIGNAL | MSG_DONTWAIT);
+        if (ret < 0) {
+                ret = -ret;
+                GOTO(err_fd, ret);
+        } else if ((uint32_t)ret != infolen) {
+                ret = EBADF;
+                DWARN("bad sd %u\n", nh->u.sd.sd);
+                GOTO(err_fd, ret);
         }
 
-        if (ltgconf_global.daemon) {
-                ret = sock_poll_sd(nh->u.sd.sd, timeout, POLLIN);
-                if (unlikely(ret))
-                        GOTO(err_fd, ret);
+        ret = sock_poll_sd(nh->u.sd.sd, timeout, POLLIN);
+        if (unlikely(ret))
+                GOTO(err_fd, ret);
 
-                ret = _recv(nh->u.sd.sd, (void *)buf, MAX_BUF_LEN, MSG_DONTWAIT);
-                if (ret < 0) {
-                        ret = errno;
-                        GOTO(err_fd, ret);
-                }
-
-                if (ret == 0) {
-                        ret = ECONNRESET;
-                        GOTO(err_fd, ret);
-                }
+        ret = _recv(nh->u.sd.sd, (void *)buf, MAX_BUF_LEN, MSG_DONTWAIT);
+        if (ret < 0) {
+                ret = errno;
+                GOTO(err_fd, ret);
         }
 
+        if (ret == 0) {
+                ret = ECONNRESET;
+                GOTO(err_fd, ret);
+        }
+
+        ltg_net_info_t *peerinfo = (void *)buf;
+        if (nid_cmp(&peerinfo->id, peerid)) {
+                ret = EINVAL;
+                DERROR("remote is %s\n", netable_rname(&peerinfo->id));
+                GOTO(err_fd, ret);
+        }
+        
         ret = sock_setnonblock(nh->u.sd.sd);
         if (unlikely(ret)) {
                 DERROR("%d - %s\n", ret, strerror(ret));
@@ -148,7 +150,8 @@ int net_connect(net_handle_t *sock, const ltg_net_info_t *info, int timeout)
                 GOTO(err_ret, ret);
         }
 
-        ret = __sock_connect(sock, &info->info[0], buf, infolen, timeout);
+        ret = __sock_connect(sock, &info->info[0], &info->id, buf, infolen,
+                             timeout);
         if (unlikely(ret)) {
                 ret = ENONET;
                 GOTO(err_ret, ret);
@@ -224,21 +227,19 @@ retry:
                 GOTO(err_ret, ret);
         }
 
-        if (!net_isnull(&info->id)) {
-                ret = rpc_getinfo(buf, &buflen);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
+        ret = rpc_getinfo(buf, &buflen);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
 
-                ret = _send(newsd, buf, buflen, 0);
-                if (ret < 0) {
-                        ret = errno;
-                        GOTO(err_ret, ret);
-                }
+        ret = _send(newsd, buf, buflen, 0);
+        if (ret < 0) {
+                ret = errno;
+                GOTO(err_ret, ret);
+        }
 
-                if (ret != (int)buflen) {
-                        ret = ECONNRESET;
-                        GOTO(err_ret, ret);
-                }
+        if (ret != (int)buflen) {
+                ret = ECONNRESET;
+                GOTO(err_ret, ret);
         }
 
         LTG_ASSERT(info->len);
