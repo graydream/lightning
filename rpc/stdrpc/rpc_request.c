@@ -249,7 +249,7 @@ int stdrpc_request_wait(const char *name, const nid_t *nid, const void *request,
         id2nh(&nh, nid);
 
         ret = __stdrpc_request_wait(name, &nh, -1, request, reqlen, NULL, buf,
-                                 msg_type, priority, timeout);
+                                    msg_type, priority, timeout);
         if (unlikely(ret))
                 goto err_ret;
 
@@ -324,5 +324,46 @@ int stdrpc_request_wait_sock(const char *name, const net_handle_t *nh, const voi
 
         return 0;
 err_ret:
+        return ret;
+}
+
+int stdrpc_request_wait2(const char *name, const coreid_t *coreid,
+                         const void *request, int reqlen,
+                         void *reply, int *replen, int msg_type, int timeout)
+{
+        int ret;
+        ltgbuf_t *buf, tmp;
+        net_handle_t nh;
+
+        if (reply) {
+                ltgbuf_init(&tmp, *replen);
+                buf = &tmp;
+        } else {
+                buf = NULL;
+        }
+
+        id2nh(&nh, &coreid->nid);
+
+        ret = __stdrpc_request_wait(name, &nh, coreid->idx, request, reqlen,
+                                    NULL, buf, msg_type, -1, timeout);
+        if (unlikely(ret))
+                goto err_ret;
+
+        if (buf) {
+                LTG_ASSERT(buf->len);
+                if (replen) {
+                        LTG_ASSERT((int)buf->len <= *replen);
+                        *replen = buf->len;
+                }
+
+                ltgbuf_get(buf, reply, buf->len);
+                ltgbuf_free(buf);
+        }
+
+        return 0;
+err_ret:
+        if (buf) {
+                ltgbuf_free(buf);
+        }
         return ret;
 }

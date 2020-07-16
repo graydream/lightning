@@ -12,7 +12,7 @@ int posix_alloc(void *meta_addr, void **_addr, uint32_t *size)
         int ret;
         void *addr;
         uint32_t req_size = _min(*size, mem_posix.max_alloc_size);
-        
+
         (void)meta_addr;
 
         ret = ltg_malign((void **)&addr, PAGE_SIZE, req_size);

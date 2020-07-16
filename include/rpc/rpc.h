@@ -30,6 +30,11 @@ int rpc_getinfo(char *infobuf, uint32_t *infobuflen);
 
 /* rpc_request.c */
 
+int stdrpc_request_wait2(const char *name, const coreid_t *coreid,
+                         const void *request, int reqlen,
+                         void *reply, int *replen, int msg_type,
+                         int timeout);
+
 int stdrpc_request_wait3(const char *name, const coreid_t *coreid, const void *request,
                       int reqlen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf, int msg_type,
                       int priority, int timeout);
