@@ -1056,7 +1056,12 @@ int etcd_lock_watch(etcd_lock_t *lock, char *locker, nid_t *nid, uint32_t *magic
                 GOTO(err_close, ret);
         }
 
-        LTG_ASSERT(node->dir == 0);
+        //LTG_ASSERT(node->dir == 0);
+        if (!node) {
+                ret = EPERM;
+                GOTO(err_close, ret);
+        }
+
         free_etcd_node(node);
 
         ret = __etcd_get(lock->key, &node, 1);
@@ -1324,7 +1329,11 @@ static int __etcd_watch_key(const char *key, char *value, int timeout,
                 GOTO(err_close, ret);
         }
 
-        DBUG("%s idx %d %s\n", key, node->modifiedIndex, node->value);
+        if (!node) {
+                ret = EAGAIN;
+                GOTO(err_close, ret);
+        }
+        // DBUG("%s idx %d %s\n", key, node->modifiedIndex, node->value);
 
         *idx_out = node->modifiedIndex;
 
@@ -1431,6 +1440,11 @@ static int __etcd_watch_dir(const char *key, int timeout, int *idx_in,
                 GOTO(err_close, ret);
         }
         
+        if (!node) {
+                ret = EAGAIN;
+                GOTO(err_close, ret);
+        }
+
         DBUG("key %s %s idx %d %d\n", key, node->key,
              idx_in ? *idx_in : -1, node->modifiedIndex);
 
