@@ -141,9 +141,9 @@ int buddy_free(void *buddy_addr, void *free_addr, uint32_t size)
         return 0;
 }
 
-void buddy_memalloc_reg()
+const struct mem_alloc *buddy_memalloc_reg()
 {
-        suzaku_mem_alloc_register(&mem_buddy);
+        return &mem_buddy;
 }
 
 struct mem_alloc mem_buddy = {
@@ -152,6 +152,3 @@ struct mem_alloc mem_buddy = {
         .alloc = buddy_alloc,
         .free = buddy_free
 };
-#if 0
-SUZAKU_MEM_ALLOC_REGISTER(buddy, &mem_buddy);
-#endif

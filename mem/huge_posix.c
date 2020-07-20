@@ -44,9 +44,9 @@ int posix_init(void *addr, uint32_t size)
         return 0;
 }
 
-void posix_memalloc_reg()
+const struct mem_alloc *posix_memalloc_reg()
 {
-        suzaku_mem_alloc_register(&mem_posix);
+        return &mem_posix;
 }
 
 struct mem_alloc mem_posix = {
@@ -55,7 +55,3 @@ struct mem_alloc mem_posix = {
         .alloc = posix_alloc,
         .free = posix_free
 };
-
-#if !ENABLE_HUGEPAGE
-SUZAKU_MEM_ALLOC_REGISTER(posix, &mem_poxix);
-#endif
