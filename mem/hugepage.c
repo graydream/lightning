@@ -17,12 +17,11 @@ typedef struct {
 
         int              hash;
         int              hugepage_count;
-        const struct mem_alloc *ops;
 } hugepage_head_t;
 
 static hugepage_head_t *__hugepage__ = NULL;
 static __thread hugepage_head_t *__private_huge__ = NULL;
-static const struct mem_alloc *__posix_alloc__ = NULL;
+struct mem_alloc *hugepage_alloc_ops = NULL;
 static int __use_huge__ = 0;
 static int PRIVATE_HP_COUNT = 0;
 
@@ -118,10 +117,9 @@ void *hugepage_private_init(int hash, int sockid)
         }
 
         head->hash = hash;
-        head->ops = buddy_memalloc_reg();
 
         __private_huge__ = head;
-        head->ops->init((void *)head + sizeof(*head), PRIVATE_HP_COUNT);
+        hugepage_alloc_ops->init((void *)head + sizeof(*head), PRIVATE_HP_COUNT);
  
         DINFO("init private hugepage finish \n");
         return head;
@@ -168,8 +166,8 @@ int hugepage_init(int daemon, uint64_t coremask, int nr_hugepage)
         hugepage_head_t *head;
 
         if (nr_hugepage == 0 || daemon == 0) {
-                __posix_alloc__ = posix_memalloc_reg();
-                __posix_alloc__->init(NULL, 0);
+                posix_memalloc_reg();
+                hugepage_alloc_ops->init(NULL, 0);
                 return 0;
         } else {
                 buddy_memalloc_reg();
@@ -229,10 +227,9 @@ int hugepage_init(int daemon, uint64_t coremask, int nr_hugepage)
         private = public + (PUBLIC_HP_COUNT) * HUGEPAGE_SIZE;
 
         __hugepage_head_init(head, mem, addr, hp_count - 1, -1);
-        __hugepage_init_public(head, public);
 
-        head->ops = posix_memalloc_reg();
-        head->ops->init((void *)head + sizeof(*head), PUBLIC_HP_COUNT);
+        __hugepage_init_public(head, public);
+        hugepage_alloc_ops->init((void *)head + sizeof(*head), PUBLIC_HP_COUNT);
 
         __hugepage_init_private(head, private);
 
@@ -256,15 +253,15 @@ int hugepage_getfree(void **_addr, uint32_t *size)
         if (*size % HUGEPAGE_SIZE)
                 return EINVAL;
 
-        if (unlikely(head == NULL)) {
-                ret = __posix_alloc__->alloc(NULL, _addr, size);
+        if (head == NULL) {
+                ret = hugepage_alloc_ops->alloc(NULL, _addr, size);
                 if (ret)
                         GOTO(err_ret, ret);
         } else {
                 if (unlikely(head == __hugepage__))
                         ltg_spin_lock(&head->lock);
 
-                ret = head->ops->alloc((void *)head + sizeof(*head), _addr, size);
+                ret = hugepage_alloc_ops->alloc((void *)head + sizeof(*head), _addr, size);
                 if (ret)
                         GOTO(err_ret, ret);
 
@@ -275,6 +272,17 @@ int hugepage_getfree(void **_addr, uint32_t *size)
         return 0;
 err_ret:
         return ret;
+}
+
+int suzaku_mem_alloc_register(struct mem_alloc *alloc_ops)
+{
+        DINFO("register ops %p %p\n", alloc_ops, hugepage_alloc_ops);
+        if (hugepage_alloc_ops != NULL)
+                LTG_ASSERT(0);
+
+        hugepage_alloc_ops = alloc_ops;
+
+        return 0;
 }
 
 void get_global_private_mem(void **private_mem, uint64_t *private_mem_size)

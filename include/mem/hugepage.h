@@ -23,7 +23,14 @@ void *hugepage_private_init(int hash, int sockid);
 extern int hugepage_getfree(void **addr, uint32_t *size);
 
 void get_global_private_mem(void **private_mem, uint64_t *private_mem_size);
-const struct mem_alloc *buddy_memalloc_reg();
-const struct mem_alloc *posix_memalloc_reg();
+int suzaku_mem_alloc_register(struct mem_alloc *alloc_ops);
+void buddy_memalloc_reg();
+void posix_memalloc_reg();
+
+#define SUZAKU_MEM_ALLOC_REGISTER(name, mem_alloc_ops) \
+	static void  __attribute__((constructor)) suzaku_mem_alloc_register_##name(void) \
+{ \
+	suzaku_mem_alloc_register(mem_alloc_ops); \
+}\
 
 #endif
