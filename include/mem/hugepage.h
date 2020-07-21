@@ -14,7 +14,7 @@ struct mem_alloc {
 #if 0
 #define PRIVATE_HP_COUNT 512
 #endif
-#define PUBLIC_HP_COUNT  (64)
+#define PUBLIC_HP_COUNT  (512)
 #define HUGEPAGE_SIZE (2UL * 1024 * 1024)
 
 int hugepage_init(int daemon, uint64_t coremask, int nr_huge);
