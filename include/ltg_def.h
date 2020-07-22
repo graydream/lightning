@@ -53,7 +53,7 @@ typedef long long LLD;
 #define SOCKID_NORMAL 10
 #define SOCKID_CORENET 20
 
-#define ENABLE_HUGEPAGE 0
+#define ENABLE_HUGEPAGE 1
 
 #if LTG_CMAKE_DEBUG
 #define ENABLE_LTG_DEBUG 1
