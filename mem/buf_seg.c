@@ -129,7 +129,7 @@ inline seg_t *seg_sys_create(ltgbuf_t *buf, uint32_t size)
         DBT("alloc %p", seg->sys.base);
         
         seg->handler.ptr = seg->sys.base;
-        //seg->handler.phyaddr = 0;
+        seg->handler.phyaddr = 0;
         
         seg->sop.seg_free = __seg_sys_free;
         seg->sop.seg_share = __seg_sys_share;
@@ -186,7 +186,7 @@ inline seg_t *seg_ext_create(ltgbuf_t *buf, void *data, uint32_t size,
         seg->sop.seg_trans = __seg_ext_trans;
         
         seg->handler.ptr = data;
-        //seg->handler.phyaddr = 0;
+        seg->handler.phyaddr = 0;
 
         seg->ext.cb = cb;
         seg->ext.arg = arg;
@@ -208,7 +208,7 @@ static void __seg_huge_free(seg_t *seg)
                 handler.pool = seg->huge.pool;
                 handler.head = seg->huge.head;
                 handler.ptr = seg->handler.ptr;
-                //handler.phyaddr = seg->handler.phyaddr;
+                handler.phyaddr = seg->handler.phyaddr;
                 mem_ring_deref(&handler);
         }
 
@@ -269,9 +269,8 @@ inline seg_t *seg_huge_create(ltgbuf_t *buf, uint32_t *size)
 
         seg->huge.pool = handler.pool;
         seg->huge.head = handler.head;
-        seg->handler.ptr = handler.ptr; 
-        //seg->handler.phyaddr = handler.phyaddr;               
-
+        seg->handler.ptr = handler.ptr;
+                
         DBUG("ptr %p %u\n", seg->handler.ptr, seg->len);
         LTG_ASSERT(seg->handler.ptr);
         LTG_ASSERT(seg->huge.head);
@@ -315,7 +314,7 @@ inline void seg_check(seg_t *seg)
                 handler.pool = seg->huge.pool;
                 handler.head = seg->huge.head;
                 handler.ptr = seg->handler.ptr;
-                //handler.phyaddr = seg->handler.phyaddr;
+                handler.phyaddr = seg->handler.phyaddr;
                 mem_ring_check(&handler);
         }
 }

@@ -102,15 +102,12 @@ inline static int __mem_ring_new(mem_ring_head_t *head, uint32_t *size,
         uint32_t alloc_size = *size;
 
 retry:
-        if (unlikely(list_empty(&head->free_list) || new_page)) {
-                uint32_t seg_size = alloc_size;
-                
-                ret = __mem_ring_new__(head, &hpage, &seg_size);
+        if (unlikely(list_empty(&head->free_list) || new_page)){
+                ret = __mem_ring_new__(head, &hpage, &alloc_size);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
 
-                DINFO("new ring %p used %u, size %u %d\n", head, head->used,
-                      alloc_size, seg_size);
+                DINFO("new ring %p used %u\n", head, head->used);
         } else {
                 alloc_size = _align_up(*size, PAGE_SIZE);
                 hpage = list_entry(head->free_list.next, mem_ring_t, list);
@@ -136,10 +133,11 @@ retry:
                         hpage->status = DELETE;
 
                         DBUG("use ring, %p used %u, size %u, offset %u ref %d\n",
-                             hpage, head->used, alloc_size, hpage->offset, hpage->ref);
+                                        hpage, head->used, alloc_size, hpage->offset, hpage->ref);
 
                         LTG_ASSERT(hpage->ref);
                         goto retry;
+
                 }
         }
 

@@ -56,6 +56,8 @@ struct mem_alloc mem_posix = {
         .free = posix_free
 };
 
+#if 0
 #if !ENABLE_HUGEPAGE
 SUZAKU_MEM_ALLOC_REGISTER(posix, &mem_poxix);
+#endif
 #endif
