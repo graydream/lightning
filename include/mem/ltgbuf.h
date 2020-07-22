@@ -47,7 +47,7 @@ struct seg_t {
 
         struct {
                 void *ptr;
-                uint64_t phyaddr;
+                //uint64_t phyaddr;
         } handler;
         
         union {
@@ -72,7 +72,7 @@ typedef struct {
         uint32_t size;
         uint64_t offset;
         void     *addr;
-        uint64_t phyaddr;
+        //uint64_t phyaddr;
         ltgbuf_t buf;
 } nvmeio_t;
 
