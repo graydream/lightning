@@ -99,15 +99,21 @@ inline static int __mem_ring_new(mem_ring_head_t *head, uint32_t *size,
 {
         int ret, new_page = 0;
         mem_ring_t *hpage;
-        uint32_t alloc_size = *size;
 
+        *size = _align_up(*size, PAGE_SIZE);
+        uint32_t alloc_size = *size;
 retry:
         if (unlikely(list_empty(&head->free_list) || new_page)){
                 ret = __mem_ring_new__(head, &hpage, &alloc_size);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
 
-                DINFO("new ring %p used %u\n", head, head->used);
+                DINFO("new ring %p used %u size %d\n", head, head->used,
+                      alloc_size, *size);
+                
+                if (alloc_size > *size) {
+                        alloc_size = *size;
+                }
         } else {
                 alloc_size = _align_up(*size, PAGE_SIZE);
                 hpage = list_entry(head->free_list.next, mem_ring_t, list);

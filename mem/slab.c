@@ -115,7 +115,7 @@ static int __slab_init(const char *name, slab_array_t **_array, int private,
         ret = ltg_spin_init(&array->spin);
         if (ret)
                 GOTO(err_ret, ret);
-        
+
         for (int i = 0; i < shift; i++) {
                 slab_bucket_t *mem = &array->slab_bucket[i];
                 ret = __slab_init__(name, mem, min * (1 << i),
