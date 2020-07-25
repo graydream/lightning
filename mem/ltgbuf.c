@@ -57,13 +57,13 @@ int ltgbuf_rdma_popmsg(ltgbuf_t *buf, void *dist, uint32_t len)
         pos = buf->list.next;
 
         seg = (seg_t *)pos;
-          
+
         memcpy(dist, seg->handler.ptr, len);
         //*dist = seg->handler.ptr;
         seg->handler.ptr += len;
         seg->handler.phyaddr += len;
         seg->len -= len;
-       
+
         if (seg->len == 0) {
                 list_del(pos);
                 seg->sop.seg_free(seg);
@@ -90,7 +90,7 @@ int ltgbuf_get(const ltgbuf_t *buf, void *dist, uint32_t len)
                 seg = (seg_t *)pos;
                 cp = left < seg->len ? left : seg->len;
                 memcpy(dist + (len - left), seg->handler.ptr, cp);
-                
+
                 left -= cp;
                 if (left == 0)
                         break;
@@ -334,7 +334,7 @@ STATIC int __ltgbuf_appendmem(ltgbuf_t *buf, const void *src, uint32_t len, int 
         } else {
                 seg = seg_huge_create(buf, &size);
         }
-      
+
         LTG_ASSERT(size == len);
         //DINFO("append seg %p, ptr %p\n", seg, seg->handler.ptr);
         memcpy(seg->handler.ptr, src, len);
@@ -402,7 +402,7 @@ int ltgbuf_trans_sge(struct ibv_sge *sge, ltgbuf_t *src_buf, ltgbuf_t *dst_buf, 
 
         list_for_each(pos, &dst_buf->list) {
                 seg = (seg_t *)pos;
-              
+
                 sge[num].addr = (uintptr_t)seg->handler.ptr;
                 sge[num].length = seg->len;
                 sge[num].lkey = lkey;
@@ -484,7 +484,6 @@ inline int ltgbuf_init(ltgbuf_t *buf, int size)
         //int coreid = __coreid();
         left = size;
         do {
-                
                 seg = seg_huge_create(buf, &newsize);
 
                 seg_add_tail(buf, seg);
@@ -551,7 +550,7 @@ int IO_FUNC ltgbuf_pop1(ltgbuf_t *buf, ltgbuf_t *newbuf, uint32_t len, int deep)
         LTG_ASSERT(len <= buf->len);
 
         left = len;
-        
+
         list_for_each_safe(pos, n, &buf->list) {
                 seg = (seg_t *)pos;
                 min = left < seg->len ? left : seg->len;
@@ -608,7 +607,7 @@ int IO_FUNC ltgbuf_pop1(ltgbuf_t *buf, ltgbuf_t *newbuf, uint32_t len, int deep)
         if (buf->len == 0) {
                 buf->used = 0;
         }
-        
+
         return 0;
 }
 
@@ -715,7 +714,7 @@ void ltgbuf_clone1(ltgbuf_t *newbuf, const ltgbuf_t *buf, int init)
                 BUFFER_CHECK(newbuf);
                 LTG_ASSERT(newbuf->len >= buf->len);
         }
-        
+
         iov_count = IOV_MAX * 2;
         ret = ltgbuf_trans(iov_array, &iov_count, buf);
         if (ret != (int)buf->len) {
@@ -929,7 +928,7 @@ void ltgbuf_trans_addr(void **addr, const ltgbuf_t *buf)
         struct list_head *pos;
         seg_t *seg;
         int i = 0;
-   
+
         list_for_each(pos, &buf->list) {
                 seg = (seg_t *)pos;
                 addr[i++] = seg->handler.ptr;
@@ -1011,7 +1010,7 @@ STATIC void __ltgbuf_trans3(struct iovec *_iov, int *_iov_count, int iov_max,
         size_t left, c;
         void *ptr;
         int iov_count;
-        
+
         left = seglen;
         ptr = _ptr;
         iov_count = *_iov_count;
@@ -1019,7 +1018,7 @@ STATIC void __ltgbuf_trans3(struct iovec *_iov, int *_iov_count, int iov_max,
                 if (iov_count == iov_max) {
                         break;
                 }
-                
+
                 c = left <= iovlen_max ? left : iovlen_max;
 
                 _iov[iov_count].iov_base = ptr;

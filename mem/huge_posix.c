@@ -7,6 +7,7 @@
 #include <sys/types.h>
 
 struct mem_alloc mem_posix;
+
 int posix_alloc(void *meta_addr, void **_addr, uint32_t *size)
 {
         int ret;

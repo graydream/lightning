@@ -17,7 +17,23 @@ typedef struct {
 
         int              hash;
         int              hugepage_count;
+        int              nr_alloc;
 } hugepage_head_t;
+
+#define HUGEPAGE_HEAD_DUMP_L(LEVEL, head, format, a...) do { \
+    LEVEL("hugepage head %p addr %p %p hash %d count %d/%d  "format, \
+          (head),  \
+          (head)->malloc_addr,  \
+          (head)->start_addr,  \
+          (head)->hash,  \
+          (head)->hugepage_count,  \
+          (head)->nr_alloc,  \
+          ##a \
+          ); \
+} while(0)
+
+#define HUGEPAGE_HEAD_DUMP(head, format, a...) HUGEPAGE_HEAD_DUMP_L(DBUG, head, format, ##a)
+
 
 static hugepage_head_t *__hugepage__ = NULL;
 static __thread hugepage_head_t *__private_huge__ = NULL;
@@ -39,6 +55,7 @@ static void __hugepage_head_init(hugepage_head_t *head, void *mem, void *addr,
 
         head->start_addr = addr + HUGEPAGE_SIZE;
         head->hugepage_count = hp_count;
+        head->nr_alloc = 0;
 
         head->malloc_addr = mem;
         head->hash = -1;
@@ -105,7 +122,6 @@ void *hugepage_private_init(int hash, int sockid)
         
         LTG_ASSERT(addr);
 
-        
         DINFO("hash %d head addr %p\n", hash, addr);
         head = (hugepage_head_t *)addr;
 
@@ -120,8 +136,8 @@ void *hugepage_private_init(int hash, int sockid)
 
         __private_huge__ = head;
         hugepage_alloc_ops->init((void *)head + sizeof(*head), PRIVATE_HP_COUNT);
- 
-        DINFO("init private hugepage finish \n");
+
+        HUGEPAGE_HEAD_DUMP_L(DINFO, head, "\n");
         return head;
 }
 
@@ -138,6 +154,7 @@ static void __hugepage_init_public(hugepage_head_t *head, void *public)
 
         __hugepage__ = head;
 
+        HUGEPAGE_HEAD_DUMP_L(DINFO, head, "\n");
 }
 
 static void __hugepage_init_private(hugepage_head_t *head, void *private)
@@ -245,7 +262,7 @@ void private_hugepage_free(void *addr)
         return ;
 }
 
-int hugepage_getfree(void **_addr, uint32_t *size)
+int hugepage_getfree(void **_addr, uint32_t *size, const char *caller)
 {
         int ret;
         hugepage_head_t *head = __private_huge__ ? __private_huge__ : __hugepage__;
@@ -265,6 +282,10 @@ int hugepage_getfree(void **_addr, uint32_t *size)
                 if (ret)
                         GOTO(err_ret, ret);
 
+                head->nr_alloc += *size / HUGEPAGE_SIZE;
+
+                HUGEPAGE_HEAD_DUMP_L(DINFO, head, "caller %s size %u\n", caller, *size);
+
                 if (unlikely(head == __hugepage__))
                         ltg_spin_unlock(&head->lock);
         }
@@ -272,6 +293,33 @@ int hugepage_getfree(void **_addr, uint32_t *size)
         return 0;
 err_ret:
         return ret;
+}
+
+int hugepage_get()
+{
+        hugepage_head_t *head = __private_huge__ ? __private_huge__ : __hugepage__;
+        if (head != NULL) {
+                if (head == __hugepage__)
+                        return PUBLIC_HP_COUNT;
+                else
+                        return head->hugepage_count;
+        }
+
+        return 0;
+}
+
+void hugepage_show(const char *caller)
+{
+        hugepage_head_t *head = __private_huge__ ? __private_huge__ : __hugepage__;
+        if (head != NULL) {
+                if (unlikely(head == __hugepage__))
+                        ltg_spin_lock(&head->lock);
+
+                HUGEPAGE_HEAD_DUMP_L(DINFO, head, "caller %s\n", caller);
+
+                if (unlikely(head == __hugepage__))
+                        ltg_spin_unlock(&head->lock);
+        }
 }
 
 int suzaku_mem_alloc_register(struct mem_alloc *alloc_ops)

@@ -25,7 +25,8 @@ int buddy_init(void *buddy_addr, uint32_t page_num)
         size_t i;
         size_t node_size;
 
-        buddy->mpage_count = page_num;
+        buddy->nr_total = page_num;
+        buddy->nr_alloc = 0;
 
         node_size = (size_t)page_num * 2;
 
@@ -36,8 +37,9 @@ int buddy_init(void *buddy_addr, uint32_t page_num)
                 buddy->buddy_trees[i] = node_size;
         }
 
-        mem_buddy.max_alloc_size = 2 * HUGEPAGE_SIZE;
+        mem_buddy.max_alloc_size = MAX_ALLOC_SIZE;
 
+        BUDDY_DUMP_L(DINFO, buddy, "\n");
         return 0;
 }
 
@@ -55,10 +57,11 @@ int __buddy_alloc(void *buddy_addr, uint32_t size)
 
         if (buddy->buddy_trees[index] < size) {
                 //UNIMPLEMENTED(__DUMP__);
+                BUDDY_DUMP_L(DWARN, buddy, "alloc %u\n", size);
                 return -1;
         }
 
-        for (node_size = buddy->mpage_count; node_size != size; node_size /= 2) {
+        for (node_size = buddy->nr_total; node_size != size; node_size /= 2) {
                 if (buddy->buddy_trees[LEFT_LEAF(index)] >= size)
                         index = LEFT_LEAF(index);
                 else
@@ -66,13 +69,16 @@ int __buddy_alloc(void *buddy_addr, uint32_t size)
         }
 
         buddy->buddy_trees[index] = 0;
-        offset = (index + 1) * node_size - buddy->mpage_count;
+        offset = (index + 1) * node_size - buddy->nr_total;
 
         while (index) {
                 index = PARENT(index);
                 buddy->buddy_trees[index] = MAX(buddy->buddy_trees[LEFT_LEAF(index)],
                                                 buddy->buddy_trees[RIGHT_LEAF(index)]);
         }
+
+        buddy->nr_alloc += size;
+        BUDDY_DUMP_L(DINFO, buddy, "alloc %u\n", size);
 
         return offset;
 }
@@ -85,16 +91,16 @@ int buddy_alloc(void *buddy_addr, void **_addr, uint32_t *size)
 
         index = __buddy_alloc(buddy_addr, req_size >> 21);
         if (unlikely(index < 0)) {
-                    DERROR("hugepage full\n");
+                    DERROR("hugepage full, index %d size %u\n", index, *size);
                     EXIT(EAGAIN);
         }
 
         *size = req_size;
 
-
         *_addr = start_addr + index * HUGEPAGE_SIZE;
 
-        DINFO("buddy alloc addr %p start addr %p\n", *_addr, start_addr);
+        DINFO("buddy start addr %p alloc addr %p size %u\n",
+              start_addr, *_addr, *size);
 
         return 0;
 }
@@ -105,9 +111,9 @@ int __buddy_free(void *buddy_addr, uint32_t offset)
         size_t node_size, index = 0;
         size_t left_longest, right_longest;
 
-        LTG_ASSERT(buddy && offset < buddy->mpage_count);
+        LTG_ASSERT(buddy && offset < buddy->nr_total);
         node_size = 1;
-        index = offset + buddy->mpage_count - 1;
+        index = offset + buddy->nr_total - 1;
 
         for (; buddy->buddy_trees[index]; index = PARENT(index)) {
                 node_size *= 2;
@@ -152,6 +158,7 @@ struct mem_alloc mem_buddy = {
         .alloc = buddy_alloc,
         .free = buddy_free
 };
+
 #if 0
 SUZAKU_MEM_ALLOC_REGISTER(buddy, &mem_buddy);
 #endif
