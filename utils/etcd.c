@@ -469,7 +469,7 @@ err_ret:
 int etcd_mkdir(const char *prefix, const char *dir, int ttl)
 {
         int ret;
-        char key[MAX_PATH_LEN];
+        char key[MAX_NAME_LEN];
         etcd_prevcond_t precond;
 
         //LTG_ASSERT(sche_self() == 0);
@@ -537,12 +537,11 @@ int etcd_update_text(const char *prefix, const char *_key, const char *_value,
 {
         int ret;
         etcd_prevcond_t precond;
-        char key[MAX_PATH_LEN], value[MAX_BUF_LEN], tmp[MAX_BUF_LEN];
+        char key[MAX_NAME_LEN], tmp[MAX_NAME_LEN];
 
         LTG_ASSERT(strcmp(_value, ""));
 
         snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
-        strcpy(value, _value);
 
         if (idx) {
                 snprintf(tmp, MAX_NAME_LEN, "%d", *idx);
@@ -553,7 +552,7 @@ int etcd_update_text(const char *prefix, const char *_key, const char *_value,
                 precond.value = "true";
         }
 
-        ret = __etcd_set(key, value, &precond, 0, ttl);
+        ret = __etcd_set(key, _value, &precond, 0, ttl);
         if (ret) {
                 GOTO(err_ret, ret);
         }
@@ -689,7 +688,7 @@ static void __etcd_readdir(const char *_key, const etcd_node_t *node,
 int etcd_readdir(const char *_key, char *buf, int *buflen)
 {
         int ret;
-        char key[MAX_PATH_LEN];
+        char key[MAX_NAME_LEN];
         etcd_node_t *node = NULL;
 
         snprintf(key, MAX_NAME_LEN, "/%s/%s", ltgconf_global.system_name, _key);
@@ -732,7 +731,7 @@ static void __etcd_list(const char *prefix, etcd_node_t *list)
 int etcd_list(const char *_key, etcd_node_t **_node)
 {
         int ret;
-        char key[MAX_PATH_LEN];
+        char key[MAX_NAME_LEN];
         etcd_node_t *node = NULL;
 
         snprintf(key, MAX_NAME_LEN, "/%s/%s", ltgconf_global.system_name, _key);
@@ -761,7 +760,7 @@ err_ret:
 int etcd_list1(const char *prefix, const char *_key, etcd_node_t **_node)
 {
         int ret;
-        char key[MAX_PATH_LEN];
+        char key[MAX_NAME_LEN];
         etcd_node_t *node = NULL;
 
         snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
@@ -804,7 +803,7 @@ int etcd_lock_init(etcd_lock_t *lock, const char *prefix, const char *key,
         if (ret)
                 GOTO(err_ret, ret);
 
-        LTG_ASSERT(strlen(key) + 1 <= MAX_PATH_LEN);
+        LTG_ASSERT(strlen(key) + 1 <= MAX_NAME_LEN);
         snprintf(lock->key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, key);
 
         ret = gethostname(lock->hostname, MAX_NAME_LEN);
@@ -879,7 +878,7 @@ static void *__etcd_lock(void *arg)
                         ret = EPERM;
                         GOTO(err_ret, ret);
                 }
-
+                
                 clock_gettime(CLOCK_REALTIME, &t);
 
                 /* update every second, we get lock fail only 1second later */
@@ -1356,7 +1355,7 @@ int etcd_watch_key(const char *prefix, const char *_key, int timeout,
                    etcd_func_t func, void *arg)
 {
         int ret, etcd_idx = 0, idx = 0;
-        char key[MAX_PATH_LEN], value[MAX_BUF_LEN];
+        char key[MAX_NAME_LEN], value[MAX_BUF_LEN];
 
 retry:
         ret = etcd_get_text(prefix, _key, value, &idx);
