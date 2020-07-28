@@ -460,7 +460,9 @@ static void *__sche_task_new(sche_t *sche)
         int ret;
         void *stack, *vaddr;
 
-        if (core_self() && ltgconf_global.daemon && ENABLE_HUGEPAGE){
+        if (core_self() && ltgconf_global.daemon
+            && ENABLE_HUGEPAGE
+            && ENABLE_TASK_HUGEPAGE){
                 if (sche->task_hpage == NULL) {
                         uint32_t size = HUGEPAGE_SIZE;
                         int ret = hugepage_getfree((void **)&vaddr, &size, __FUNCTION__);
