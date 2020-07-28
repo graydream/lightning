@@ -462,7 +462,7 @@ static void *__sche_task_new(sche_t *sche)
 
         if (core_self() && ltgconf_global.daemon
             && ENABLE_HUGEPAGE
-            && ENABLE_TASK_HUGEPAGE){
+            && ENABLE_TASK_HUGEPAGE) {
                 if (sche->task_hpage == NULL) {
                         uint32_t size = HUGEPAGE_SIZE;
                         int ret = hugepage_getfree((void **)&vaddr, &size, __FUNCTION__);
@@ -520,6 +520,8 @@ int IO_FUNC sche_task_new(const char *name, func_t func, void *arg, int _group)
                 ret = __sche_wait_task(name, func, arg, group);
                 if (unlikely(ret))
                         UNIMPLEMENTED(__DUMP__);
+
+                return -1;
         }
 
 	taskctx = list_entry(sche->free_task.list.next, taskctx_t, running_hook);

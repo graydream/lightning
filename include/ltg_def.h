@@ -55,7 +55,7 @@ typedef long long LLD;
 
 #define ENABLE_HUGEPAGE 1
 
-#define ENABLE_TASK_HUGEPAGE 0
+#define ENABLE_TASK_HUGEPAGE 1
 
 #if LTG_CMAKE_DEBUG
 #define ENABLE_LTG_DEBUG 1
