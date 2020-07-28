@@ -173,8 +173,8 @@ static int __etcd_set(const char *key, const char *value,
 
         if (likely(sche_running())) {
                 ret = sche_newthread(SCHE_THREAD_ETCD, _random(), FALSE,
-                                         "etcd_set", -1, __etcd_set_request,
-                                         key, value, precond, flag, ttl);
+                                     "etcd_set", -1, __etcd_set_request,
+                                     key, value, precond, flag, ttl);
                 if (unlikely(ret)) {
                         //LTG_ASSERT(ret == ENOKEY);
                         GOTO(err_ret, ret);
@@ -315,7 +315,7 @@ static int __etcd_del(etcd_session sess, char *key)
         if (likely(sche_running())) {
                 ret = sche_newthread(SCHE_THREAD_ETCD, _random(), FALSE, "etcd_del",
                                      -1, __etcd_del_request,
-                                sess, key);
+                                     sess, key);
                 if (unlikely(ret)) {
                         GOTO(err_ret, ret);
                 }
@@ -388,8 +388,8 @@ static int __etcd_del_dir(etcd_session sess, char *key, int recursive)
         LTG_ASSERT(sess);
         if (likely(sche_running())) {
                 ret = sche_newthread(SCHE_THREAD_ETCD, _random(), FALSE, "etcd_del",
-                                         -1, __etcd_del_dir_request,
-                                         sess, key, recursive);
+                                     -1, __etcd_del_dir_request,
+                                     sess, key, recursive);
                 if (unlikely(ret)) {
                         GOTO(err_ret, ret);
                 }
@@ -442,7 +442,7 @@ static int __etcd_open_str(char *server, etcd_session *_sess)
 
         if (likely(sche_running())) {
                 ret = sche_newthread(SCHE_THREAD_ETCD, _random(), FALSE, "etcd_open", -1, __etcd_open_str__,
-                                server,  &sess);
+                                     server,  &sess);
                 if (unlikely(ret)) {
                         //LTG_ASSERT(ret == ENOKEY);
                         GOTO(err_ret, ret);
@@ -492,18 +492,17 @@ err_ret:
 int etcd_create_text(const char *prefix, const char *_key, const char *_value, int ttl)
 {
         int ret;
-        char key[MAX_PATH_LEN], value[MAX_BUF_LEN];
+        char key[MAX_NAME_LEN];
         etcd_prevcond_t precond;
 
         LTG_ASSERT(strcmp(_value, ""));
 
         snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
-        strcpy(value, _value);
 
         precond.type = prevExist;
         precond.value = "false";
 
-        ret = __etcd_set(key, value, &precond, 0, ttl);
+        ret = __etcd_set(key, _value, &precond, 0, ttl);
         if (ret) {
                 GOTO(err_ret, ret);
         }
@@ -603,9 +602,9 @@ err_ret:
 int etcd_get_text(const char *prefix, const char *_key, char *value, int *idx)
 {
         int ret;
-        char key[MAX_PATH_LEN];
         etcd_node_t *node = NULL;
-
+        char key[MAX_NAME_LEN];
+        
         snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
         ret = __etcd_get(key, &node, 1);
         if(ret){
