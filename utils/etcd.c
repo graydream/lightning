@@ -516,9 +516,12 @@ int etcd_create(const char *prefix, const char *_key, const void *_value,
                 int valuelen, int ttl)
 {
         int ret;
-        char buf[MAX_BUF_LEN];
+        char *buf;
         size_t size;
 
+        buf = ltg_malloc1(MAX_BUF_LEN);
+        LTG_ASSERT(buf);
+        
         size = MAX_BUF_LEN;
         ret = urlsafe_b64_encode(_value, valuelen, buf, &size);
         LTG_ASSERT(ret == 0);
@@ -527,8 +530,11 @@ int etcd_create(const char *prefix, const char *_key, const void *_value,
         if (ret)
                 GOTO(err_ret, ret);
 
+        ltg_free1(buf);
+        
         return 0;
 err_ret:
+        ltg_free1(buf);
         return ret;
 }
 
@@ -582,9 +588,12 @@ int etcd_update(const char *prefix, const char *_key, const void *_value, int va
                 int *idx, int ttl)
 {
         int ret;
-        char buf[MAX_BUF_LEN];
+        char *buf;
         size_t size;
 
+        buf = ltg_malloc1(MAX_BUF_LEN);
+        LTG_ASSERT(buf);
+        
         size = MAX_BUF_LEN;
         ret = urlsafe_b64_encode(_value, valuelen, buf, &size);
         LTG_ASSERT(ret == 0);
@@ -593,8 +602,11 @@ int etcd_update(const char *prefix, const char *_key, const void *_value, int va
         if (ret)
                 GOTO(err_ret, ret);
 
+        ltg_free1(buf);
+        
         return 0;
 err_ret:
+        ltg_free1(buf);
         return ret;
 }
 
@@ -635,9 +647,12 @@ int etcd_get_bin(const char *prefix, const char *_key, void *_value,
                  int *_valuelen, int *idx)
 {
         int ret;
-        char buf[MAX_BUF_LEN];
+        char *buf;
         size_t size;
 
+        buf = ltg_malloc1(MAX_BUF_LEN);
+        LTG_ASSERT(buf);
+        
         ret = etcd_get_text(prefix, _key, buf, idx);
         if (ret)
                 GOTO(err_ret, ret);
@@ -651,8 +666,11 @@ int etcd_get_bin(const char *prefix, const char *_key, void *_value,
                 *_valuelen = size;
         }
 
+        ltg_free1(buf);
+        
         return 0;
 err_ret:
+        ltg_free1(buf);
         return ret;
 }
 
@@ -1214,13 +1232,12 @@ err_ret:
 int etcd_set_text(const char *prefix, const char *_key, const char *_value, int flag, int ttl)
 {
         int ret;
-        char key[MAX_PATH_LEN], value[MAX_BUF_LEN];
+        char key[MAX_PATH_LEN];
         etcd_prevcond_t *precond, _precond;
 
         //LTG_ASSERT(strcmp(_value, ""));
 
         snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
-        strcpy(value, _value);
 
         precond = NULL;        
         if (flag & O_EXCL) {
@@ -1229,7 +1246,7 @@ int etcd_set_text(const char *prefix, const char *_key, const char *_value, int 
                 precond = &_precond;
         }
 
-        ret = __etcd_set(key, value, precond, 0, ttl);
+        ret = __etcd_set(key, _value, precond, 0, ttl);
         if (ret) {
                 GOTO(err_ret, ret);
         }
@@ -1243,9 +1260,12 @@ int etcd_set_bin(const char *prefix, const char *_key, const void *_value,
                  int valuelen, int flag, int ttl)
 {
         int ret;
-        char buf[MAX_BUF_LEN];
+        char *buf;
         size_t size;
 
+        buf = ltg_malloc1(MAX_BUF_LEN);
+        LTG_ASSERT(buf);
+        
         size = MAX_BUF_LEN;
         ret = urlsafe_b64_encode(_value, valuelen, buf, &size);
         LTG_ASSERT(ret == 0);
@@ -1254,16 +1274,22 @@ int etcd_set_bin(const char *prefix, const char *_key, const void *_value,
         if (ret)
                 GOTO(err_ret, ret);
 
+        ltg_free1(buf);
+        
         return 0;
 err_ret:
+        ltg_free1(buf);
         return ret;
 }
 
 static int __etcd_get_index(int *idx)
 {
         int ret;
-        char buf[MAX_BUF_LEN];
+        char *buf;
 
+        buf = ltg_malloc1(MAX_BUF_LEN);
+        LTG_ASSERT(buf);
+        
         ret = etcd_set_text("misc", "test", "test", O_CREAT, 0);
         if (ret)
                 GOTO(err_ret, ret);
@@ -1272,9 +1298,11 @@ static int __etcd_get_index(int *idx)
         if (ret)
                 GOTO(err_ret, ret);
 
+        ltg_free1(buf);
 
         return 0;
 err_ret:
+        ltg_free1(buf);
         return ret;
 }
 
