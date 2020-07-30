@@ -274,6 +274,9 @@ static inline void __sche_backtrace__(const char *name, int id, int idx, uint32_
 {
         char info[MAX_INFO_LEN];
 
+        DINFO("%s[%u][%u] seq[%u]", name, id, idx, seq);
+        return;
+        
         snprintf(info, MAX_INFO_LEN, "%s[%u][%u] seq[%u]", name, id, idx, seq);
         _backtrace(info);
 }

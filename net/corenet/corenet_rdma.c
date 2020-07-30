@@ -1626,9 +1626,9 @@ static int __corenet_rdma_on_active_event(struct rdma_event_channel *evt_channel
                 int ms_timeout = 20 * 1000;
 
                 /*
-                * poll the channel until it has an event and sleep ms_timeout
-                * milliseconds between any iteration
-                */
+                 * poll the channel until it has an event and sleep ms_timeout
+                 * milliseconds between any iteration
+                 */
                 ev_pollfd.fd      = evt_channel->fd;
                 ev_pollfd.events  = POLLIN;
                 ev_pollfd.revents = 0;
@@ -1760,6 +1760,8 @@ int corenet_rdma_connect_by_channel(const uint32_t addr, const uint32_t port,
         struct rdma_cm_id *cma_conn_id;
         struct rdma_event_channel *evt_channel;
 
+        DBUG("connect %s:%d\n", _inet_ntoa(addr), port);
+        
         ANALYSIS_BEGIN(0);
 
         //evt_channel = corenet_rdma_get_evt_channel(core->hash);
@@ -1776,7 +1778,7 @@ int corenet_rdma_connect_by_channel(const uint32_t addr, const uint32_t port,
                 GOTO(err_ret, ret);
         }
 
-        CMID_DUMP_L(DINFO, cma_conn_id);
+        //CMID_DUMP_L(DINFO, cma_conn_id);
 
         ret = __corenet_rdma_resolve_addr(cma_conn_id, addr, port, sockid);
         if (ret)
