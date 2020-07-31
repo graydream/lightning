@@ -33,6 +33,11 @@ typedef struct {
 } mem_sys_t;
 
 typedef struct {
+        void *base;
+} mem_solid_t;
+
+
+typedef struct {
         void *arg;
         int (*cb)(void *arg);
 } mem_ext_t;
@@ -54,6 +59,7 @@ struct seg_t {
                 mem_huge_t huge;
                 mem_ext_t ext;
                 mem_sys_t sys;
+                mem_solid_t solid;
         };
 } ;
 
@@ -135,12 +141,15 @@ int ltgbuf_itor(const ltgbuf_t *buf, uint32_t size, off_t offset,
 void ltgbuf_bezero(ltgbuf_t *buf);
 void ltgbuf_check(const ltgbuf_t *buf);
 
+int ltgbuf_solid_init(ltgbuf_t *buf, int size);
+
 int ltgbuf_trans_sge(struct ibv_sge *sge, ltgbuf_t *src_buf, ltgbuf_t *dst_buf, uint32_t lkey);
 void ltgbuf_trans_addr(void **addr, const ltgbuf_t *buf);
 int ltgbuf_initwith(ltgbuf_t *buf, void *data, int size, void *arg, int (*cb)(void *arg));
 int ltgbuf_rdma_popmsg(ltgbuf_t *buf, void *dist, uint32_t len);
 int ltgbuf_nvme_init2(nvmeio_t *io, uint32_t size, uint64_t offset, ltgbuf_t *buf);
 
+seg_t *seg_solid_create(ltgbuf_t *buf, uint32_t size);
 seg_t *seg_huge_create(ltgbuf_t *buf, uint32_t *size);
 seg_t *seg_sys_create(ltgbuf_t *buf, uint32_t size);
 seg_t *seg_ext_create(ltgbuf_t *buf, void *data, uint32_t size,

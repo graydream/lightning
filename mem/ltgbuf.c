@@ -1289,3 +1289,31 @@ void ltgbuf_check(const ltgbuf_t *buf)
                 BUFFER_CHECK(buf);
         }
 }
+
+int ltgbuf_solid_init(ltgbuf_t *buf, int size)
+{
+        seg_t *seg;
+
+        LTG_ASSERT(size >= 0 && size < (1024 * 1024 * 100));
+
+        buf->len = 0;
+        buf->used = 0;
+        INIT_LIST_HEAD(&buf->list);
+        if (size == 0)
+                return 0;
+
+        ANALYSIS_BEGIN(0);
+
+        seg = seg_solid_create(buf, size);
+        if (seg == NULL) {
+                UNIMPLEMENTED(__DUMP__);
+        }
+        
+        seg_add_tail(buf, seg);
+
+        BUFFER_CHECK(buf);
+
+        ANALYSIS_END(0, 1000 * 100, NULL);
+
+        return 0;
+}

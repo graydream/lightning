@@ -11,25 +11,24 @@
 #include "ltg_core.h"
 #include "mem/slab.h"
 
-#define SLAB_SEG (1024 * 1024 * 2)
+//#define SLAB_SEG (1024 * 1024 * 2)
+#define SLAB_SEG MAX_ALLOC_SIZE
 #define SLAB_MD sizeof(slab_md_t)
 
-#if 0
+#if ENABLE_HUGEPAGE
 static void *__slab_lowlevel_calloc(int private)
 {
-        if (private && ltgconf_global.daemon) {
-                hugepage_t *hpage;
-                hpage = private_hugepage_alloc(NULL, SLAB_SEG);
-                return hpage->vaddr;
-        } else {
-                int ret;
-                void *ptr;
-                ret = ltg_malloc(&ptr, SLAB_SEG);
-                if (ret)
-                        return NULL;
-                else
-                        return ptr;
-        }
+        int ret;
+        void *ptr;
+        uint32_t size = SLAB_SEG;
+
+        (void) private;
+
+        ret = hugepage_getfree(&ptr, &size, __FUNCTION__);
+        if (ret)
+                return NULL;
+        else
+                return ptr;
 }
 
 #if 0

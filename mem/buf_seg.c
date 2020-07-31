@@ -39,9 +39,7 @@ static seg_t *__seg_alloc_head(ltgbuf_t *buf, uint32_t size, int sys)
                 if (likely(!sys)) {
                         seg = slab_stream_alloc(sizeof(seg_t));
                         LTG_ASSERT(seg);
-                        if (ltgconf_global.rdma) {
-                                DINFO("%p alloc %p, len %u\n", buf, seg, size);
-                        }
+                        DBUG("%p alloc %p, len %u\n", buf, seg, size);
                 } else {
                         int ret = ltg_malloc((void **)&seg, sizeof(seg_t));
                         LTG_ASSERT(ret == 0);
@@ -317,4 +315,81 @@ inline void seg_check(seg_t *seg)
                 handler.phyaddr = seg->handler.phyaddr;
                 mem_ring_check(&handler);
         }
+}
+
+/*seg solid modules*/
+
+static void __seg_solid_free(seg_t *seg)
+{
+        if (seg->shared == 0) {
+                DBT("free %p", seg->solid.base);
+                slab_static_free1((void **)&seg->solid.base);
+        } else {
+                DBT("nofree %p", seg->solid.base);
+        }
+
+        __seg_free_head(seg, 1);
+}
+
+static seg_t *__seg_solid_share(ltgbuf_t *buf, seg_t *src)
+{
+        seg_t *newseg;
+
+        newseg = __seg_alloc_head(buf, src->len, 1);
+        if (!newseg)
+                return NULL;
+
+        DBT("share %p", src->solid.base);
+        
+        newseg->handler = src->handler;
+        newseg->sop = src->sop;
+        newseg->solid = src->solid;
+        newseg->shared = 1;
+
+        return newseg;
+}
+
+static seg_t *__seg_solid_trans(ltgbuf_t *buf, seg_t *seg)
+{
+        seg_t *newseg = __seg_alloc_head(buf, seg->len, 1);
+
+        newseg->handler = seg->handler;
+        newseg->sop = seg->sop;
+        newseg->solid = seg->solid;
+        newseg->shared = seg->shared;
+
+        DBT("share %p", seg->solid.base);
+        
+        __seg_free_head(seg, 1);
+
+        return newseg;
+}
+
+inline seg_t *seg_solid_create(ltgbuf_t *buf, uint32_t size)
+{
+        int ret;
+        seg_t *seg;
+
+        seg = __seg_alloc_head(buf, size, 1);
+        if (unlikely(!seg))
+                return NULL;
+
+        ret = slab_static_alloc1((void **)&seg->solid.base, seg->len);
+        if (unlikely(ret)) {
+                GOTO(err_free, ret);
+        }
+
+        DBT("alloc %p", seg->solid.base);
+        
+        seg->handler.ptr = seg->solid.base;
+        seg->handler.phyaddr = 0;
+        
+        seg->sop.seg_free = __seg_solid_free;
+        seg->sop.seg_share = __seg_solid_share;
+        seg->sop.seg_trans = __seg_solid_trans;
+        
+        return seg;
+err_free:
+        UNIMPLEMENTED(__DUMP__);
+        return NULL;
 }
