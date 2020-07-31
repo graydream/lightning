@@ -863,7 +863,7 @@ int IO_FUNC corenet_rdma_send(const sockid_t *sockid, ltgbuf_t *buf, void **addr
         node->last_sr = &req->wr.sr[req->ref - 1];
         node->send_count += req->ref;
 
-        LTG_ASSERT(node->send_count <= MAX_SGE);
+//        LTG_ASSERT(node->send_count <= MAX_SGE);
 
 #if 0
 	if (node->send_count >= 4) {
@@ -896,7 +896,7 @@ static inline int __corenet_rdma_commit(corenet_node_t *node)
         if (unlikely(ret)) {
                 DERROR("ibv_post_send fail, QP_NUM:0x%x, bad_wr:%p, errno:%d, errmsg:%s\n",
                         handler->qp->qp_num, bad_wr, ret, strerror(ret));
-                LTG_ASSERT(0);
+                return -1;
         }
 
         corenet_rdma_get(handler, node->send_count, __FUNCTION__, 0);
@@ -914,6 +914,7 @@ void corenet_rdma_commit(void *rdma_net)
         struct list_head *pos, *n;
         corenet_rdma_t *__corenet_rdma__ = rdma_net;
         corenet_node_t *node;
+        int ret;
 
         if (unlikely(rdma_net == NULL || srv_running == 0 || rdma_running == 0)) {
                 return;
@@ -922,7 +923,9 @@ void corenet_rdma_commit(void *rdma_net)
         list_for_each_safe(pos, n, &__corenet_rdma__->corenet.forward_list) {
                 node = container_of(pos, corenet_node_t, send_list);
                 LTG_ASSERT(node->in_use == 1);
-                __corenet_rdma_commit(node);
+                ret = __corenet_rdma_commit(node);
+                if(unlikely(ret))
+                        return
 
                list_del_init(&node->send_list);
         }
