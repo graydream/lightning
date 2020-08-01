@@ -12,7 +12,7 @@
 #include "mem/slab.h"
 
 //#define SLAB_SEG (1024 * 1024 * 2)
-#define SLAB_SEG MAX_ALLOC_SIZE
+#define SLAB_SEG  (ltgconf_global.nr_hugepage ? MAX_ALLOC_SIZE : (1024 * 1024 * 2))
 #define SLAB_MD sizeof(slab_md_t)
 
 #if ENABLE_HUGEPAGE
@@ -160,7 +160,7 @@ int slab_init(const char *name, slab_t **_slab, slab_array_t **_public, int min,
 {
         int ret;
         slab_t *slab;
-        
+
         ret = ltg_malloc((void **)&slab, sizeof(*slab));
         if (ret)
                 GOTO(err_ret, ret);
