@@ -1236,7 +1236,7 @@ static int __corenet_rdma_create_qp__(struct rdma_cm_id *cm_id, core_t *core, rd
 
         ret = rdma_create_qp(cm_id, dev->pd, &qp_init_attr);
         if (ret) {
-                DERROR("cm_id:%p, errno:%d\n", cm_id, ret);
+                DERROR("cm_id:%p, ret %d, errno:%d\n", cm_id, ret, errno);
                 ret = errno;
                 LTG_ASSERT(0);
                 GOTO(err_ret, ret);

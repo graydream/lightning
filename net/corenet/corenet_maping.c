@@ -153,7 +153,7 @@ err_ret:
 
 int corenet_maping_register(uint64_t coremask)
 {
-        int ret;
+        int ret, retry = 0;
         nid_t nid = *net_getnid();
         coreid_t coreid = {nid, 0};
         corenet_addr_t *addr;
@@ -170,14 +170,19 @@ int corenet_maping_register(uint64_t coremask)
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
 
+        retry:
                 if (addr->info_count != addr_count[i]) {
                         snprintf(key, MAX_NAME_LEN, "%d/%d", nid.id, i);
                         ret = etcd_create(ETCD_CORENET, key, addr, addr->len, -1);
                         if (unlikely(ret)) {
-                                ret = etcd_update(ETCD_CORENET, key, addr, addr->len,
-                                                  NULL, -1);
-                                if (unlikely(ret))
-                                        GOTO(err_ret, ret);
+                                if (ret == ENOKEY || ret == ENOENT) {
+                                        ret = etcd_update(ETCD_CORENET, key, addr, addr->len,
+                                                          NULL, -1);
+                                        if (unlikely(ret))
+                                                GOTO(err_ret, ret);
+                                } else {
+                                        USLEEP_RETRY(err_ret, ret, retry, retry, 100, (1000 * 1000));
+                                }
                         }
 
                         DINFO("update core[%d] corenet %u -> %u\n", i, addr_count[i],
