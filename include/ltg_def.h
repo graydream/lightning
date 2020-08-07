@@ -13,7 +13,9 @@
 
 #define MAX_BUF_LEN     (1024 * 4)
 
+#ifndef PAGE_SIZE
 #define PAGE_SIZE (1024 * 4)
+#endif
 
 #define MAX_LINE_LEN    (1024 * 2)
 
