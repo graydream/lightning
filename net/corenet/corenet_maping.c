@@ -175,7 +175,7 @@ int corenet_maping_register(uint64_t coremask)
                         snprintf(key, MAX_NAME_LEN, "%d/%d", nid.id, i);
                         ret = etcd_create(ETCD_CORENET, key, addr, addr->len, -1);
                         if (unlikely(ret)) {
-                                if (ret == ENOKEY || ret == ENOENT) {
+                                if (ret == ENOKEY || ret == ENOENT || ret == EEXIST) {
                                         ret = etcd_update(ETCD_CORENET, key, addr, addr->len,
                                                           NULL, -1);
                                         if (unlikely(ret))
