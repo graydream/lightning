@@ -45,6 +45,7 @@ extern int __d_info__;
 extern int __d_goto__;
 extern int __d_bug__;
 extern int __d_level__;
+extern void _backtrace(const char *name);
 
 static inline pid_t __gettid(void)
 {
@@ -116,10 +117,12 @@ void  __attribute__((noinline)) dbg_log_write(const int logtype, const int size,
         do {                                                            \
                 if (unlikely(!(exp))) {                                 \
                         DERROR("!!!!!!!!!!assert fail, coredump:%d\n", ltgconf_global.coredump); \
-                        if (ltgconf_global.coredump) {                         \
+                        if (ltgconf_global.coredump) {                  \
                                 abort();                                \
                         } else {                                        \
-                                if (ltgconf_global.restart) {                  \
+                                char info[MAX_INFO_LEN];                \
+                                _backtrace(info);                       \
+                                if (ltgconf_global.restart) {           \
                                         EXIT(EAGAIN);                   \
                                 } else {                                \
                                         EXIT(100);                      \
