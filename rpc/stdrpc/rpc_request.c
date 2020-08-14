@@ -30,7 +30,7 @@ static int __rpc_request_send(const sockid_t *sockid, int coreid,
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        ltg_net_head_t *net_req = ltgbuf_head(&buf);
+        ltg_net_head_t *net_req = ltgbuf_head1(&buf, sizeof(*net_req));
         net_req->coreid = coreid;
         
         DBUG("send msg to %s, id (%u, %x), len %u\n",

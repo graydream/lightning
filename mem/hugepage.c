@@ -40,6 +40,7 @@ static __thread hugepage_head_t *__private_huge__ = NULL;
 struct mem_alloc *hugepage_alloc_ops = NULL;
 static int __use_huge__ = 0;
 static int PRIVATE_HP_COUNT = 0;
+static int PUBLIC_HP_COUNT = 0;
 
 static void __hugepage_head_init(hugepage_head_t *head, void *mem, void *addr,
                                  int hp_count, int sockid)
@@ -191,6 +192,8 @@ int hugepage_init(int daemon, uint64_t coremask, int nr_hugepage)
         }
         
         __use_huge__ = nr_hugepage;
+        PRIVATE_HP_COUNT = nr_hugepage;
+        PUBLIC_HP_COUNT = nr_hugepage / 2;
 
         if (!IS_POWER_OF_2(PRIVATE_HP_COUNT)) {
                 DERROR("private hp count error %d\n", nr_hugepage);
@@ -205,13 +208,12 @@ int hugepage_init(int daemon, uint64_t coremask, int nr_hugepage)
         }
 
         static_assert(sizeof(*head) <= HUGEPAGE_SIZE, "hugepage");
-        PRIVATE_HP_COUNT = nr_hugepage;
+        
         
         for (int i = 0; i < CORE_MAX; i++) {
                 if (core_usedby(coremask, i))
                         poll_num++;
         }
-
 
         mem_size = ((LLU)PRIVATE_HP_COUNT + 1) * HUGEPAGE_SIZE * poll_num
                        + (PUBLIC_HP_COUNT + 2) * HUGEPAGE_SIZE;

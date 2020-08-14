@@ -18,7 +18,7 @@ void stdrpc_reply_init_prep(const msgid_t *msgid, ltgbuf_t *buf, ltgbuf_t *data,
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
-        net_rep = ltgbuf_head(buf);
+        net_rep = ltgbuf_head1(buf, sizeof(*net_rep));
         net_rep->magic = LTG_MSG_MAGIC;
         net_rep->len = sizeof(ltg_net_head_t);
         net_rep->type = LTG_MSG_REP;
@@ -54,7 +54,7 @@ void stdrpc_reply_error_prep(const msgid_t *msgid, ltgbuf_t *buf, int _error)
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
-        net_rep = ltgbuf_head(buf);
+        net_rep = ltgbuf_head1(buf, sizeof(*net_rep));
         net_rep->magic = LTG_MSG_MAGIC;
         net_rep->len = sizeof(ltg_net_head_t) + len;
         net_rep->type = LTG_MSG_REP;
@@ -87,7 +87,7 @@ void stdrpc_reply_error(const sockid_t *sockid, const msgid_t *msgid, int _error
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
-        net_rep = ltgbuf_head(&buf);
+        net_rep = ltgbuf_head1(&buf, sizeof(*net_rep));
         net_rep->magic = LTG_MSG_MAGIC;
         net_rep->len = sizeof(ltg_net_head_t) + len;
         net_rep->type = LTG_MSG_REP;

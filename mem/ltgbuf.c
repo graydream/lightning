@@ -896,6 +896,21 @@ void *ltgbuf_head(const ltgbuf_t *buf)
         return ((seg_t *)buf->list.next)->handler.ptr;
 }
 
+void *ltgbuf_head1(const ltgbuf_t *buf, uint32_t size)
+{
+        BUFFER_CHECK(buf);
+
+        LTG_ASSERT(buf->len);
+
+        if (list_empty(&buf->list))
+                return NULL;
+
+        seg_t *seg = (seg_t *)buf->list.next;
+        LTG_ASSERT(seg->len >= size);
+        
+        return seg->handler.ptr;
+}
+
 int ltgbuf_trans(struct iovec *_iov, int *iov_count, const ltgbuf_t *buf)
 {
         int seg_count, max, size = 0;

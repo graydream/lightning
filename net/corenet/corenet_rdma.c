@@ -471,7 +471,7 @@ rdma_req_t *build_post_send_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
 {
         struct ibv_send_wr *sr = NULL;
         rdma_req_t *req = NULL;
-        void *ptr = ltgbuf_head(buf);
+        void *ptr = ltgbuf_head1(buf, sizeof(ltg_net_head_t));
         ltg_net_head_t *net_head = ptr;
 
         (void)addr;
@@ -509,7 +509,7 @@ rdma_req_t  *build_rdma_read_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
 {
         struct ibv_send_wr *sr, *tail, head;
         rdma_req_t *req ;
-        void *ptr = ltgbuf_head(buf);
+        void *ptr = ltgbuf_head1(buf, sizeof(ltg_net_head_t));
         int index;
         ltgbuf_t _buf;
 
@@ -562,7 +562,7 @@ rdma_req_t *build_rdma_write_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
 {
         struct ibv_send_wr *sr, head, *tail, *msg_sr;
         rdma_req_t *req = NULL;
-        void *ptr = ltgbuf_head(buf);
+        void *ptr = ltgbuf_head1(buf, sizeof(ltg_net_head_t));
         int index;
         (void)size;
         ltg_net_head_t *net_head = ptr;

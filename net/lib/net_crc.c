@@ -12,7 +12,7 @@ int ltgnet_pack_crcsum(ltgbuf_t *pack)
         uint32_t crcode;
         ltg_net_head_t *head;
 
-        head = ltgbuf_head(pack);
+        head = ltgbuf_head1(pack, sizeof(*head));
 
         if (head->crcode)
                 return 0;

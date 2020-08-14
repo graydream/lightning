@@ -119,6 +119,7 @@ extern int ltgbuf_appendzero(ltgbuf_t *buf, int size);
 extern int ltgbuf_writefile(const ltgbuf_t *buf, int fd, uint64_t offset);
 
 void *ltgbuf_head(const ltgbuf_t *buf);
+void *ltgbuf_head1(const ltgbuf_t *buf, uint32_t size);
 int ltgbuf_get(const ltgbuf_t *pack, void *buf, uint32_t len);
 int ltgbuf_get1(const ltgbuf_t *pack, void *buf, uint32_t offset, uint32_t len);
 

@@ -14,8 +14,8 @@ struct mem_alloc {
 #define MAX_CPU_CORE 32
 #if 0
 #define PRIVATE_HP_COUNT 512
-#endif
 #define PUBLIC_HP_COUNT  (512)
+#endif
 
 #define HUGEPAGE_SIZE (2UL * 1024 * 1024)
 #define MAX_ALLOC_SIZE (2 * HUGEPAGE_SIZE)

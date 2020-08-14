@@ -30,7 +30,7 @@ int rpc_request_prep(ltgbuf_t *buf, const msgid_t *msgid, const void *request,
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        net_req = ltgbuf_head(buf);
+        net_req = ltgbuf_head1(buf, sizeof(*net_req));
         net_req->magic = LTG_MSG_MAGIC;
         net_req->len = sizeof(ltg_net_head_t) + reqlen;
         net_req->type = LTG_MSG_REQ;
