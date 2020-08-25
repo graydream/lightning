@@ -52,7 +52,7 @@ typedef struct {
 } corenet_rdma_fwd_t;
 
 typedef corenet_rdma_node_t corenet_node_t;
-static int __seq__ = 1;
+static uint16_t __seq__ = 1;
 
 static void *__corenet_get()
 {

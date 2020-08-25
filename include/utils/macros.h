@@ -188,6 +188,7 @@
 #endif
 
 #if ENABLE_SCHEDULE_LOCK_CHECK
+
 #define USLEEP_RETRY(__err_ret__, __ret__, __labal__, __retry__, __max__, __sleep__) \
         if ((__retry__)  < __max__) {                                   \
                 if (__retry__ % 10 == 0) {                              \

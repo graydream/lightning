@@ -220,6 +220,7 @@ err_ret:
 
 static sche_thread_t *__sche_thread_get(int type, int hash)
 {
+        LTG_ASSERT(hash >= 0);
         sche_threadpool_t *tp = &__sche_threadpool__;
         struct sche_thread_ops *sche_ops = sche_thread_ops_get(type);
         return tp->threads[sche_ops->off + hash % sche_ops->size];

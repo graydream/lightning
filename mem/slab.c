@@ -382,14 +382,14 @@ void slab_scan(void *_core, slab_array_t *array)
         slab_md_t *md;
         core_t *core = _core;
 
-        int seq = 0;
+        uint32_t seq = 0;
         for (int i = 0; i < array->count; i++) {
                 slab_bucket_t *slab_bucket = &array->slab_bucket[i];
                 
                 list_for_each(pos, &slab_bucket->used) {
                         md = (void *)pos;
 
-                        if (now - md->time > 30) {
+                        if (now - md->time > 256) {
                                 DWARN("%s[%d],addr %p used %u size %u, seq[%d]\n",
                                       core->name, core->hash, md->ptr,
                                       now - md->time, slab_bucket->split, seq);
