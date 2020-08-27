@@ -162,57 +162,9 @@ err_ret:
         return ret;
 }
 
-#if 0
-static void __cpuset_getcpu(coreinfo_t **master)
-{
-        int ret, i, fd;
-        coreinfo_t *coreinfo = NULL;
-
-        *master = NULL;
-        for (i = 0; i <= cpuinfo.threading_max; i++) {
-                // TODO 按cpu_id降序，依次分配core
-                // cpu_id与NUMA Node具有不同的映射关系
-                coreinfo = &__coreinfo__[cpuinfo.threading_max - i];
-                DBUG("cpu[%u] used %u node_id %u -> %u\n", i,
-                      coreinfo->used, coreinfo->node_id, __next_node_id__);
-
-                if (coreinfo->used)
-                        continue;
-
-                if (coreinfo->node_id != __next_node_id__)
-                        continue;
-
-                ret = __cpu_lock(coreinfo->cpu_id, &fd);
-                if (ret) {
-                        DBUG("cpu[%u] used by oeher process\n", coreinfo->cpu_id);
-                        coreinfo->used = 1;
-                        continue;
-                }
-
-                coreinfo->lockfd = fd;
-                __next_node_id__ = (__next_node_id__ + 1 ) % __cpu_node_count__;
-
-                coreinfo->used = 1;
-                *master = coreinfo;
-
-                break;
-        }
-
-        if (*master) {
-                DINFO("master %u/%u/%u/%u\n",
-                      coreinfo->cpu_id, coreinfo->node_id,
-                      coreinfo->physical_package_id,
-                      coreinfo->core_id);
-        } else {
-                DERROR("can not allcate cpu, reduce ltgconf_global.polling_core please\n");
-                EXIT(EINVAL);
-        }
-}
-#endif
-
 int cpuset_init(uint64_t mask)
 {
-        int i, ret, max = 0;
+        int i, ret, max = 0, count;
         char buf[MAX_BUF_LEN], path[MAX_PATH_LEN];
         coreinfo_t *coreinfo;
         int node_list[MAX_NUMA_NODE] = {0};
@@ -225,13 +177,14 @@ int cpuset_init(uint64_t mask)
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        ret = ltg_malloc((void **)&__coreinfo__, sizeof(*__coreinfo__) * (max + 1));
+        count = max + 1;
+        ret = ltg_malloc((void **)&__coreinfo__, sizeof(*__coreinfo__) * (count));
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        memset(__coreinfo__, 0x0, sizeof(*__coreinfo__) * (max + 1));
+        memset(__coreinfo__, 0x0, sizeof(*__coreinfo__) * (count));
 
-        for (i = 0; i <= max; i++) {
+        for (i = 0; i < count; i++) {
                 coreinfo = &__coreinfo__[i];
                 coreinfo->cpu_id = i;
 
@@ -281,15 +234,15 @@ int cpuset_init(uint64_t mask)
                 cpuinfo.polling_core = 1;
         }
 
-        cpuinfo.threading_max = max;
+        cpuinfo.threading_max = count;
 
-        if (max < core_count(mask)) {
+        if (count < core_count(mask)) {
                 ret = EINVAL;
-                DERROR("bad coremask config, need %u got %u\n", core_count(mask), max);
+                DERROR("bad coremask config, need %u got %u\n", core_count(mask), count);
                 GOTO(err_ret, ret);
         }
         
-        DINFO("core max %u polling %u\n", max, cpuinfo.polling_core);
+        DINFO("core count %u polling %u\n", count, cpuinfo.polling_core);
 
         __cpuset_init__ = __CPUSET_INIT__;
 
