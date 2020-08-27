@@ -472,11 +472,11 @@ static void __mem_ring_scan__(core_t *core, mem_ring_head_t *head)
         mem_ring_t *hpage;
         time_t now = gettime();
 
-        int seq = 0;
+        uint32_t seq = 0;
         list_for_each(pos, &head->used_list) {
                 hpage = (void *)pos;
 
-                if (now - head->time > 30) {
+                if (now - head->time > 256) {
                         DWARN("%s[%d] ring %p used %u free %u,"
                               " page %p ref %d, status %d, seq[%d],"
                               " last update %d %d, offset %u\n",
