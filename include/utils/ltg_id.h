@@ -20,6 +20,7 @@ extern int srv_running;
 typedef struct __task_t {
         int16_t taskid;
         int16_t scheid;
+        int32_t retval;
         uint32_t fingerprint;
 #if SCHEDULE_TASKCTX_RUNTIME
         uint64_t tv;
