@@ -347,9 +347,6 @@ static void __sche_wait_task_resume(sche_t *sche)
 static void IO_FUNC __sche_trampoline(taskctx_t *taskctx)
 {
         sche_t *sche = taskctx->sche;
-#if SCHEDULE_TASKCTX_RUNTIME
-        uint64_t used, now;
-#endif
 
         //ANALYSIS_BEGIN(0);
 
@@ -370,11 +367,8 @@ static void IO_FUNC __sche_trampoline(taskctx_t *taskctx)
 #endif
 
 #if SCHEDULE_TASKCTX_RUNTIME
-	if (likely(taskctx->sleep == 0)) {
-		now = get_rdtsc();
-		used = now - taskctx->ctime;
-		sche->c_runtime += used;
-	}
+	if (likely(taskctx->sleep == 0))
+                sche->c_runtime += _microsec_time_used_from_now(&taskctx->ctime);
 #else
         sche->task_count--;
 #endif
@@ -555,11 +549,9 @@ int IO_FUNC sche_task_new(const char *name, func_t func, void *arg, int _group)
         DBUG("new task[%d] %s count:%d\n", taskctx->id, name, sche->task_count);
 
         sche_fingerprint_new(sche, taskctx);
-#if SCHEDULE_TASKCTX_RUNTIME
-        taskctx->ctime = get_rdtsc();
-#else
-        _gettimeofday(&taskctx->ctime, NULL);
-#endif
+
+        _microsec_update_now(&taskctx->ctime);
+
         count_list_add_tail(&taskctx->hook, &sche->runable[taskctx->group]);
 
         __sche_makecontext(sche, taskctx);
