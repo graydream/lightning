@@ -27,13 +27,14 @@
 #include <rdma/rdma_cma.h>
 #include <uuid/uuid.h>
 
-
 #define DBG_SUBSYS S_LTG_UTILS
 
 #include "ltg_utils.h"
 
 int srv_running = 1;
 int rdma_running = 1;
+
+static uint64_t __global_hz__ = 0;
 
 #undef MAXSIZE_LOGFILE
 #define BACKTRACE_SIZE (1024 * 8)
@@ -304,6 +305,72 @@ inline int _sem_timedwait1(sem_t *sem, int tmo)
         return 0;
 err_ret:
         return ret;
+}
+
+inline void init_global_hz(void)
+{
+        if (__global_hz__ == 0)
+                __global_hz__ = cpu_freq_init();
+
+        LTG_ASSERT(__global_hz__ != 0);
+}
+
+inline void _microsec_update_now(ltg_time_t *now)
+{
+#if SCHEDULE_TASKCTX_RUNTIME
+        LTG_ASSERT(__global_hz__ != 0);
+        now->tv = get_rdtsc();
+#else
+        _gettimeofday(&now->tv, NULL);
+#endif
+}
+
+inline int64_t _microsec_time_used_from_now(ltg_time_t *prev)
+{
+#if SCHEDULE_TASKCTX_RUNTIME
+        LTG_ASSERT(__global_hz__ != 0);
+        return (get_rdtsc() - prev->tv) * 1000 * 1000 / __global_hz__;
+#else
+        struct timeval now;
+        _gettimeofday(&now, NULL);
+
+        return ((LLU)now.tv_sec - (LLU)prev->tv.tv_sec) * 1000 * 1000
+                + (now.tv_usec - prev->tv.tv_usec);
+#endif
+}
+
+inline int64_t _sec_time_used_from_now(ltg_time_t *prev)
+{
+#if SCHEDULE_TASKCTX_RUNTIME
+        LTG_ASSERT(__global_hz__ != 0);
+        return (get_rdtsc() - prev->tv) / __global_hz__;
+
+#else
+        return gettime() - prev->tv.tv_sec;
+#endif
+}
+
+inline int64_t _microsec_time_used(ltg_time_t *t1, ltg_time_t *t2)
+{
+#if SCHEDULE_TASKCTX_RUNTIME
+        LTG_ASSERT(__global_hz__ != 0);
+        return (t2->tv - t1->tv) * 1000 * 1000 / __global_hz__;
+
+#else
+        return ((LLU)t2->tv.tv_sec - (LLU)t1->tv.tv_sec) * 1000 * 1000
+                + (t2->tv.tv_usec - t1->tv.tv_usec);
+#endif
+}
+
+inline int64_t _sec_time_used(ltg_time_t *t1, ltg_time_t *t2)
+{
+#if SCHEDULE_TASKCTX_RUNTIME
+        LTG_ASSERT(__global_hz__ != 0);
+        return (t2->tv - t1->tv) / __global_hz__;
+
+#else
+        return ((LLU)t2->tv.tv_sec - (LLU)t1->tv.tv_sec);
+#endif
 }
 
 inline int64_t _time_used(const struct timeval *prev, const struct timeval *now)

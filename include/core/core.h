@@ -102,8 +102,15 @@ typedef struct __core {
         struct list_head scan_list;
         uint64_t stat_nr1;
         uint64_t stat_nr2;
-        struct timeval  stat_t1;
-        struct timeval  stat_t2;
+        ltg_time_t stat_t1;
+        ltg_time_t stat_t2;
+// #if SCHEDULE_TASKCTX_RUNTIME
+//         uint64_t  stat_t1;
+//         uint64_t  stat_t2;
+// #else
+//         struct timeval  stat_t1;
+//         struct timeval  stat_t2;
+// #endif
         void *tls[LTG_TLS_MAX_KEEP];
 } core_t;
 
@@ -168,15 +175,13 @@ void  tgt_core_ring_poller(void *_core, void *var, void *arg);
 void core_worker_run(core_t *core);
 
 #define CORE_ANALYSIS_BEGIN(mark)               \
-        struct timeval t1##mark, t2##mark;      \
-        int used##mark;                         \
-                                                \
-        _gettimeofday(&t1##mark, NULL);         \
+        ltg_time_t t1##mark;                    \
+        uint64_t used##mark;                    \
+        _microsec_update_now(&t1##mark);        \
 
 
 #define CORE_ANALYSIS_UPDATE(mark, __usec, __str)                       \
-        _gettimeofday(&t2##mark, NULL);                                 \
-        used##mark = _time_used(&t1##mark, &t2##mark);                  \
+        used##mark = _microsec_time_used_from_now(&t1##mark);           \
         core_latency_update(used##mark);                                \
         if (used##mark > (__usec)) {                                    \
                 if (used##mark > 1000 * 1000 * ltgconf_global.rpc_timeout) {   \

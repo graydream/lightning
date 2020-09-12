@@ -17,16 +17,19 @@ extern int srv_running;
 
 #pragma pack(8)
 
-typedef struct __task_t {
-        int16_t taskid;
-        int16_t scheid;
-        int32_t retval;
-        uint32_t fingerprint;
+typedef struct {
 #if SCHEDULE_TASKCTX_RUNTIME
         uint64_t tv;
 #else
         struct timeval tv;
 #endif
+} ltg_time_t;
+
+typedef struct __task_t {
+        int16_t taskid;
+        int16_t scheid;
+        uint32_t fingerprint;
+        ltg_time_t tv;
 } task_t;
 
 #pragma pack(8)
