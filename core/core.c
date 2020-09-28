@@ -98,8 +98,7 @@ static void IO_FUNC core_stat(core_t *core)
                   &run_time, &c_runtime);
         ring_count = core_ring_count(core);
 
-        _gettimeofday(&core->stat_t2, NULL);
-        uint64_t used = _time_used(&core->stat_t1, &core->stat_t2);
+        uint64_t used = _microsec_time_used(&core->stat_t1, &core->stat_t2);
         if (used > 0) {
 
 #if !SCHEDULE_TASKCTX_RUNTIME

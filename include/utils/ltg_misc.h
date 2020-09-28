@@ -45,7 +45,15 @@ void *_opaque_encode(void *buf, uint32_t *len, ...);
 const void *_opaque_decode(const void *buf, uint32_t len, ...);
 int _errno_net(int ret);
 void _backtrace(const char *name);
+
+void init_global_hz(void);
+void _microsec_update_now(ltg_time_t *now);
+int64_t _microsec_time_used_from_now(ltg_time_t *prev);
+int64_t _sec_time_used_from_now(ltg_time_t *prev);
+int64_t _microsec_time_used(ltg_time_t *t1, ltg_time_t *t2);
+int64_t _sec_time_used(ltg_time_t *t1, ltg_time_t *t2);
 int64_t _time_used(const struct timeval *prev, const struct timeval *now);
+
 int _dir_iterator(const char *path, int (*callback)(const char *, const char *, void *),
                   void *opaque);
 int ltg_thread_create(thread_func fn, void *arg, const char *name);

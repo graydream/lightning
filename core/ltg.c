@@ -175,6 +175,9 @@ int ltg_init(const ltgconf_t *ltgconf, const ltg_netconf_t *ltgnet_manage,
 {
         int ret;
 
+#if SCHEDULE_TASKCTX_RUNTIME
+        init_global_hz();
+#endif
         memcpy(&ltgconf_global, ltgconf, sizeof(*ltgconf));
 
         ltg_netconf_global.count = 0;

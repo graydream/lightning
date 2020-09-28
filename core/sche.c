@@ -149,11 +149,8 @@ static inline void __sche_check_yield_used(sche_t *sche, taskctx_t *taskctx, uin
         if (unlikely(used > (uint64_t)1000 * 1000 * (ltgconf_global.rpc_timeout * 4))) {
                 __sche_backtrace__(sche->name, sche->id, taskctx->id, sche->scan_seq);
                 uint64_t used1;
-#if SCHEDULE_TASKCTX_RUNTIME
-                used1 =  _microsec_used(taskctx->ctime, get_rdtsc(), sche->hz);
-#else
-                used1 = gettime() - taskctx->ctime.tv_sec;
-#endif
+                used1 = _sec_time_used_from_now(&taskctx->ctime);
+
                 if (unlikely(used > (uint64_t)1000 * 1000 * (ltgconf_global.rpc_timeout * 4))) {
                         DWARN("%s[%u][%u] %s.%s wait %fs, total %lu, retval %u\n",
                               sche->name, sche->id, taskctx->id,
@@ -232,19 +229,12 @@ static void __sche_exec__(sche_t *sche, taskctx_t *taskctx)
 
         DBUG("swap in task[%u] %s\n", taskctx->id, taskctx->name);
 
-#if SCHEDULE_TASKCTX_RUNTIME
-        taskctx->rtime = get_rdtsc();
-#endif
+        _microsec_update_now(&taskctx->rtime);
 
         swapcontext1(&(taskctx->main), &(taskctx->ctx));
         
 #if SCHEDULE_TASKCTX_RUNTIME
-        uint64_t used, now;
-
-        now = get_rdtsc();
-        used = now - taskctx->rtime;
-        sche->run_time += used;
-        //__sche_check_running_used(sche, taskctx, used);
+        sche->run_time += _microsec_time_used_from_now(&taskctx->rtime);
 #endif
 
         sche->running_task = -1;
@@ -298,11 +288,8 @@ static void __sche_backtrace_exec(sche_t *sche, taskctx_t *taskctx,
         LTG_ASSERT(gettime() -  taskctx->wait_begin < ltgconf_global.rpc_timeout * 6 * 1000 * 1000);
 
         uint64_t used1;
-#if SCHEDULE_TASKCTX_RUNTIME
-        used1 =   _microsec_used(taskctx->ctime, get_rdtsc(), sche->hz) / 1000 /1000;
-#else
-        used1 = gettime() - taskctx->ctime.tv_sec;
-#endif
+        used1 = _sec_time_used_from_now(&taskctx->ctime);
+
         DINFO("%s[%u][%u] %s.%s wait %ds, total %lu s\n",
               sche->name, sche->id, taskctx->id,
               taskctx->name, name, used,
@@ -339,7 +326,8 @@ int IO_FUNC sche_yield1(const char *name, ltgbuf_t *buf, void *opaque, func_t fu
 #if SCHEDULE_CHECK_RUNTIME
         struct timeval now;
 #endif
-        struct timeval t1, t2;
+
+        ltg_time_t t1;
         uint64_t used;
 
         LTG_ASSERT(_tmo < 1000);
@@ -349,7 +337,7 @@ int IO_FUNC sche_yield1(const char *name, ltgbuf_t *buf, void *opaque, func_t fu
 #endif
 
         LTG_ASSERT(sche->running_task != -1);
-        _gettimeofday(&t1, NULL);
+        _microsec_update_now(&t1);
 
         taskctx = &sche->tasks[sche->running_task];
         LTG_ASSERT(taskctx->state == TASK_STAT_RUNNING);
@@ -400,8 +388,7 @@ retry:
         // 任务等待时间，过大说明调度器堵塞，或在此期间别的被调度任务堵塞
         // 如write等同步过程，不运行出现在调度器循环里
 
-        _gettimeofday(&t2, NULL);
-        used = _time_used(&t1, &t2);
+        used = _microsec_time_used_from_now(&t1);
         __sche_check_yield_used(sche, taskctx, used);
 
         return taskctx->retval;
@@ -493,15 +480,12 @@ inline int sche_stat(int *sid, int *taskid, int *runable, int *wait, int *count,
                 *wait = __sche_task_wait(sche);
                 *taskid = sche->running_task;
                 *count = sche->task_count;
+                *run_time = sche->run_time;
+                *c_runtime = sche->c_runtime;
 #if SCHEDULE_TASKCTX_RUNTIME
-                *run_time = (sche->run_time * 1000 * 1000) / sche->hz;
-                *c_runtime = (sche->c_runtime * 1000 * 1000)/ sche->hz;
                 sche->task_count = 0;
                 sche->run_time = 0;
                 sche->c_runtime = 0;
-#else
-                *run_time = sche->run_time ;
-                *c_runtime = sche->c_runtime;
 #endif
         } else {
                 *sid = -1;
@@ -673,10 +657,7 @@ static int __sche_create(int *eventfd, const char *name, int idx,
 
         if (unlikely(ret))
                 GOTO(err_lock, ret);
-#if SCHEDULE_TASKCTX_RUNTIME
-        sche->hz = cpu_freq_init();
-#endif
-        DINFO("sche hz is %lu\n", sche->hz);
+
         __sche_array__[idx] = sche;
         if (_sche)
                 *_sche = sche;
@@ -962,21 +943,15 @@ void sche_dump(sche_t *sche, int block)
 {
         int i, count = 0;
         taskctx_t *taskctx;
-        struct timeval t1;
         uint64_t used;
         taskctx_t *tasks = sche->tasks;
-
-        _gettimeofday(&t1, NULL);
 
         list_for_each_entry_safe(taskctx, tasks, &sche->running_task_list, running_hook) {
                 i = taskctx->id;
                 if (taskctx->state != TASK_STAT_FREE) {
                         count ++;
-#if SCHEDULE_TASKCTX_RUNTIME
-                        used = _microsec_used(taskctx->ctime, get_rdtsc(), sche->hz);
-#else
-                        used = _time_used(&taskctx->ctime, &t1);
-#endif
+                        used = _microsec_time_used_from_now(&taskctx->ctime);
+
                         DINFO("%s[%u] %s status %u used %fms\n", sche->name, i,
                               taskctx->name, taskctx->state, (double)used / 1000);
                 }

@@ -78,43 +78,39 @@
 
 #if ENABLE_ANALYSIS
 #define ANALYSIS_BEGIN(mark)                    \
-        struct timeval t1##mark, t2##mark;      \
+        ltg_time_t t1##mark;                    \
         int used##mark;                         \
         static time_t __warn__##mark;           \
         (void ) __warn__##mark;                 \
                                                 \
         if (unlikely(ltgconf_global.performance_analysis)) {\
-                _gettimeofday(&t1##mark, NULL);      \
+                _microsec_update_now(&t1##mark);         \
         }
 
 #define ANALYSIS_START(mark, __str)             \
-        struct timeval t1##mark, t2##mark;      \
-        int used##mark;                         \
+        ltg_time_t t1##mark, t2##mark;          \
+        uint64_t used##mark;                    \
                                                 \
         if (ltgconf_global.performance_analysis) {\
                 DWARN_PERF("analysis %s start\n", (__str) ? (__str) : ""); \
-                _gettimeofday(&t1##mark, NULL); \
+                _microsec_update_now(&t1##mark) \
         }                                       \
 
 #define ANALYSIS_RESET(mark)                    \
         if (ltgconf_global.performance_analysis) {\
-                _gettimeofday(&t1##mark, NULL); \
+                _microsec_update_now(&t1##mark);\
         }
 
-#define ANALYSIS_TIMED_END(mark, __str)                                                \
-        if (ltgconf_global.performance_analysis) {                                                   \
-                _gettimeofday(&t2##mark, NULL);                                               \
-                used##mark = _time_used(&t1##mark, &t2##mark);                                \
-                DERROR(""#mark" time %ju us %s\n", used##mark, (__str) ? (__str) : "");  \
+#define ANALYSIS_TIMED_END(mark, __str)                                                 \
+        if (ltgconf_global.performance_analysis) {                                      \
+                used##mark = _microsec_time_used_from_now(&t1##mark)                    \
+                DERROR(""#mark" time %ju us %s\n", used##mark, (__str) ? (__str) : ""); \
         }
 
 #define ANALYSIS_END(mark, __usec, __str)                               \
-        if (unlikely(ltgconf_global.performance_analysis)) {                             \
-                _gettimeofday(&t2##mark, NULL);                         \
-                used##mark = _time_used(&t1##mark, &t2##mark);          \
+        if (unlikely(ltgconf_global.performance_analysis)) {            \
+                used##mark = _microsec_time_used_from_now(&t1##mark);   \
                 if (used##mark > (__usec)) {                            \
-                        time_t __now__##mark = gettime();                         \
-                        __warn__##mark = __now__##mark;                 \
                         if (used##mark > IO_WARN * 2) {                     \
                                 DERROR("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         } else if (used##mark > IO_WARN) { \
@@ -125,23 +121,19 @@
                 } \
         }
 
-#define ANALYSIS_ASSERT(mark, __usec, __str)                               \
-        if (ltgconf_global.performance_analysis) {                             \
-                _gettimeofday(&t2##mark, NULL);                         \
-                used##mark = _time_used(&t1##mark, &t2##mark);          \
-                LTG_ASSERT(used##mark < (__usec));                         \
-        }                                                             \
+#define ANALYSIS_ASSERT(mark, __usec, __str)                            \
+        if (ltgconf_global.performance_analysis) {                      \
+                used##mark = _microsec_time_used_from_now(&t1##mark);   \
+                LTG_ASSERT(used##mark < (__usec));                      \
+        }                                                               \
         
-#define ANALYSIS_QUEUE(mark, __usec, __str)                               \
-        if (unlikely(ltgconf_global.performance_analysis)) {                     \
-                _gettimeofday(&t2##mark, NULL);                         \
-                used##mark = _time_used(&t1##mark, &t2##mark);          \
+#define ANALYSIS_QUEUE(mark, __usec, __str)                             \
+        if (unlikely(ltgconf_global.performance_analysis)) {            \
+                used##mark = _microsec_time_used_from_now(&t1##mark);   \
                 if (used##mark) {                                       \
                         analysis_private_queue(__str ? __str : __FUNCTION__, NULL, used##mark); \
                 }                                                       \
                 if (used##mark > (__usec)) {                            \
-                        time_t __now__##mark = gettime();               \
-                        __warn__##mark = __now__##mark;                 \
                         if (used##mark > IO_WARN * 2) {                     \
                                 DERROR("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         } else if (used##mark > IO_WARN) {              \
@@ -150,14 +142,13 @@
                                 DINFO_PERF("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
                         }                                               \
                 }                                                       \
+                _microsec_update_now(&t1##mark);                        \
                                                                         \
-                t1##mark = t2##mark;                                    \
         }
 
-#define ANALYSIS_UPDATE(mark, __usec, __str)                               \
-        if (ltgconf_global.performance_analysis) {                             \
-                _gettimeofday(&t2##mark, NULL);                         \
-                used##mark = _time_used(&t1##mark, &t2##mark);          \
+#define ANALYSIS_UPDATE(mark, __usec, __str)                            \
+        if (ltgconf_global.performance_analysis) {                      \
+                used##mark = _microsec_time_used_from_now(&t1##mark)    \
                 core_latency_update(used##mark);                        \
                 if (used##mark > (__usec)) {                            \
                         if (used##mark > IO_WARN) {                     \
@@ -167,9 +158,6 @@
                         }                                               \
                 }                                                       \
         }
-
-
-
 #else
 #define ANALYSIS_BEGIN(mark)  {}
 #define ANALYSIS_RESET(mark)   {}
