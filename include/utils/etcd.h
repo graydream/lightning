@@ -54,6 +54,7 @@ int etcd_create_text(const char *prefix, const char *_key, const char *_value, i
 int etcd_set_text(const char *prefix, const char *_key, const char *_value,
                   int flag, int ttl);
 int etcd_update_text(const char *prefix, const char *_key, const char *_value, int  *idx, int ttl);
+int etcd_exist(const char *prefix, const char *_key);
 int etcd_get_text (const char *prefix, const char *_key, char *value, int *idx);
 
 int etcd_create(const char *prefix, const char *_key, const void *_value, int valuelen, int ttl);

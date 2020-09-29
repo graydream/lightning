@@ -600,6 +600,16 @@ err_ret:
         return ret;
 }
 
+int etcd_exist(const char *prefix, const char *_key)
+{
+        char key[MAX_PATH_LEN];
+        etcd_node_t *node = NULL;
+
+        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
+
+        return __etcd_get(key, &node, 1);
+}
+
 int etcd_get_text(const char *prefix, const char *_key, char *value, int *idx)
 {
         int ret;
