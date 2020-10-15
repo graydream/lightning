@@ -121,6 +121,7 @@ static void *__conn_scan(void *arg)
                 ret = etcd_watch_dir(ETCD_NETWORK, "manage", 60,
                                      __conn_watch, NULL);
                 if (unlikely(ret)) {
+                        sleep(1);
                         continue;
                 }
 #else
