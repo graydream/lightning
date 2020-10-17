@@ -11,11 +11,23 @@
 #define __ETCD_SRV__  "127.0.0.1:2379"
 
 #define ETCD_TRACE 0
+#define ETCD_SESS_REUSE 1
 
 extern ltgconf_t ltgconf_global;
 
 static timerange_t *__tr_get = NULL;
 static timerange_t *__tr_set = NULL;
+
+#if ETCD_SESS_REUSE
+static struct list_head sess_list;
+static ltg_spinlock_t sess_lock;
+static int sess_count = 0;
+
+typedef struct {
+        struct list_head hook;
+        etcd_session sess;
+} entry_t;
+#endif
 
 static inline timerange_t *tr_get()
 {
@@ -46,6 +58,8 @@ static inline timerange_t *tr_set()
 static int __etcd_open_str(char *server, etcd_session *_sess);
 static int __etcd_get__(const char *srv, const char *key, etcd_node_t **result,
                         int consistent);
+static int __etcd_get_sess(char *server, etcd_session *_sess);
+static void __etcd_put_sess(etcd_session *sess, int retval);
 
 
 static int  __etcd_set__(const char *key, const char *value,
@@ -63,7 +77,7 @@ static int  __etcd_set__(const char *key, const char *value,
 #endif
 
         host = strdup(__ETCD_SRV__);
-        ret = __etcd_open_str(host, &sess);
+        ret = __etcd_get_sess(host, &sess);
         if (ret) {
                 GOTO(err_ret, ret);
         }
@@ -84,12 +98,12 @@ static int  __etcd_set__(const char *key, const char *value,
                 GOTO(err_close, ret);
         }
         
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
 
         ltg_free1(host);
         return 0;
 err_close:
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
 err_ret:
         ltg_free1(host);
         return ret;
@@ -109,7 +123,7 @@ static int __etcd_get__(const char *srv, const char *key, etcd_node_t **result, 
 #endif
         
         host = strdup(srv);
-        ret = __etcd_open_str(host, &sess);
+        ret = __etcd_get_sess(host, &sess);
         if (ret) {
                 GOTO(err_ret, ret);
         }
@@ -131,12 +145,12 @@ static int __etcd_get__(const char *srv, const char *key, etcd_node_t **result, 
         
         *result = node;
 
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
 
         ltg_free1(host);
         return 0;
 err_close:
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
 err_ret:
         ltg_free1(host);
         return ret;
@@ -435,13 +449,124 @@ err_ret:
         return ret;
 }
 
+#if ETCD_SESS_REUSE
+static int __etcd_get_sess__(etcd_session *sess)
+{
+        int ret;
+        entry_t *ent;
+
+        ret = ltg_spin_lock(&sess_lock);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+                
+        if (list_empty(&sess_list)) {
+                LTG_ASSERT(sess_count == 0);
+                ret = ENOENT;
+                GOTO(err_lock, ret);
+        }
+
+        DBUG("reuse\n");
+        
+        ent = (void *)sess_list.next;
+        *sess = ent->sess;
+        list_del(&ent->hook);
+        ltg_free((void **)&ent);
+        sess_count--;
+        
+        ltg_spin_unlock(&sess_lock);
+
+        return 0;
+err_lock:
+        ltg_spin_unlock(&sess_lock);
+err_ret:
+        return ret;
+}
+
+static void __etcd_put_sess__(etcd_session *sess)
+{
+        int ret;
+        entry_t *ent;
+
+        ret = ltg_spin_lock(&sess_lock);
+        if (unlikely(ret))
+                UNIMPLEMENTED(__DUMP__);
+
+        if (sess_count > 128) {
+                ltg_spin_unlock(&sess_lock);
+                etcd_close_str(sess);
+                return ;
+        }
+
+        ret = ltg_malloc((void **)&ent, sizeof(*ent));
+        if (unlikely(ret))
+                UNIMPLEMENTED(__DUMP__);
+        
+        ent->sess = *sess;
+        list_add_tail(&ent->hook, &sess_list);
+        sess_count++;
+        
+        ltg_spin_unlock(&sess_lock);
+
+        return;
+}
+
+static int __etcd_get_sess(char *server, etcd_session *_sess)
+{
+        int ret;
+
+        ret = __etcd_get_sess__(_sess);
+        if(ret) {
+                ret = __etcd_open_str(server, _sess);
+                if(ret)
+                        GOTO(err_ret, ret);
+        }
+
+        return 0;
+err_ret:
+        return ret;
+}
+
+static void __etcd_put_sess(etcd_session *sess, int retval)
+{
+        if (retval && retval != ENOKEY) {
+                etcd_close_str(*sess);
+        } else {
+                __etcd_put_sess__(sess);
+        }
+}
+
+#else
+
+static int __etcd_get_sess(char *server, etcd_session *_sess)
+{
+        int ret;
+
+        ret = __etcd_open_str(server, _sess);
+        if(ret)
+                GOTO(err_ret, ret);
+
+        return 0;
+err_ret:
+        return ret;
+}
+
+static void __etcd_put_sess(etcd_session *sess, int retval)
+{
+        (void) retval;
+        
+        etcd_close_str(*sess);
+}
+
+#endif
+
 static int __etcd_open_str(char *server, etcd_session *_sess)
 {
         int ret;
         etcd_session  sess;
 
         if (likely(sche_running())) {
-                ret = sche_newthread(SCHE_THREAD_ETCD, _random(), FALSE, "etcd_open", -1, __etcd_open_str__,
+                ret = sche_newthread(SCHE_THREAD_ETCD, _random(), FALSE, "etcd_open",
+                                     -1, __etcd_open_str__,
                                 server,  &sess);
                 if (unlikely(ret)) {
                         //LTG_ASSERT(ret == ENOKEY);
@@ -977,7 +1102,7 @@ int etcd_unlock(etcd_lock_t *lock)
                 GOTO(err_ret, ret);
 
         host = strdup(__ETCD_SRV__);
-        ret = __etcd_open_str(host, &sess);
+        ret = __etcd_get_sess(host, &sess);
         if (ret) {
                 GOTO(err_free, ret);
         }
@@ -990,12 +1115,12 @@ int etcd_unlock(etcd_lock_t *lock)
                 GOTO(err_close, ret);
         }
 
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
 
         ltg_free1(host);
         return 0;
 err_close:
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
 err_free:
         ltg_free1(host);
 err_ret:
@@ -1055,7 +1180,7 @@ int etcd_lock_watch(etcd_lock_t *lock, char *locker, nid_t *nid, uint32_t *magic
         LTG_ASSERT(sche_self() == 0);
 
         host = strdup(__ETCD_SRV__);
-        ret = __etcd_open_str(host, &sess);
+        ret = __etcd_get_sess(host, &sess);
         if (ret) {
                 GOTO(err_ret, ret);
         }
@@ -1098,13 +1223,13 @@ int etcd_lock_watch(etcd_lock_t *lock, char *locker, nid_t *nid, uint32_t *magic
         if (idx)
                 *idx = node->modifiedIndex;
 
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
         free_etcd_node(node);
         ltg_free1(host);
         
         return 0;
 err_close:
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
 err_ret:
         ltg_free1(host);
         return ret;
@@ -1136,7 +1261,7 @@ int etcd_del2(char *key)
         // LTG_ASSERT(sche_self() == 0);
 
         host = strdup(__ETCD_SRV__);
-        ret = __etcd_open_str(host, &sess);
+        ret = __etcd_get_sess(host, &sess);
         if (ret) {
                 GOTO(err_ret, ret);
         }
@@ -1146,12 +1271,12 @@ int etcd_del2(char *key)
                 GOTO(err_close, ret);
         }
 
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
         ltg_free1(host);
 
         return 0;
 err_close:
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
 err_ret:
         ltg_free1(host);
         return ret;
@@ -1175,7 +1300,7 @@ int etcd_del_dir(const char *prefix, const char *_key, int recursive)
         // LTG_ASSERT(sche_self() == 0);
 
         host = strdup(__ETCD_SRV__);
-        ret = __etcd_open_str(host, &sess);
+        ret = __etcd_get_sess(host, &sess);
         if (ret) {
                 GOTO(err_ret, ret);
         }
@@ -1188,12 +1313,12 @@ int etcd_del_dir(const char *prefix, const char *_key, int recursive)
                 GOTO(err_close, ret);
         }
 
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
         ltg_free1(host);
 
         return 0;
 err_close:
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
 err_ret:
         ltg_free1(host);
         return ret;
@@ -1218,6 +1343,14 @@ int etcd_init()
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
+#if ETCD_SESS_REUSE
+        ret = ltg_spin_init(&sess_lock);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+        
+        INIT_LIST_HEAD(&sess_list);
+#endif
+        
         return 0;
 err_ret:
         return ret;
@@ -1303,7 +1436,7 @@ static int __etcd_watch_key(const char *key, char *value, int timeout,
         LTG_ASSERT(sche_self() == 0);
 
         host = strdup(__ETCD_SRV__);
-        ret = __etcd_open_str(host, &sess);
+        ret = __etcd_get_sess(host, &sess);
         if (ret) {
                 GOTO(err_ret, ret);
         }
@@ -1351,13 +1484,13 @@ out:
         strcpy(value, node->value);
         
         free_etcd_node(node);
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
 
         ltg_free1(host);
         
         return 0;
 err_close:
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
 err_ret:
         ltg_free1(host);
         return ret;
@@ -1419,7 +1552,7 @@ static int __etcd_watch_dir(const char *key, int timeout, int *idx_in,
         LTG_ASSERT(sche_self() == 0);
 
         host = strdup(__ETCD_SRV__);
-        ret = __etcd_open_str(host, &sess);
+        ret = __etcd_get_sess(host, &sess);
         if (ret) {
                 GOTO(err_ret, ret);
         }
@@ -1463,12 +1596,12 @@ static int __etcd_watch_dir(const char *key, int timeout, int *idx_in,
         free_etcd_node(node);
 
 out:
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
         ltg_free1(host);
         
         return 0;
 err_close:
-        etcd_close_str(sess);
+        __etcd_put_sess(&sess, ret);
 err_ret:
         ltg_free1(host);
         return ret;
