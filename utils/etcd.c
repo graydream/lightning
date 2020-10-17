@@ -11,7 +11,7 @@
 #define __ETCD_SRV__  "127.0.0.1:2379"
 
 #define ETCD_TRACE 0
-#define ETCD_SESS_REUSE 1
+#define ETCD_SESS_REUSE 0
 
 extern ltgconf_t ltgconf_global;
 
