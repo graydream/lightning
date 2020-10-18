@@ -1659,3 +1659,62 @@ retry:
 err_ret:
         return ret;
 }
+
+int etcd_get_text1(const char *prefix, const char *_key, char *value,
+                   int *idx, int consistent)
+{
+        int ret;
+        char key[MAX_PATH_LEN];
+        etcd_node_t *node = NULL;
+
+        snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
+        ret = __etcd_get(key, &node, consistent);
+        if(ret){
+                GOTO(err_ret, ret);
+        }
+
+        if (node->dir) {
+                ret = EISDIR;
+                GOTO(err_free, ret);
+        }
+
+        LTG_ASSERT(node->key && node->value);
+
+        strcpy(value, node->value);
+
+        if (idx)
+                *idx = node->modifiedIndex;
+
+        free_etcd_node(node);
+
+        return 0;
+err_free:
+        free_etcd_node(node);
+err_ret:
+        return ret;
+}
+
+int etcd_get_bin1(const char *prefix, const char *_key, void *_value,
+                  int *_valuelen, int *idx, int consistent)
+{
+        int ret;
+        char buf[MAX_BUF_LEN];
+        size_t size;
+
+        ret = etcd_get_text1(prefix, _key, buf, idx, consistent);
+        if (ret)
+                GOTO(err_ret, ret);
+
+        size = MAX_BUF_LEN;
+        ret = urlsafe_b64_decode(buf, strlen(buf), _value, &size);
+        LTG_ASSERT(ret == 0);
+
+        if (_valuelen) {
+                LTG_ASSERT((int)size <= *_valuelen);
+                *_valuelen = size;
+        }
+
+        return 0;
+err_ret:
+        return ret;
+}

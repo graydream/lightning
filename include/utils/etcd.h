@@ -56,6 +56,7 @@ int etcd_set_text(const char *prefix, const char *_key, const char *_value,
 int etcd_update_text(const char *prefix, const char *_key, const char *_value, int  *idx, int ttl);
 int etcd_exist(const char *prefix, const char *_key);
 int etcd_get_text (const char *prefix, const char *_key, char *value, int *idx);
+int etcd_get_text1(const char *prefix, const char *_key, char *value, int *idx, int consistent);
 
 int etcd_create(const char *prefix, const char *_key, const void *_value, int valuelen, int ttl);
 int etcd_set_bin(const char *prefix, const char *_key, const void *_value,
@@ -63,6 +64,8 @@ int etcd_set_bin(const char *prefix, const char *_key, const void *_value,
 int etcd_update(const char *prefix, const char *_key, const void *_value, int valuelen,
                 int *idx, int ttl);
 int etcd_get_bin(const char *prefix, const char *_key, void *_value, int *_valuelen, int *idx);
+int etcd_get_bin1(const char *prefix, const char *_key, void *_value,
+                 int *_valuelen, int *idx, int consistent);
 
 int etcd_lock_init(etcd_lock_t *lock, const char *prefix, const char *key, int ttl, uint32_t magic, int update);
 int etcd_lock(etcd_lock_t *lock);
