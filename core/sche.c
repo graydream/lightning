@@ -123,6 +123,7 @@ static int __sche_runable(const sche_t *sche)
         return count;
 }
 
+/*
 #if SCHEDULE_CHECK_RUNTIME
 static inline void __sche_check_running_used(sche_t *sche, taskctx_t *taskctx, uint64_t used)
 {
@@ -138,11 +139,12 @@ static inline void __sche_check_running_used(sche_t *sche, taskctx_t *taskctx, u
         }
 }
 #endif
+*/
 
 static inline void __sche_check_yield_used(sche_t *sche, taskctx_t *taskctx, uint64_t used)
 {
         /* notice: time_used is seconds */
-        if (unlikely(taskctx->sleeping)) {
+        if (unlikely(taskctx->sleeping || taskctx->sleep)) {
                 return;
         }
 
