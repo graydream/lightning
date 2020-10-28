@@ -97,6 +97,8 @@ STATIC int __rpc_request_handler(const nid_t *nid, const sockid_t *sockid,
         net_prog_t *prog;
         net_request_handler handler;
 
+        (void) nid;
+        
         LTG_ASSERT(sockid->addr);
 
         DBUG("new msg from %s/%u, id (%u, %x)\n",
@@ -118,13 +120,9 @@ STATIC int __rpc_request_handler(const nid_t *nid, const sockid_t *sockid,
 
         rpc_request->sockid = *sockid;
         rpc_request->msgid = *msgid;
+        rpc_request->dist.nid.id = 0;
+        rpc_request->dist.idx = 0;
         rpc_request->sockid.reply = stdrpc_reply_tcp;
-        if (nid) {
-                rpc_request->nid = *nid;
-        } else {
-                rpc_request->nid.id = 0;
-        }
-
         ltgbuf_init(&rpc_request->buf, 0);
         ltgbuf_merge(&rpc_request->buf, buf);
         
