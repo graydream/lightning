@@ -58,7 +58,8 @@ static void __getmsg(ltgbuf_t *buf, msg_t **_req, int *buflen, char *_buf)
         *_req = req;
 }
 
-static int __net_srv_heartbeat(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf)
+static int __net_srv_heartbeat(const sockid_t *sockid, const msgid_t *msgid,
+                               ltgbuf_t *_buf, ltgbuf_t *out)
 {
         int buflen;
         msg_t *req;
@@ -66,6 +67,8 @@ static int __net_srv_heartbeat(const sockid_t *sockid, const msgid_t *msgid, ltg
         ltg_net_info_t *info;
         uint64_t *seq;
 
+        (void) out;
+        
         ANALYSIS_BEGIN(0);
         __getmsg(_buf, &req, &buflen, buf);
 
@@ -119,13 +122,16 @@ err_ret:
         return ret;
 }
 
-static int __net_srv_hello1(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf)
+static int __net_srv_hello1(const sockid_t *sockid, const msgid_t *msgid,
+                               ltgbuf_t *_buf, ltgbuf_t *out)
 {
         int buflen;
         msg_t *req;
         char buf[MAX_BUF_LEN];
         uint64_t *seq;
 
+        (void) out;
+        
         ANALYSIS_BEGIN(0);
         __getmsg(_buf, &req, &buflen, buf);
 
@@ -142,13 +148,16 @@ static int __net_srv_hello1(const sockid_t *sockid, const msgid_t *msgid, ltgbuf
         return 0;
 }
 
-static int __net_srv_hello2(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf)
+static int __net_srv_hello2(const sockid_t *sockid, const msgid_t *msgid,
+                               ltgbuf_t *_buf, ltgbuf_t *out)
 {
         int buflen;
         msg_t *req;
         char buf[MAX_BUF_LEN];
         uint64_t *seq;
 
+        (void) out;
+        
         ANALYSIS_BEGIN(0);
         __getmsg(_buf, &req, &buflen, buf);
 
@@ -255,7 +264,7 @@ static void __request_handler(void *arg)
 
         sche_task_setname(name);
 
-        ret = handler(&sockid, &msgid, &buf);
+        ret = handler(&sockid, &msgid, &buf, NULL);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
