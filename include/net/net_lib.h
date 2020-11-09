@@ -27,6 +27,7 @@ typedef struct  {
         uint32_t magic;
         uint32_t len;
         uint32_t blocks;
+        uint32_t replen;
         uint32_t prog;
         msgid_t msgid;
         uint32_t type;

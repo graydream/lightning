@@ -44,6 +44,7 @@ typedef struct corerpc_op {
         coreid_t coreid;
         const void *request;
         int reqlen;
+        int replen;
         const ltgbuf_t *wbuf;
         ltgbuf_t *rbuf;
         int msg_type;
@@ -57,14 +58,14 @@ typedef struct corerpc_op {
 void corerpc_register(int type, net_request_handler handler, void *context);
 
 int corerpc_postwait(const char *name, const coreid_t *coreid, const void *request,
-                     int reqlen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
+                     int reqlen, int replen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
                      int msg_type, int msg_size, int group, int timeout);
 
 int corerpc_postwait1(const char *name, const coreid_t *coreid, const void *request,
                       int reqlen,  void *reply, int *replen,
                       int msg_type, int group, int timeout);
 int corerpc_postwait2(const char *name, const coreid_t *coreid,
-                      const void *request, int reqlen,
+                      const void *request, int reqlen, int replen,
                       const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
                       uint64_t *latency, int msg_type, int msg_size,
                       int group, int timeout);

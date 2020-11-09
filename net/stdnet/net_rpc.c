@@ -244,7 +244,7 @@ static void __request_handler(void *arg)
         __request_handler_func__ handler;
         char name[MAX_NAME_LEN];
 
-        request_trans(arg, NULL, &sockid, &msgid, &buf, NULL);
+        request_trans(arg, NULL, &sockid, &msgid, &buf, NULL, NULL);
 
         if (buf.len < sizeof(req)) {
                 ret = EINVAL;

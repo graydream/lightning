@@ -17,7 +17,7 @@ STATIC void __request_nosys(void *arg)
         msgid_t msgid;
         ltgbuf_t buf;
 
-        request_trans(arg, NULL, &sockid, &msgid, &buf, NULL);
+        request_trans(arg, NULL, &sockid, &msgid, &buf, NULL, NULL);
 
         DBUG("nosys\n");
         sche_task_setname("nosys");
@@ -32,7 +32,7 @@ STATIC void __request_stale(void *arg)
         msgid_t msgid;
         ltgbuf_t buf;
 
-        request_trans(arg, NULL, &sockid, &msgid, &buf, NULL);
+        request_trans(arg, NULL, &sockid, &msgid, &buf, NULL, NULL);
 
         sche_task_setname("stale");
         ltgbuf_free(&buf);
@@ -122,6 +122,7 @@ STATIC int __rpc_request_handler(const nid_t *nid, const sockid_t *sockid,
         rpc_request->msgid = *msgid;
         rpc_request->dist.nid.id = 0;
         rpc_request->dist.idx = 0;
+        rpc_request->replen = head->replen;
         rpc_request->sockid.reply = stdrpc_reply_tcp;
         ltgbuf_init(&rpc_request->buf, 0);
         ltgbuf_merge(&rpc_request->buf, buf);

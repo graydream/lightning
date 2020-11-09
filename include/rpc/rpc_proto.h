@@ -9,6 +9,7 @@ typedef struct {
         sockid_t sockid;
         msgid_t msgid;
         ltgbuf_t buf;
+        int replen;
         void *ctx;
 } rpc_request_t;
 
@@ -19,7 +20,9 @@ typedef int (*__request_handler_func__)(const sock_t *sockid, const msgid_t *msg
                                         ltgbuf_t *input, ltgbuf_t *output);
 #define __RPC_HANDLER_NAME__ 128
 
-inline static void IO_FUNC request_trans(void *arg, coreid_t *dist, sockid_t *sockid, msgid_t *msgid, ltgbuf_t *buf, void **ctx)
+inline static void IO_FUNC request_trans(void *arg, coreid_t *dist,
+                                         sockid_t *sockid, msgid_t *msgid,
+                                         ltgbuf_t *buf, int *replen, void **ctx)
 {
         rpc_request_t *rpc_request;
 
@@ -32,6 +35,9 @@ inline static void IO_FUNC request_trans(void *arg, coreid_t *dist, sockid_t *so
         if (dist)
                 *dist = rpc_request->dist;
 
+        if (replen)
+                *replen = rpc_request->replen;
+        
         if (ctx)
                 *ctx = rpc_request->ctx;
 

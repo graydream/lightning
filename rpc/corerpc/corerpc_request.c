@@ -119,7 +119,7 @@ int corerpc_rdma_request(void *ctx, void *_op)
         __corerpc_msgid_prep(&op->msgid, op->wbuf, op->rbuf, op->msg_size, handler);
 
         ret = rpc_request_prep(&buf, &op->msgid, op->request, op->reqlen,
-                               op->wbuf, op->msg_type, 0, op->group);
+                               op->replen, op->wbuf, op->msg_type, 0, op->group);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -142,7 +142,7 @@ int corerpc_tcp_request(void *ctx, void *_op)
         corerpc_op_t *op = _op;
 
         ret = rpc_request_prep(&buf, &op->msgid, op->request, op->reqlen,
-                               op->wbuf, op->msg_type, 1, op->group);
+                               op->replen, op->wbuf, op->msg_type, 1, op->group);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -235,7 +235,7 @@ err_ret:
 }
 
 int IO_FUNC corerpc_postwait(const char *name, const coreid_t *coreid, const void *request,
-                             int reqlen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
+                             int reqlen, int replen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
                              int msg_type, int msg_size, int group, int timeout)
 {
         int ret;
@@ -245,6 +245,7 @@ int IO_FUNC corerpc_postwait(const char *name, const coreid_t *coreid, const voi
         op.coreid = *coreid;
         op.request = request;
         op.reqlen = reqlen;
+        op.replen = replen;
         op.wbuf = wbuf;
         op.rbuf = rbuf;
         op.group = group;
@@ -257,7 +258,7 @@ int IO_FUNC corerpc_postwait(const char *name, const coreid_t *coreid, const voi
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
         } else {
-                ret = stdrpc_request_wait3(name, coreid, request, reqlen,
+                ret = stdrpc_request_wait3(name, coreid, request, reqlen, replen,
                                            wbuf, rbuf, msg_type, -1, timeout);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
@@ -283,10 +284,10 @@ int IO_FUNC corerpc_postwait1(const char *name, const coreid_t *coreid,
                 rbuf = &tmp;
         } else {
                 rbuf = NULL;
-                replen = -1;
+                replen = 0;
         }
 
-        ret = corerpc_postwait(name, coreid, request, reqlen,
+        ret = corerpc_postwait(name, coreid, request, reqlen, replen,
                                NULL, rbuf, msg_type, replen, group, timeout);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
@@ -309,7 +310,7 @@ err_ret:
 }
 
 int IO_FUNC corerpc_postwait2(const char *name, const coreid_t *coreid,
-                              const void *request, int reqlen,
+                              const void *request, int reqlen, int replen,
                               const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
                               uint64_t *latency, int msg_type, int msg_size,
                               int group, int timeout)
@@ -320,6 +321,7 @@ int IO_FUNC corerpc_postwait2(const char *name, const coreid_t *coreid,
         op.coreid = *coreid;
         op.request = request;
         op.reqlen = reqlen;
+        op.replen = replen;
         op.wbuf = wbuf;
         op.rbuf = rbuf;
         op.group = group;
@@ -332,7 +334,7 @@ int IO_FUNC corerpc_postwait2(const char *name, const coreid_t *coreid,
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
         } else {
-                ret = stdrpc_request_wait3(name, coreid, request, reqlen,
+                ret = stdrpc_request_wait3(name, coreid, request, reqlen, replen,
                                            wbuf, rbuf, msg_type, -1, timeout);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);

@@ -24,7 +24,7 @@ static void __request_nosys(void *arg)
         msgid_t msgid;
         ltgbuf_t buf;
 
-        request_trans(arg, NULL, &sockid, &msgid, &buf, NULL);
+        request_trans(arg, NULL, &sockid, &msgid, &buf, NULL, NULL);
 
         DBUG("nosys\n");
         sche_task_setname("nosys");
@@ -39,7 +39,7 @@ static void __request_stale(void *arg)
         msgid_t msgid;
         ltgbuf_t buf;
 
-        request_trans(arg, NULL, &sockid, &msgid, &buf, NULL);
+        request_trans(arg, NULL, &sockid, &msgid, &buf, NULL, NULL);
 
         DERROR("got stale msg\n");
 
@@ -82,6 +82,7 @@ static int IO_FUNC __corerpc_request_handler(corerpc_ctx_t *ctx,
         rpc_request->dist.idx = head->coreid;
         rpc_request->dist.nid = *net_getnid();
         LTG_ASSERT(sockid->reply);
+        rpc_request->replen = head->replen;
         rpc_request->ctx = ctx;
         ltgbuf_init(&rpc_request->buf, 0);
         ltgbuf_merge(&rpc_request->buf, buf);

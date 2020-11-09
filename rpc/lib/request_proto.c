@@ -9,7 +9,8 @@
 #include "ltg_core.h"
 
 int rpc_request_prep(ltgbuf_t *buf, const msgid_t *msgid, const void *request,
-                     int reqlen, const ltgbuf_t *data, int prog, int merge, int priority)
+                     int reqlen, int replen, const ltgbuf_t *data, int prog,
+                     int merge, int priority)
 {
         int ret;
         ltg_net_head_t *net_req;
@@ -33,6 +34,7 @@ int rpc_request_prep(ltgbuf_t *buf, const msgid_t *msgid, const void *request,
         net_req = ltgbuf_head1(buf, sizeof(*net_req));
         net_req->magic = LTG_MSG_MAGIC;
         net_req->len = sizeof(ltg_net_head_t) + reqlen;
+        net_req->replen = replen;
         net_req->type = LTG_MSG_REQ;
         net_req->prog = prog;
         net_req->msgid = *msgid;

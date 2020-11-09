@@ -36,16 +36,18 @@ int stdrpc_request_wait2(const char *name, const coreid_t *coreid,
                          int timeout);
 
 int stdrpc_request_wait3(const char *name, const coreid_t *coreid, const void *request,
-                      int reqlen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf, int msg_type,
-                      int priority, int timeout);
+                         int reqlen, int replen, const ltgbuf_t *wbuf,
+                         ltgbuf_t *rbuf, int msg_type,
+                         int priority, int timeout);
 int stdrpc_request_wait(const char *name, const nid_t *nid, const void *request,
-                     int reqlen, void *reply, int *replen, int msg_type,
-                     int priority, int timeout);
+                        int reqlen, void *reply, int *replen, int msg_type,
+                        int priority, int timeout);
 
 int stdrpc_request_wait_sock(const char *name, const net_handle_t *nh, const void *request,
                           int reqlen, void *reply, int *replen, int msg_type,
                           int priority, int timeout);
 int rpc_request_prep(ltgbuf_t *buf, const msgid_t *msgid, const void *request,
-                     int reqlen, const ltgbuf_t *data, int prog, int merge, int priority);
+                     int reqlen, int replen, const ltgbuf_t *data, int prog,
+                     int merge, int priority);
 
 #endif
