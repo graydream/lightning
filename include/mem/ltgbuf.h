@@ -100,7 +100,9 @@ int ltgbuf_appendmem(ltgbuf_t *buf, const void *src, uint32_t len);
 int ltgbuf_appendzero(ltgbuf_t *buf, int size);
 
 int ltgbuf_copy(ltgbuf_t *buf, const char *srcmem, int size);
-int ltgbuf_copy1(ltgbuf_t *pack, void *buf, uint32_t offset, uint32_t len);
+int ltgbuf_copy1(ltgbuf_t *pack, const void *buf, uint32_t offset, uint32_t len);
+void ltgbuf_copy3(ltgbuf_t *buf, const char *srcmem, int size);
+int ltgbuf_droptail(ltgbuf_t *buf, uint32_t len);
 
 int ltgbuf_popmsg(ltgbuf_t *pack, void *buf, uint32_t len);
 

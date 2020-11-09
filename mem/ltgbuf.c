@@ -156,7 +156,7 @@ int ltgbuf_get1(const ltgbuf_t *buf, void *dist, uint32_t offset, uint32_t len)
         return 0;
 }
 
-int ltgbuf_copy1(ltgbuf_t *buf, void *src, uint32_t offset, uint32_t len)
+int ltgbuf_copy1(ltgbuf_t *buf, const void *src, uint32_t offset, uint32_t len)
 {
         uint32_t buf_off = 0, seg_off, src_off = 0;
         struct list_head *pos;
@@ -1329,6 +1329,63 @@ int ltgbuf_solid_init(ltgbuf_t *buf, int size)
         BUFFER_CHECK(buf);
 
         ANALYSIS_END(0, 1000 * 100, NULL);
+
+        return 0;
+}
+
+void ltgbuf_copy3(ltgbuf_t *buf, const char *srcmem, int size)
+{
+        int left, offset, min;
+        struct list_head *pos;
+
+        LTG_ASSERT(size >= 0);
+        LTG_ASSERT((int)buf->len >= size);
+        BUFFER_CHECK(buf);
+
+        left = size;
+        offset = 0;
+
+        list_for_each(pos, &buf->list) {
+                seg_t *seg = (seg_t *)pos;
+                min = _min(left, BUFFER_SEG_SIZE);
+                memcpy(seg->handler.ptr, srcmem + offset, min);
+                left -= min;
+                offset += min;
+        }
+
+        BUFFER_CHECK(buf);
+}
+
+int ltgbuf_droptail(ltgbuf_t *buf, uint32_t len)
+{
+        uint32_t drop, seg_len;
+        seg_t *seg;
+
+        LTG_ASSERT(buf->len >= len);
+
+        if (len == 0)
+                return 0;
+
+        drop = len;
+
+retry:
+        seg = (void *)buf->list.prev;
+
+        if (seg->len > drop) {
+                seg->len -= drop;
+        } else {
+                list_del(&seg->hook);
+
+                seg_len = seg->len;
+                seg->sop.seg_free(seg);
+
+                if (seg_len < drop) {
+                        drop -= seg_len;
+                        goto retry;
+                }
+        }
+
+        buf->len -= len;
 
         return 0;
 }
