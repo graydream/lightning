@@ -59,7 +59,7 @@ static void __getmsg(ltgbuf_t *buf, msg_t **_req, int *buflen, char *_buf)
 }
 
 static int __net_srv_heartbeat(const sockid_t *sockid, const msgid_t *msgid,
-                               ltgbuf_t *_buf, ltgbuf_t *out)
+                               ltgbuf_t *_buf, ltgbuf_t *out, int *outlen)
 {
         int buflen;
         msg_t *req;
@@ -68,6 +68,7 @@ static int __net_srv_heartbeat(const sockid_t *sockid, const msgid_t *msgid,
         uint64_t *seq;
 
         (void) out;
+        (void) outlen;
         
         ANALYSIS_BEGIN(0);
         __getmsg(_buf, &req, &buflen, buf);
@@ -123,7 +124,7 @@ err_ret:
 }
 
 static int __net_srv_hello1(const sockid_t *sockid, const msgid_t *msgid,
-                               ltgbuf_t *_buf, ltgbuf_t *out)
+                            ltgbuf_t *_buf, ltgbuf_t *out, int *outlen)
 {
         int buflen;
         msg_t *req;
@@ -131,6 +132,7 @@ static int __net_srv_hello1(const sockid_t *sockid, const msgid_t *msgid,
         uint64_t *seq;
 
         (void) out;
+        (void) outlen;
         
         ANALYSIS_BEGIN(0);
         __getmsg(_buf, &req, &buflen, buf);
@@ -149,7 +151,7 @@ static int __net_srv_hello1(const sockid_t *sockid, const msgid_t *msgid,
 }
 
 static int __net_srv_hello2(const sockid_t *sockid, const msgid_t *msgid,
-                               ltgbuf_t *_buf, ltgbuf_t *out)
+                            ltgbuf_t *_buf, ltgbuf_t *out, int *outlen)
 {
         int buflen;
         msg_t *req;
@@ -157,6 +159,7 @@ static int __net_srv_hello2(const sockid_t *sockid, const msgid_t *msgid,
         uint64_t *seq;
 
         (void) out;
+        (void) outlen;
         
         ANALYSIS_BEGIN(0);
         __getmsg(_buf, &req, &buflen, buf);
@@ -264,7 +267,8 @@ static void __request_handler(void *arg)
 
         sche_task_setname(name);
 
-        ret = handler(&sockid, &msgid, &buf, NULL);
+        int outlen = 0;
+        ret = handler(&sockid, &msgid, &buf, NULL, &outlen);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 

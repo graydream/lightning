@@ -17,7 +17,7 @@ int rpc_pack_handler(const nid_t *nid, const sockid_t *sockid, ltgbuf_t *buf);
 int rpc_pack_len(void *buf, uint32_t len, int *msg_len, int *io_len);
 
 typedef int (*__request_handler_func__)(const sock_t *sockid, const msgid_t *msgid,
-                                        ltgbuf_t *input, ltgbuf_t *output);
+                                        ltgbuf_t *input, ltgbuf_t *output, int *outlen);
 #define __RPC_HANDLER_NAME__ 128
 
 inline static void IO_FUNC request_trans(void *arg, coreid_t *dist,
