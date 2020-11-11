@@ -67,11 +67,7 @@ int corerpc_postwait1(const char *name, const coreid_t *netctl,
                       const coreid_t *coreid, const void *request,
                       int reqlen,  void *reply, int *replen,
                       int msg_type, int group, int timeout);
-int corerpc_postwait2(const char *name, const coreid_t *coreid,
-                      const void *request, int reqlen, int replen,
-                      const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
-                      uint64_t *latency, int msg_type, int msg_size,
-                      int group, int timeout);
+
 int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
                           const sockid_t *sockid, const void *request,
                           int reqlen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,

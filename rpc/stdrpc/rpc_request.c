@@ -26,16 +26,13 @@ static int __rpc_request_send(const sockid_t *sockid, int coreid,
         net_handle_t nh;
 
         ret = rpc_request_prep(&buf, msgid, request, reqlen, replen, data,
-                               msg_type, 1, priority);
+                               msg_type, 1, priority, coreid);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        ltg_net_head_t *net_req = ltgbuf_head1(&buf, sizeof(*net_req));
-        net_req->coreid = coreid;
-        
         DBUG("send msg to %s, id (%u, %x), len %u\n",
-              _inet_ntoa(sockid->addr), msgid->idx,
-              msgid->figerprint, buf.len);
+             _inet_ntoa(sockid->addr), msgid->idx,
+             msgid->figerprint, buf.len);
 
         sock2nh(&nh, sockid);
         ret = sdevent_queue(&nh, &buf);

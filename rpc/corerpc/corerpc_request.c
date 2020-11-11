@@ -52,7 +52,7 @@ STATIC int __corerpc_getslot(void *_ctx, rpc_ctx_t *ctx, corerpc_op_t *op, const
 
         ret = rpc_table_setslot(__rpc_table_private__, &op->msgid,
                                 __corerpc_post_task, ctx, &op->sockid,
-                                &op->coreid.nid, op->timeout);
+                                &op->netctl.nid, op->timeout);
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
@@ -119,7 +119,8 @@ int corerpc_rdma_request(void *ctx, void *_op)
         __corerpc_msgid_prep(&op->msgid, op->wbuf, op->rbuf, op->msg_size, handler);
 
         ret = rpc_request_prep(&buf, &op->msgid, op->request, op->reqlen,
-                               op->replen, op->wbuf, op->msg_type, 0, op->group);
+                               op->replen, op->wbuf, op->msg_type, 0, op->group,
+                               op->coreid.idx);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -142,7 +143,8 @@ int corerpc_tcp_request(void *ctx, void *_op)
         corerpc_op_t *op = _op;
 
         ret = rpc_request_prep(&buf, &op->msgid, op->request, op->reqlen,
-                               op->replen, op->wbuf, op->msg_type, 1, op->group);
+                               op->replen, op->wbuf, op->msg_type, 1, op->group,
+                               op->coreid.idx);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -175,7 +177,7 @@ static int __corerpc_send_and_wait(void *core, const char *name, corerpc_op_t *o
         ret = op->sockid.request(core, op);
         if (unlikely(ret)) {
                 sche_task_reset();
-                corenet_maping_close(&op->coreid.nid, &op->sockid);
+                corenet_maping_close(&op->netctl.nid, &op->sockid);
 		ret = _errno_net(ret);
 		LTG_ASSERT(ret == ENONET || ret == ESHUTDOWN);
 		GOTO(err_free, ret);
@@ -210,17 +212,17 @@ int IO_FUNC __corerpc_postwait(const char *name, corerpc_op_t *op, uint64_t *lat
 
         ANALYSIS_BEGIN(0);
 
-        if (!netable_connected(&op->coreid.nid)) {
+        if (!netable_connected(&op->netctl.nid)) {
                 ret = ENONET;
                 GOTO(err_ret, ret);
         }
         
-        ret = corenet_maping(core, &op->coreid, &op->sockid);
+        ret = corenet_maping(core, &op->netctl, &op->sockid);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        DBUG("send to %s/%d, sd %u\n", netable_rname(&op->coreid.nid),
-             op->coreid.idx, op->sockid.sd);
+        DBUG("send to %s/%d, sd %u\n", netable_rname(&op->netctl.nid),
+             op->netctl.idx, op->sockid.sd);
 
         ret = __corerpc_send_and_wait(core, name, op, latency);
         if (unlikely(ret)) {
@@ -312,44 +314,6 @@ err_ret:
         return ret;
 }
 
-int IO_FUNC corerpc_postwait2(const char *name, const coreid_t *coreid,
-                              const void *request, int reqlen, int replen,
-                              const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
-                              uint64_t *latency, int msg_type, int msg_size,
-                              int group, int timeout)
-{
-        int ret;
-        corerpc_op_t op;
-
-        op.coreid = *coreid;
-        op.request = request;
-        op.reqlen = reqlen;
-        op.replen = replen;
-        op.wbuf = wbuf;
-        op.rbuf = rbuf;
-        op.group = group;
-        op.msg_type = msg_type;
-        op.msg_size = msg_size;
-        op.timeout = timeout;
-
-        if (likely(ltgconf_global.daemon && corerpc_inited)) {
-                ret = __corerpc_postwait(name, &op, latency);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
-        } else {
-                ret = stdrpc_request_wait3(name, coreid, request, reqlen, replen,
-                                           wbuf, rbuf, msg_type, -1, timeout);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
-
-                *latency = 0;
-        }
-
-        return 0;
-err_ret:
-        return ret;
-}
-
 int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
                           const sockid_t *sockid, const void *request,
                           int reqlen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
@@ -360,6 +324,7 @@ int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
         uint64_t latency;
 
         op.coreid = *coreid;
+        op.netctl = *coreid;
         op.request = request;
         op.reqlen = reqlen;
         op.wbuf = wbuf;

@@ -48,6 +48,6 @@ int stdrpc_request_wait_sock(const char *name, const net_handle_t *nh, const voi
                           int priority, int timeout);
 int rpc_request_prep(ltgbuf_t *buf, const msgid_t *msgid, const void *request,
                      int reqlen, int replen, const ltgbuf_t *data, int prog,
-                     int merge, int priority);
+                     int merge, int priority, int coreid);
 
 #endif
