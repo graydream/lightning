@@ -120,8 +120,8 @@ STATIC int __rpc_request_handler(const nid_t *nid, const sockid_t *sockid,
 
         rpc_request->sockid = *sockid;
         rpc_request->msgid = *msgid;
-        rpc_request->dist.nid.id = 0;
-        rpc_request->dist.idx = 0;
+        rpc_request->dist.nid = *net_getnid();
+        rpc_request->dist.idx = head->coreid;
         rpc_request->replen = head->replen;
         rpc_request->sockid.reply = stdrpc_reply_tcp;
         ltgbuf_init(&rpc_request->buf, 0);
