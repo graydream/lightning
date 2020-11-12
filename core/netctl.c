@@ -102,9 +102,9 @@ STATIC int IO_FUNC __netctl_postwait(va_list ap)
                                 group, timeout);
 }
 
-int netctl_postwait(const char *name, const coreid_t *coreid, const void *request,
-                    int reqlen, int replen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
-                    int msg_type, int msg_size, int group, int timeout)
+int IO_FUNC netctl_postwait(const char *name, const coreid_t *coreid, const void *request,
+                            int reqlen, int replen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
+                            int msg_type, int msg_size, int group, int timeout)
 {
         coreid_t netctl;
 
@@ -146,9 +146,9 @@ STATIC int IO_FUNC __netctl_postwait1(va_list ap)
 }
 
 
-int netctl_postwait1(const char *name, const coreid_t *coreid,
-                     const void *request, int reqlen,  void *reply,
-                     int *replen, int msg_type, int group, int timeout)
+int IO_FUNC netctl_postwait1(const char *name, const coreid_t *coreid,
+                             const void *request, int reqlen,  void *reply,
+                             int *replen, int msg_type, int group, int timeout)
 {
         coreid_t netctl;
 

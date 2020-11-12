@@ -56,7 +56,11 @@ typedef struct corerpc_op {
         msgid_t msgid;
 } corerpc_op_t;
 
+#if RPC_REG_NEW
+void corerpc_register(int type, request_get_handler handler, void *context);
+#else
 void corerpc_register(int type, net_request_handler handler, void *context);
+#endif
 
 int corerpc_postwait(const char *name, const coreid_t *netctl,
                      const coreid_t *coreid, const void *request,

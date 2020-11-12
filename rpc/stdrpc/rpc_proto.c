@@ -11,7 +11,9 @@
 
 static net_prog_t  __stdnet_prog__[LTG_MSG_MAX_KEEP];
 
+#if 0
 static rpc_prog_t  __stdrpc_prog__[LTG_MSG_MAX_KEEP];
+#endif
 
 STATIC void __request_nosys(void *arg)
 {
@@ -218,6 +220,7 @@ void rpc_request_register(int type, net_request_handler handler, void *context)
 }
 
 
+#if 0
 void rpc_request_register1(int type, __request_handler_func__ handler,
                            void *context)
 {
@@ -234,3 +237,4 @@ void rpc_request_register1(int type, __request_handler_func__ handler,
         prog->handler = handler;
         prog->context = context;
 }
+#endif

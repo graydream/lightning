@@ -4,6 +4,14 @@
 #include "ltg_utils.h"
 #include "ltg_net.h"
 
+typedef int (*request_handler_func)(const sock_t *sockid, const msgid_t *msgid,
+                                        ltgbuf_t *input, ltgbuf_t *output, int *outlen);
+
+typedef void (*request_get_handler)(const ltgbuf_t *buf, request_handler_func *func,
+                                    const char **name);
+
+#define __request_handler_func__ request_handler_func
+
 typedef struct {
         coreid_t dist;
         sockid_t sockid;
@@ -11,13 +19,12 @@ typedef struct {
         ltgbuf_t buf;
         int replen;
         void *ctx;
+        request_get_handler handler;
 } rpc_request_t;
 
 int rpc_pack_handler(const nid_t *nid, const sockid_t *sockid, ltgbuf_t *buf);
 int rpc_pack_len(void *buf, uint32_t len, int *msg_len, int *io_len);
 
-typedef int (*__request_handler_func__)(const sock_t *sockid, const msgid_t *msgid,
-                                        ltgbuf_t *input, ltgbuf_t *output, int *outlen);
 #define __RPC_HANDLER_NAME__ 128
 
 inline static void IO_FUNC request_trans(void *arg, coreid_t *dist,
@@ -45,7 +52,7 @@ inline static void IO_FUNC request_trans(void *arg, coreid_t *dist,
 }
 
 typedef struct {
-        __request_handler_func__ handler;
+        request_get_handler handler;
         void *context;
 } rpc_prog_t;
 

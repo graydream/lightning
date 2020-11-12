@@ -13,12 +13,6 @@
 #include "ltg_rpc.h"
 #include "ltg_core.h"
 
-typedef struct {
-        uint32_t op;
-        uint32_t buflen;
-        char buf[0];
-} msg_t;
-
 typedef enum {
         NET_RPC_NULL = 0,
         NET_RPC_HELLO1,
@@ -28,6 +22,13 @@ typedef enum {
         NET_RPC_CORES,
         NET_RPC_MAX,
 } net_rpc_op_t;
+
+typedef struct {
+        uint32_t op;
+        uint32_t buflen;
+        char buf[0];
+} msg_t;
+
 
 static __request_handler_func__  __request_handler__[NET_RPC_MAX - NET_RPC_NULL];
 static char  __request_name__[NET_RPC_MAX - NET_RPC_NULL][__RPC_HANDLER_NAME__ ];
@@ -264,13 +265,38 @@ err_ret:
         return;
 }
 
+#if RPC_REG_NEW
+static void __request_get_handler__(const ltgbuf_t *buf, request_handler_func *func,
+                                    const char **name)
+{
+        msg_t req;
+        
+        if (unlikely(buf->len < sizeof(req))) {
+                *func = NULL;
+                return;
+        }
+
+        ltgbuf_get(buf, &req, sizeof(req));
+
+        __request_get_handler(req.op, func, name);
+        if (unlikely(func == NULL)) {
+                DWARN("error op %u\n", req.op);
+                return;
+        }
+}
+#endif
+
 int net_rpc_init()
 {
         __request_set_handler(NET_RPC_HELLO1, __net_srv_hello1, "net_srv_hello");
         __request_set_handler(NET_RPC_HELLO2, __net_srv_hello2, "net_srv_hello");
 
         rpc_request_register(MSG_NET, __request_handler, NULL);
+#if RPC_REG_NEW
+        corerpc_register(MSG_NET, __request_get_handler__, NULL);
+#else
         corerpc_register(MSG_NET, __request_handler, NULL);
+#endif
 
         return 0;
 }

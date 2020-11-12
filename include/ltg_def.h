@@ -71,4 +71,6 @@ typedef long long LLD;
 
 #define SCHEDULE_TASKCTX_RUNTIME 1
 
+#define RPC_REG_NEW 1
+
 #endif
