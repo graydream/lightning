@@ -30,16 +30,16 @@ typedef struct {
 } msg_t;
 
 
-static __request_handler_func__  __request_handler__[NET_RPC_MAX - NET_RPC_NULL];
+static request_handler_func  __request_handler__[NET_RPC_MAX - NET_RPC_NULL];
 static char  __request_name__[NET_RPC_MAX - NET_RPC_NULL][__RPC_HANDLER_NAME__ ];
 
-static void __request_get_handler(int op, __request_handler_func__ *func, const char **name)
+static void __request_get_handler(int op, request_handler_func *func, const char **name)
 {
         *func = __request_handler__[op - NET_RPC_NULL];
         *name = __request_name__[op - NET_RPC_NULL];
 }
 
-static void __request_set_handler(int op, __request_handler_func__ func, const char *name)
+static void __request_set_handler(int op, request_handler_func func, const char *name)
 {
         LTG_ASSERT(strlen(name) + 1 < __RPC_HANDLER_NAME__ );
         strcpy(__request_name__[op - NET_RPC_NULL], name);
@@ -59,22 +59,17 @@ static void __getmsg(ltgbuf_t *buf, msg_t **_req, int *buflen, char *_buf)
         *_req = req;
 }
 
-static int __net_srv_hello1(const sockid_t *sockid, const msgid_t *msgid,
-                            ltgbuf_t *_buf, ltgbuf_t *out, int *outlen)
+static int __net_srv_hello1(ltgbuf_t *_buf, ltgbuf_t *out, int *outlen)
 {
         int buflen;
         msg_t *req;
         char buf[MAX_BUF_LEN];
         uint64_t *seq;
 
-        (void) sockid;
-        (void) msgid;
         (void) out;
         
         ANALYSIS_BEGIN(0);
         __getmsg(_buf, &req, &buflen, buf);
-
-        DBUG("hello id (%u, %x)\n", msgid->idx, msgid->figerprint);
 
         _opaque_decode(req->buf, buflen,
                        &seq, NULL,
@@ -87,22 +82,17 @@ static int __net_srv_hello1(const sockid_t *sockid, const msgid_t *msgid,
         return 0;
 }
 
-static int __net_srv_hello2(const sockid_t *sockid, const msgid_t *msgid,
-                            ltgbuf_t *_buf, ltgbuf_t *out, int *outlen)
+static int __net_srv_hello2(ltgbuf_t *_buf, ltgbuf_t *out, int *outlen)
 {
         int buflen;
         msg_t *req;
         char buf[MAX_BUF_LEN];
         uint64_t *seq;
 
-        (void) sockid;
-        (void) msgid;
         (void) out;
         
         ANALYSIS_BEGIN(0);
         __getmsg(_buf, &req, &buflen, buf);
-
-        DBUG("hello id (%u, %x)\n", msgid->idx, msgid->figerprint);
 
         _opaque_decode(req->buf, buflen,
                        &seq, NULL,
@@ -178,7 +168,7 @@ err_ret:
 #if !RPC_REG_NEW
 static int IO_FUNC __request_handler_redirect(va_list ap)
 {
-        __request_handler_func__ handler = va_arg(ap, __request_handler_func__);
+        request_handler_func handler = va_arg(ap, request_handler_func);
         ltgbuf_t *in = va_arg(ap, ltgbuf_t *);
         ltgbuf_t *out = va_arg(ap, ltgbuf_t *);
         int *outlen = va_arg(ap, int *);
@@ -195,7 +185,7 @@ static void IO_FUNC __request_handler(void *arg)
         sockid_t sockid;
         msgid_t msgid;
         ltgbuf_t buf;
-        __request_handler_func__ handler;
+        request_handler_func handler;
         const char *name;
         coreid_t coreid;
 

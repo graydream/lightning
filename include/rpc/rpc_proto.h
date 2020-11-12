@@ -4,14 +4,10 @@
 #include "ltg_utils.h"
 #include "ltg_net.h"
 
-typedef int (*request_handler_func)(const sock_t *sockid, const msgid_t *msgid,
-                                    ltgbuf_t *input, ltgbuf_t *output, int *outlen);
+typedef int (*request_handler_func)(ltgbuf_t *input, ltgbuf_t *output, int *outlen);
 
 typedef void (*request_get_handler)(const ltgbuf_t *buf, request_handler_func *func,
                                     const char **name);
-
-
-#define __request_handler_func__ request_handler_func
 
 typedef struct {
         coreid_t dist;

@@ -53,14 +53,14 @@ static rpc_prog_t __corerpc_prog__[LTG_MSG_MAX_KEEP];
 
 static int IO_FUNC __request_handler_redirect(va_list ap)
 {
-        __request_handler_func__ handler = va_arg(ap, __request_handler_func__);
+        request_handler_func handler = va_arg(ap, request_handler_func);
         ltgbuf_t *in = va_arg(ap, ltgbuf_t *);
         ltgbuf_t *out = va_arg(ap, ltgbuf_t *);
         int *outlen = va_arg(ap, int *);
 
         va_end(ap);
 
-        return handler(NULL, NULL, in, out, outlen);
+        return handler(in, out, outlen);
 }
 
 static void IO_FUNC __corerpc_request_task(void *arg)
@@ -106,7 +106,7 @@ static void IO_FUNC __corerpc_request_task(void *arg)
                 if (unlikely(ret))
                         GOTO(err_free, ret);
         } else {
-                ret = handler(NULL, NULL, &buf, &out, &outlen);
+                ret = handler(&buf, &out, &outlen);
                 if (unlikely(ret))
                         GOTO(err_free, ret);
         }

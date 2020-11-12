@@ -112,7 +112,7 @@ static void IO_FUNC __rpc_request_task(void *arg)
 
         ltgbuf_init(&out, replen);
 
-        ret = handler(NULL, NULL, &buf, &out, &outlen);
+        ret = handler(&buf, &out, &outlen);
         if (unlikely(ret))
                 GOTO(err_free, ret);
 
