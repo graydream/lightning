@@ -11,6 +11,8 @@
 
 static net_prog_t  __stdnet_prog__[LTG_MSG_MAX_KEEP];
 
+static rpc_prog_t  __stdrpc_prog__[LTG_MSG_MAX_KEEP];
+
 STATIC void __request_nosys(void *arg)
 {
         sockid_t sockid;
@@ -207,6 +209,24 @@ void rpc_request_register(int type, net_request_handler handler, void *context)
         
         LTG_ASSERT(type < LTG_MSG_MAX_KEEP);
         prog = &__stdnet_prog__[type];
+
+        LTG_ASSERT(prog->handler == NULL);
+        LTG_ASSERT(prog->context == NULL);
+
+        prog->handler = handler;
+        prog->context = context;
+}
+
+
+void rpc_request_register1(int type, __request_handler_func__ handler,
+                           void *context)
+{
+        rpc_prog_t *prog;
+
+        DINFO("set %d %p\n", type, handler);
+        
+        LTG_ASSERT(type < LTG_MSG_MAX_KEEP);
+        prog = &__stdrpc_prog__[type];
 
         LTG_ASSERT(prog->handler == NULL);
         LTG_ASSERT(prog->context == NULL);

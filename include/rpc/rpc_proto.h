@@ -44,4 +44,9 @@ inline static void IO_FUNC request_trans(void *arg, coreid_t *dist,
         slab_stream_free(rpc_request);
 }
 
+typedef struct {
+        __request_handler_func__ handler;
+        void *context;
+} rpc_prog_t;
+
 #endif

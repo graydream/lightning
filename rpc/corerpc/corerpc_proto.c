@@ -17,6 +17,7 @@ typedef struct {
 #define LTG_MSG_MAX_KEEP (LTG_MSG_MAX * 2)
 
 static net_prog_t __corenet_prog__[LTG_MSG_MAX_KEEP];
+static rpc_prog_t __corerpc_prog__[LTG_MSG_MAX_KEEP];
 
 static void __request_nosys(void *arg)
 {
@@ -302,6 +303,20 @@ void corerpc_register(int type, net_request_handler handler, void *context)
 
         LTG_ASSERT(type < LTG_MSG_MAX_KEEP);
         prog = &__corenet_prog__[type];
+
+        LTG_ASSERT(prog->handler == NULL);
+        LTG_ASSERT(prog->context == NULL);
+        
+        prog->handler = handler;
+        prog->context = context;
+}
+
+void corerpc_register1(int type, __request_handler_func__ handler, void *context)
+{
+        rpc_prog_t *prog;
+
+        LTG_ASSERT(type < LTG_MSG_MAX_KEEP);
+        prog = &__corerpc_prog__[type];
 
         LTG_ASSERT(prog->handler == NULL);
         LTG_ASSERT(prog->context == NULL);

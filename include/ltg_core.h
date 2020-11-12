@@ -14,6 +14,7 @@
 #include "core/corerpc.h"
 #include "core/corenet_maping.h"
 #include "core/corenet_connect.h"
+#include "core/netctl.h"
 
 
 #endif

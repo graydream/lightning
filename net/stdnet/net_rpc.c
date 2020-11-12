@@ -58,71 +58,6 @@ static void __getmsg(ltgbuf_t *buf, msg_t **_req, int *buflen, char *_buf)
         *_req = req;
 }
 
-static int __net_srv_heartbeat(const sockid_t *sockid, const msgid_t *msgid,
-                               ltgbuf_t *_buf, ltgbuf_t *out, int *outlen)
-{
-        int buflen;
-        msg_t *req;
-        char buf[MAX_BUF_LEN];
-        ltg_net_info_t *info;
-        uint64_t *seq;
-
-        (void) out;
-        (void) outlen;
-        
-        ANALYSIS_BEGIN(0);
-        __getmsg(_buf, &req, &buflen, buf);
-
-        DBUG("heartbeat id (%u, %x)\n", msgid->idx, msgid->figerprint);
-
-        _opaque_decode(req->buf, buflen,
-                       &seq, NULL,
-                       &info, NULL,
-                       NULL);
-
-        stdrpc_reply(sockid, msgid, NULL, 0);
-        ANALYSIS_END(0, 1000 * 100, NULL);
-        
-        return 0;
-}
-
-int net_rpc_heartbeat(const sockid_t *sockid, uint64_t seq)
-{
-        int ret;
-        char buf[MAX_BUF_LEN], info[MAX_BUF_LEN];
-        uint32_t count, len;
-        msg_t *req;
-        net_handle_t nh;
-
-        ANALYSIS_BEGIN(0);
-
-        len = MAX_BUF_LEN;
-        ret = rpc_getinfo(info, &len);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        req = (void *)buf;
-        req->op = NET_RPC_HEARTBEAT;
-        _opaque_encode(req->buf, &count, &seq, sizeof(seq), info, len, NULL);
-
-#if 0
-        DINFO("heartbeat to %s seq %ju\n", _inet_ntoa(sockid->addr), seq);
-#endif
-        sock2nh(&nh, sockid);
-        ret = stdrpc_request_wait_sock("net_rpc_hb", &nh,
-                                    req, sizeof(*req) + count,
-                                    NULL, NULL,
-                                    MSG_NET, 0, ltgconf_global.hb_timeout);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        ANALYSIS_END(0, 1000 * 500, NULL);
-
-        return 0;
-err_ret:
-        return ret;
-}
-
 static int __net_srv_hello1(const sockid_t *sockid, const msgid_t *msgid,
                             ltgbuf_t *_buf, ltgbuf_t *out, int *outlen)
 {
@@ -131,8 +66,9 @@ static int __net_srv_hello1(const sockid_t *sockid, const msgid_t *msgid,
         char buf[MAX_BUF_LEN];
         uint64_t *seq;
 
+        (void) sockid;
+        (void) msgid;
         (void) out;
-        (void) outlen;
         
         ANALYSIS_BEGIN(0);
         __getmsg(_buf, &req, &buflen, buf);
@@ -143,7 +79,7 @@ static int __net_srv_hello1(const sockid_t *sockid, const msgid_t *msgid,
                        &seq, NULL,
                        NULL);
 
-        stdrpc_reply(sockid, msgid, NULL, 0);
+        *outlen = 0;
 
         ANALYSIS_END(0, 1000 * 100, NULL);
         
@@ -158,8 +94,9 @@ static int __net_srv_hello2(const sockid_t *sockid, const msgid_t *msgid,
         char buf[MAX_BUF_LEN];
         uint64_t *seq;
 
+        (void) sockid;
+        (void) msgid;
         (void) out;
-        (void) outlen;
         
         ANALYSIS_BEGIN(0);
         __getmsg(_buf, &req, &buflen, buf);
@@ -170,7 +107,7 @@ static int __net_srv_hello2(const sockid_t *sockid, const msgid_t *msgid,
                        &seq, NULL,
                        NULL);
 
-        corerpc_reply(sockid, msgid, NULL, 0);
+        *outlen = 0;
 
         ANALYSIS_END(0, 1000 * 100, NULL);
         
@@ -237,6 +174,7 @@ err_ret:
         return ret;
 }
 
+
 static void __request_handler(void *arg)
 {
         int ret;
@@ -283,13 +221,8 @@ err_ret:
 
 int net_rpc_init()
 {
-        __request_set_handler(NET_RPC_HEARTBEAT, __net_srv_heartbeat, "net_srv_heartbeat");
         __request_set_handler(NET_RPC_HELLO1, __net_srv_hello1, "net_srv_hello");
         __request_set_handler(NET_RPC_HELLO2, __net_srv_hello2, "net_srv_hello");
-#if 0
-        __request_set_handler(NET_RPC_CORES, __net_srv_cores, "net_srv_cores");
-        __request_set_handler(NET_RPC_COREADDR, __net_srv_corenetinfo, "net_srv_coreinfo");
-#endif
 
         rpc_request_register(MSG_NET, __request_handler, NULL);
         corerpc_register(MSG_NET, __request_handler, NULL);
