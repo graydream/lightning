@@ -32,10 +32,10 @@ typedef enum {
 static __request_handler_func__  __request_handler__[NET_RPC_MAX - NET_RPC_NULL];
 static char  __request_name__[NET_RPC_MAX - NET_RPC_NULL][__RPC_HANDLER_NAME__ ];
 
-static void __request_get_handler(int op, __request_handler_func__ *func, char *name)
+static void __request_get_handler(int op, __request_handler_func__ *func, const char **name)
 {
         *func = __request_handler__[op - NET_RPC_NULL];
-        strcpy(name, __request_name__[op - NET_RPC_NULL]);
+        *name = __request_name__[op - NET_RPC_NULL];
 }
 
 static void __request_set_handler(int op, __request_handler_func__ func, const char *name)
@@ -174,30 +174,43 @@ err_ret:
         return ret;
 }
 
-
-static void __request_handler(void *arg)
+static int IO_FUNC __request_handler_redirect(va_list ap)
 {
-        int ret;
+        __request_handler_func__ handler = va_arg(ap, __request_handler_func__);
+        ltgbuf_t *in = va_arg(ap, ltgbuf_t *);
+        ltgbuf_t *out = va_arg(ap, ltgbuf_t *);
+        int *outlen = va_arg(ap, int *);
+
+        va_end(ap);
+
+        return handler(NULL, NULL, in, out, outlen);
+}
+
+static void IO_FUNC __request_handler(void *arg)
+{
+        int ret, replen;
         msg_t req;
         sockid_t sockid;
         msgid_t msgid;
         ltgbuf_t buf;
         __request_handler_func__ handler;
-        char name[MAX_NAME_LEN];
+        const char *name;
+        coreid_t coreid;
 
-        request_trans(arg, NULL, &sockid, &msgid, &buf, NULL, NULL);
+        request_trans(arg, &coreid, &sockid, &msgid, &buf, &replen, NULL);
 
-        if (buf.len < sizeof(req)) {
+        if (unlikely(buf.len < sizeof(req))) {
                 ret = EINVAL;
                 GOTO(err_ret, ret);
         }
 
         ltgbuf_get(&buf, &req, sizeof(req));
 
-        DBUG("new job op %u\n", req.op);
+        DBUG("new op %u from %s, id (%u, %x)\n", req.op,
+             _inet_ntoa(sockid.addr), msgid.idx, msgid.figerprint);
 
-        __request_get_handler(req.op, &handler, name);
-        if (handler == NULL) {
+        __request_get_handler(req.op, &handler, &name);
+        if (unlikely(handler == NULL)) {
                 ret = ENOSYS;
                 DWARN("error op %u\n", req.op);
                 GOTO(err_ret, ret);
@@ -205,17 +218,49 @@ static void __request_handler(void *arg)
 
         sche_task_setname(name);
 
-        int outlen = 0;
-        ret = handler(&sockid, &msgid, &buf, NULL, &outlen);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
+        DBUG("name %s\n", name);
+        SOCKID_DUMP(&sockid);
+        MSGID_DUMP(&msgid);
+
+        ltgbuf_t out;
+        int outlen;
+
+        ltgbuf_init(&out, replen);
+
+        if (likely(netctl())) {
+                DBUG("%s netctl to bactl\n", name);
+                ret = core_ring_wait(coreid.idx, -1, "cds_rpc",
+                                     __request_handler_redirect,
+                                     handler, &buf, &out, &outlen);
+                if (unlikely(ret))
+                        GOTO(err_free, ret);
+        } else {
+                ret = handler(NULL, NULL, &buf, &out, &outlen);
+                if (unlikely(ret))
+                        GOTO(err_free, ret);
+        }
+
+        LTG_ASSERT(outlen <= replen);
+        if (unlikely(outlen < (int)out.len)) {
+                ltgbuf_droptail(&out, replen - outlen);
+        }
+        
+        corerpc_reply_buffer(&sockid, &msgid, &out);
 
         ltgbuf_free(&buf);
+        ltgbuf_free(&out);
+
+        DBUG("reply op %u from %s, id (%u, %x)\n", req.op,
+             _inet_ntoa(sockid.addr), msgid.idx, msgid.figerprint);
 
         return ;
+err_free:
+        ltgbuf_free(&out);
 err_ret:
         ltgbuf_free(&buf);
-        stdrpc_reply_error(&sockid, &msgid, ret);
+        corerpc_reply_error(&sockid, &msgid, ret);
+        DBUG("error op %u from %s, id (%u, %x)\n", req.op,
+             _inet_ntoa(sockid.addr), msgid.idx, msgid.figerprint);
         return;
 }
 

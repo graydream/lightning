@@ -95,7 +95,7 @@ STATIC int IO_FUNC __netctl_postwait(va_list ap)
 
         (void) netctl;
 
-        DINFO("%s redirect to netctl\n", name);
+        DBUG("%s redirect to netctl\n", name);
         
         return corerpc_postwait(name, netctl, coreid, request, reqlen, replen,
                                 wbuf, rbuf, msg_type, msg_size,
@@ -109,7 +109,7 @@ int netctl_postwait(const char *name, const coreid_t *coreid, const void *reques
         coreid_t netctl;
 
         if (netctl_get(coreid, &netctl)) {
-                DINFO("%s redirect to netctl\n", name);
+                DBUG("%s redirect to netctl\n", name);
                 return core_ring_wait(netctl.idx, -1, name, __netctl_postwait, &netctl,
                                       name, coreid, request, reqlen, replen,
                                       wbuf, rbuf, msg_type, msg_size,
