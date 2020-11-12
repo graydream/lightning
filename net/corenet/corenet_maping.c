@@ -671,11 +671,12 @@ err_ret:
         return ret;
 }
 
-int corenet_maping_init()
+int corenet_maping_init(uint64_t mask)
 {
         int ret;
 
-        ret = core_init_modules("corenet_maping", __corenet_maping_init, NULL);
+        ret = core_init_modules1("corenet_maping", mask,
+                                 __corenet_maping_init, NULL);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 

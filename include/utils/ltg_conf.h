@@ -30,7 +30,7 @@ typedef struct {
 
         int polling_timeout;
         uint64_t coremask;
-        uint64_t netctl;
+        uint64_t netmask;
         int nr_hugepage;
         int daemon;
         

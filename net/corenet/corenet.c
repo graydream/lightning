@@ -142,7 +142,6 @@ static int __corenet_init(va_list ap)
         int ret;
         __corenet_t *corenet;
         core_t *core = core_self();
-        int *flag = va_arg(ap, int *);
 
         va_end(ap);
 
@@ -157,11 +156,11 @@ static int __corenet_init(va_list ap)
         }
 
         if (ltgconf_global.rdma && ltgconf_global.daemon) {
-                ret = __corenet_rdma_init(corenet, *flag);
+                ret = __corenet_rdma_init(corenet, 0);
                 if (unlikely(ret))
                         GOTO(err_free, ret);
         } else {
-                ret = __corenet_tcp_init(core, corenet, *flag);
+                ret = __corenet_tcp_init(core, corenet, 0);
                 if (unlikely(ret))
                         GOTO(err_free, ret);
         }
@@ -191,7 +190,7 @@ err_ret:
         return ret;
 }
 
-int corenet_init(int flag)
+int corenet_init(uint64_t mask)
 {
         int ret;
 #if ENABLE_RDMA
@@ -206,22 +205,9 @@ int corenet_init(int flag)
         }
 #endif
 
-        ret = core_init_modules("corenet", __corenet_init, &flag, NULL);
+        ret = core_init_modules1("corenet", mask, __corenet_init, NULL);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
-        
-#if 0
-        if (ltgconf_global.netctl == 0) {
-                ret = core_init_modules("corenet", __corenet_init, &flag, NULL);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
-        } else {
-                ret = core_init_modules1("corenet", ltgconf_global.netctl,
-                                         __corenet_init, &flag, NULL);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
-        }
-#endif
 
         return 0;
 err_ret:

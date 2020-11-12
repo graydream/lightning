@@ -451,15 +451,17 @@ int core_init(uint64_t mask, int flag)
         }
 
         if (flag & CORE_FLAG_NET) {
-                ret = corenet_init(flag);
+                uint64_t mask = ltgconf_global.netmask;
+                
+                ret = corenet_init(mask);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
 
-                ret = corerpc_init();
+                ret = corerpc_init(mask);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
                 
-                ret = corenet_maping_init();
+                ret = corenet_maping_init(mask);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
         } else {

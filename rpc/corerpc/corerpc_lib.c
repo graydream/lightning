@@ -128,11 +128,11 @@ err_ret:
         return ret;
 }
 
-int corerpc_init()
+int corerpc_init(uint64_t mask)
 {
         int ret;
 
-        ret = core_init_modules("corerpc", __corerpc_init, NULL);
+        ret = core_init_modules1("corerpc", mask, __corerpc_init, NULL);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 

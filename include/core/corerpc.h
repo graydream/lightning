@@ -100,7 +100,7 @@ void corerpc_destroy(rpc_table_t **_rpc_table);
 
 
 //rpc table
-int corerpc_init();
+int corerpc_init(uint64_t mask);
 
 #if ENABLE_RDMA
 

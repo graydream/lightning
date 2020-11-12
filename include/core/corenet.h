@@ -430,7 +430,7 @@ void rdma_handle_event(int fd, int type, int events __attribute__ ((unused)),
 
 #endif
 
-int corenet_init();
+int corenet_init(uint64_t mask);
 
 int corenet_getaddr(const coreid_t *coreid, corenet_addr_t *addr);
 int corenet_register(uint64_t coremask);
