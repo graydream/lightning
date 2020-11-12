@@ -2,8 +2,6 @@
 #define __LTG_CORE_H__
 
 #include "ltg_utils.h"
-#include "ltg_net.h"
-#include "ltg_rpc.h"
 
 #include "core/core.h"
 #include "core/sche.h"

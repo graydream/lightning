@@ -125,6 +125,15 @@ static int __ltg_init_stage1(const nid_t *nid, const char *name)
         if (ret)
                 GOTO(err_ret, ret);
 
+#if 0
+        if (ltgconf_global.netctl
+            && (ltgconf_global.coreflag & CORE_FLAG_NET)) {
+                ret = netctl_init(ltgconf_global.netctl);
+                if (ret)
+                        GOTO(err_ret, ret);
+        }
+#endif
+        
         ret = etcd_init();
         if (ret)
                 GOTO(err_ret, ret);

@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 
-#include "ltg_net.h"
 #include "ltg_utils.h"
+#include "rpc/rpc_proto.h"
 
 /* rpc_lib.c */
 int rpc_init(const char *name);
@@ -13,7 +13,12 @@ int rpc_destroy(void);
 /* rpc_passive.c */
 int rpc_passive(uint32_t port);
 int rpc_start();
+
+#if RPC_REG_NEW
+void rpc_request_register(int type, request_get_handler handler, void *context);
+#else
 void rpc_request_register(int type, net_request_handler handler, void *context);
+#endif
 void stdrpc_reply_tcp(void *ctx, void *arg);
 
 /* stdrpc_reply.c */

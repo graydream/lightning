@@ -205,9 +205,23 @@ int corenet_init(int flag)
                         GOTO(err_ret, ret);
         }
 #endif
+
         ret = core_init_modules("corenet", __corenet_init, &flag, NULL);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
+        
+#if 0
+        if (ltgconf_global.netctl == 0) {
+                ret = core_init_modules("corenet", __corenet_init, &flag, NULL);
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+        } else {
+                ret = core_init_modules1("corenet", ltgconf_global.netctl,
+                                         __corenet_init, &flag, NULL);
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+        }
+#endif
 
         return 0;
 err_ret:

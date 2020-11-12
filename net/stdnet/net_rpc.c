@@ -175,6 +175,7 @@ err_ret:
         return ret;
 }
 
+#if !RPC_REG_NEW
 static int IO_FUNC __request_handler_redirect(va_list ap)
 {
         __request_handler_func__ handler = va_arg(ap, __request_handler_func__);
@@ -264,6 +265,7 @@ err_ret:
              _inet_ntoa(sockid.addr), msgid.idx, msgid.figerprint);
         return;
 }
+#endif
 
 #if RPC_REG_NEW
 static void __request_get_handler__(const ltgbuf_t *buf, request_handler_func *func,
@@ -291,11 +293,12 @@ int net_rpc_init()
         __request_set_handler(NET_RPC_HELLO1, __net_srv_hello1, "net_srv_hello");
         __request_set_handler(NET_RPC_HELLO2, __net_srv_hello2, "net_srv_hello");
 
-        rpc_request_register(MSG_NET, __request_handler, NULL);
 #if RPC_REG_NEW
         corerpc_register(MSG_NET, __request_get_handler__, NULL);
+        rpc_request_register(MSG_NET, __request_get_handler__, NULL);
 #else
         corerpc_register(MSG_NET, __request_handler, NULL);
+        rpc_request_register(MSG_NET, __request_handler, NULL);
 #endif
 
         return 0;

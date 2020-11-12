@@ -7,7 +7,6 @@
 #include "sock_buffer.h"
 #include "net_proto.h"
 #include "ltg_utils.h"
-#include "ltg_net.h"
 
 #pragma pack(8)
 typedef struct {
