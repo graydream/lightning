@@ -165,99 +165,6 @@ err_ret:
         return ret;
 }
 
-#if !RPC_REG_NEW
-static int IO_FUNC __request_handler_redirect(va_list ap)
-{
-        request_handler_func handler = va_arg(ap, request_handler_func);
-        ltgbuf_t *in = va_arg(ap, ltgbuf_t *);
-        ltgbuf_t *out = va_arg(ap, ltgbuf_t *);
-        int *outlen = va_arg(ap, int *);
-
-        va_end(ap);
-
-        return handler(NULL, NULL, in, out, outlen);
-}
-
-static void IO_FUNC __request_handler(void *arg)
-{
-        int ret, replen;
-        msg_t req;
-        sockid_t sockid;
-        msgid_t msgid;
-        ltgbuf_t buf;
-        request_handler_func handler;
-        const char *name;
-        coreid_t coreid;
-
-        request_trans(arg, &coreid, &sockid, &msgid, &buf, &replen, NULL);
-
-        if (unlikely(buf.len < sizeof(req))) {
-                ret = EINVAL;
-                GOTO(err_ret, ret);
-        }
-
-        ltgbuf_get(&buf, &req, sizeof(req));
-
-        DBUG("new op %u from %s, id (%u, %x)\n", req.op,
-             _inet_ntoa(sockid.addr), msgid.idx, msgid.figerprint);
-
-        __request_get_handler(req.op, &handler, &name);
-        if (unlikely(handler == NULL)) {
-                ret = ENOSYS;
-                DWARN("error op %u\n", req.op);
-                GOTO(err_ret, ret);
-        }
-
-        sche_task_setname(name);
-
-        DBUG("name %s\n", name);
-        SOCKID_DUMP(&sockid);
-        MSGID_DUMP(&msgid);
-
-        ltgbuf_t out;
-        int outlen;
-
-        ltgbuf_init(&out, replen);
-
-        if (likely(netctl())) {
-                DBUG("%s netctl to bactl\n", name);
-                ret = core_ring_wait(coreid.idx, -1, "cds_rpc",
-                                     __request_handler_redirect,
-                                     handler, &buf, &out, &outlen);
-                if (unlikely(ret))
-                        GOTO(err_free, ret);
-        } else {
-                ret = handler(NULL, NULL, &buf, &out, &outlen);
-                if (unlikely(ret))
-                        GOTO(err_free, ret);
-        }
-
-        LTG_ASSERT(outlen <= replen);
-        if (unlikely(outlen < (int)out.len)) {
-                ltgbuf_droptail(&out, replen - outlen);
-        }
-        
-        corerpc_reply_buffer(&sockid, &msgid, &out);
-
-        ltgbuf_free(&buf);
-        ltgbuf_free(&out);
-
-        DBUG("reply op %u from %s, id (%u, %x)\n", req.op,
-             _inet_ntoa(sockid.addr), msgid.idx, msgid.figerprint);
-
-        return ;
-err_free:
-        ltgbuf_free(&out);
-err_ret:
-        ltgbuf_free(&buf);
-        corerpc_reply_error(&sockid, &msgid, ret);
-        DBUG("error op %u from %s, id (%u, %x)\n", req.op,
-             _inet_ntoa(sockid.addr), msgid.idx, msgid.figerprint);
-        return;
-}
-#endif
-
-#if RPC_REG_NEW
 static void __request_get_handler__(const ltgbuf_t *buf, request_handler_func *func,
                                     const char **name)
 {
@@ -276,20 +183,14 @@ static void __request_get_handler__(const ltgbuf_t *buf, request_handler_func *f
                 return;
         }
 }
-#endif
 
 int net_rpc_init()
 {
         __request_set_handler(NET_RPC_HELLO1, __net_srv_hello1, "net_srv_hello");
         __request_set_handler(NET_RPC_HELLO2, __net_srv_hello2, "net_srv_hello");
 
-#if RPC_REG_NEW
         corerpc_register(MSG_NET, __request_get_handler__, NULL);
         rpc_request_register(MSG_NET, __request_get_handler__, NULL);
-#else
-        corerpc_register(MSG_NET, __request_handler, NULL);
-        rpc_request_register(MSG_NET, __request_handler, NULL);
-#endif
 
         return 0;
 }

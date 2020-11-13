@@ -14,11 +14,7 @@ int rpc_destroy(void);
 int rpc_passive(uint32_t port);
 int rpc_start();
 
-#if RPC_REG_NEW
 void rpc_request_register(int type, request_get_handler handler, void *context);
-#else
-void rpc_request_register(int type, net_request_handler handler, void *context);
-#endif
 void stdrpc_reply_tcp(void *ctx, void *arg);
 
 /* stdrpc_reply.c */

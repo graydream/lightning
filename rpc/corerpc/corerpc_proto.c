@@ -47,8 +47,6 @@ static void __request_stale(void *arg)
         return;
 }
 
-#if RPC_REG_NEW
-
 static rpc_prog_t __corerpc_prog__[LTG_MSG_MAX_KEEP];
 
 static int IO_FUNC __request_handler_redirect(va_list ap)
@@ -195,65 +193,6 @@ static int IO_FUNC __corerpc_request_handler(corerpc_ctx_t *ctx,
 err_ret:
         return ret;
 }
-
-#else
-
-static net_prog_t __corenet_prog__[LTG_MSG_MAX_KEEP];
-
-static int IO_FUNC __corerpc_request_handler(corerpc_ctx_t *ctx,
-                                             const ltg_net_head_t *head,
-                                             ltgbuf_t *buf)
-{
-        int ret;
-        rpc_request_t *rpc_request;
-        const msgid_t *msgid;
-        net_prog_t *prog;
-        sockid_t *sockid;
-        net_request_handler handler;
-
-        sockid = &ctx->sockid;
-        LTG_ASSERT(sockid->addr);
-        DBUG("new msg from %s/%u, id (%u, %x)\n",
-              _inet_ntoa(sockid->addr), sockid->sd, head->msgid.idx,
-              head->msgid.figerprint);
-
-        msgid = &head->msgid;
-        LTG_ASSERT(head->prog < LTG_MSG_MAX_KEEP);
-        prog = &__corenet_prog__[head->prog];
-
-        rpc_request = slab_stream_alloc(sizeof(*rpc_request));
-        if (!rpc_request) {
-                ret = ENOMEM;
-                GOTO(err_ret, ret);
-        }
-
-        LTG_ASSERT(sockid->addr);
-        rpc_request->sockid = *sockid;
-        rpc_request->msgid = *msgid;
-        rpc_request->dist.idx = head->coreid;
-        rpc_request->dist.nid = *net_getnid();
-        LTG_ASSERT(sockid->reply);
-        rpc_request->replen = head->replen;
-        rpc_request->ctx = ctx;
-        ltgbuf_init(&rpc_request->buf, 0);
-        ltgbuf_merge(&rpc_request->buf, buf);
-
-        if (unlikely(head->master_magic != ltg_global.master_magic)) {
-                DERROR("got stale msg, master_magic %x:%x\n",
-                       head->master_magic, ltg_global.master_magic);
-                handler = __request_stale;
-        } else {
-                handler = prog->handler ? prog->handler : __request_nosys;
-        }
-
-        sche_task_new("corenet", handler, rpc_request, 0);
-
-        return 0;
-err_ret:
-        return ret;
-}
-
-#endif
 
 extern rpc_table_t *corerpc_self();
 
@@ -449,7 +388,6 @@ int corerpc_recv(void *_ctx, void *buf, int *_count)
         return 0;
 }
 
-#if RPC_REG_NEW
 void corerpc_register(int type, request_get_handler handler, void *context)
 {
         rpc_prog_t *prog;
@@ -463,24 +401,6 @@ void corerpc_register(int type, request_get_handler handler, void *context)
         prog->handler = handler;
         prog->context = context;
 }
-
-#else
-
-void corerpc_register(int type, net_request_handler handler, void *context)
-{
-        net_prog_t *prog;
-
-        LTG_ASSERT(type < LTG_MSG_MAX_KEEP);
-        prog = &__corenet_prog__[type];
-
-        LTG_ASSERT(prog->handler == NULL);
-        LTG_ASSERT(prog->context == NULL);
-        
-        prog->handler = handler;
-        prog->context = context;
-}
-
-#endif
 
 void corerpc_close(void *_ctx)
 {
