@@ -62,12 +62,12 @@ void corerpc_register(int type, request_get_handler handler, void *context);
 void corerpc_register(int type, net_request_handler handler, void *context);
 #endif
 
-int corerpc_postwait(const char *name, const coreid_t *netctl,
+int corerpc_postwait(const char *name,
                      const coreid_t *coreid, const void *request,
                      int reqlen, int replen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
                      int msg_type, int msg_size, int group, int timeout);
 
-int corerpc_postwait1(const char *name, const coreid_t *netctl,
+int corerpc_postwait1(const char *name,
                       const coreid_t *coreid, const void *request,
                       int reqlen,  void *reply, int *replen,
                       int msg_type, int group, int timeout);

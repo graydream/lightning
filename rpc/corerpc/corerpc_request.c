@@ -205,7 +205,8 @@ err_ret:
         return ret;
 }
 
-int IO_FUNC __corerpc_postwait(const char *name, corerpc_op_t *op, uint64_t *latency)
+int IO_FUNC __corerpc_postwait__(const char *name, corerpc_op_t *op,
+                                 uint64_t *latency)
 {
         int ret;
         core_t *core = core_self();
@@ -236,10 +237,10 @@ err_ret:
         return ret;
 }
 
-int IO_FUNC corerpc_postwait(const char *name, const coreid_t *netctl,
-                             const coreid_t *coreid, const void *request,
-                             int reqlen, int replen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
-                             int msg_type, int msg_size, int group, int timeout)
+static int IO_FUNC __corerpc_postwait(const char *name, const coreid_t *netctl,
+                                      const coreid_t *coreid, const void *request,
+                                      int reqlen, int replen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
+                                      int msg_type, int msg_size, int group, int timeout)
 {
         int ret;
         corerpc_op_t op;
@@ -258,7 +259,7 @@ int IO_FUNC corerpc_postwait(const char *name, const coreid_t *netctl,
         op.timeout = timeout;
 
         if (likely(ltgconf_global.daemon && corerpc_inited)) {
-                ret = __corerpc_postwait(name, &op, &latency);
+                ret = __corerpc_postwait__(name, &op, &latency);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
         } else {
@@ -273,10 +274,10 @@ err_ret:
         return ret;
 }
 
-int IO_FUNC corerpc_postwait1(const char *name, const coreid_t *netctl,
-                              const coreid_t *coreid,
-                              const void *request, int reqlen, void *reply,
-                              int *_replen, int msg_type, int group, int timeout)
+static int IO_FUNC __corerpc_postwait1(const char *name, const coreid_t *netctl,
+                                const coreid_t *coreid,
+                                const void *request, int reqlen, void *reply,
+                                int *_replen, int msg_type, int group, int timeout)
 {
         int ret, replen;
         ltgbuf_t *rbuf, tmp;
@@ -292,7 +293,7 @@ int IO_FUNC corerpc_postwait1(const char *name, const coreid_t *netctl,
                 replen = 0;
         }
 
-        ret = corerpc_postwait(name, netctl, coreid, request, reqlen, replen,
+        ret = __corerpc_postwait(name, netctl, coreid, request, reqlen, replen,
                                NULL, rbuf, msg_type, replen, group, timeout);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
@@ -348,4 +349,95 @@ int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
         return 0;
 err_ret:
         return ret;
+}
+
+
+STATIC int IO_FUNC __corerpc_postwait_task(va_list ap)
+{
+        const coreid_t *netctl = va_arg(ap, const coreid_t *);
+        const char *name = va_arg(ap, const char *);
+        const coreid_t *coreid = va_arg(ap, const coreid_t *);
+        const void *request = va_arg(ap, const void *);
+        int reqlen = va_arg(ap, int);
+        int replen = va_arg(ap, int);
+        const ltgbuf_t *wbuf = va_arg(ap, const ltgbuf_t *);
+        ltgbuf_t *rbuf = va_arg(ap, ltgbuf_t *);
+        int msg_type = va_arg(ap, int);
+        int msg_size = va_arg(ap, int);
+        int group = va_arg(ap, int);
+        int timeout = va_arg(ap, int);
+
+        va_end(ap);
+
+        (void) netctl;
+
+        DBUG("%s redirect to netctl\n", name);
+        
+        return __corerpc_postwait(name, netctl, coreid, request, reqlen, replen,
+                                  wbuf, rbuf, msg_type, msg_size,
+                                  group, timeout);
+}
+
+int IO_FUNC corerpc_postwait(const char *name, const coreid_t *coreid,
+                             const void *request, int reqlen, int replen,
+                             const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
+                             int msg_type, int msg_size, int group, int timeout)
+{
+        coreid_t netctl;
+
+        if (netctl_get(coreid, &netctl)) {
+                DBUG("%s redirect to netctl\n", name);
+                return core_ring_wait(netctl.idx, -1, name, __corerpc_postwait_task,
+                                      &netctl, name, coreid, request, reqlen, replen,
+                                      wbuf, rbuf, msg_type, msg_size,
+                                      group, timeout);
+        } else {
+                return __corerpc_postwait(name, NULL, coreid, request, reqlen, replen,
+                                        wbuf, rbuf, msg_type, msg_size,
+                                        group, timeout);
+        }
+}
+
+STATIC int IO_FUNC __corerpc_postwait1_task(va_list ap)
+{
+        const coreid_t *netctl = va_arg(ap, const coreid_t *);
+        const char *name = va_arg(ap, const char *);
+        const coreid_t *coreid = va_arg(ap, const coreid_t *);
+        const void *request = va_arg(ap, const void *);
+        int reqlen = va_arg(ap, int);
+        void *reply = va_arg(ap, void *);
+        int *replen = va_arg(ap, int *);
+        int msg_type = va_arg(ap, int);
+        int group = va_arg(ap, int);
+        int timeout = va_arg(ap, int);
+
+        va_end(ap);
+
+        (void) netctl;
+
+        DBUG("%s redirect to netctl\n", name);
+        
+        return __corerpc_postwait1(name, netctl, coreid, request, reqlen,
+                                   reply, replen, msg_type,
+                                   group, timeout);
+}
+
+
+int IO_FUNC corerpc_postwait1(const char *name, const coreid_t *coreid,
+                              const void *request, int reqlen,  void *reply,
+                              int *replen, int msg_type, int group, int timeout)
+{
+        coreid_t netctl;
+
+        if (netctl_get(coreid, &netctl)) {
+                DBUG("%s redirect to netctl\n", name);
+                return core_ring_wait(netctl.idx, -1, name, __corerpc_postwait1_task,
+                                      &netctl, name, coreid, request, reqlen,
+                                      reply, replen, msg_type,
+                                      group, timeout);
+        } else {
+                return __corerpc_postwait1(name, NULL, coreid, request, reqlen,
+                                           reply, replen, msg_type,
+                                           group, timeout);
+        }
 }
