@@ -26,7 +26,7 @@ typedef enum {
         VARIABLE_ANALYSIS,
         VARIABLE_LOADBALANCE,
         VARIABLE_LATENCY,
-} variable_type_t;
+} va_type_t;
 
 typedef int (*core_exec)(void *ctx, void *buf, int *count);
 typedef int (*core_exec1)(void *ctx, void *msg_buf);

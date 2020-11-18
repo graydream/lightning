@@ -108,7 +108,7 @@ static int __ltg_init_stage1(const nid_t *nid, const char *name)
         ret = timer_init(0);
         if (ret)
                 GOTO(err_ret, ret);
-        
+
         ret = sche_init();
         if (unlikely(ret))
                 GOTO(err_ret, ret);
