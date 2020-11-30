@@ -387,7 +387,7 @@ static void __timer_expire_task(void *arg)
 }
 #endif
 
-void IO_FUNC timer_expire(void *ctx)
+void S_LTG timer_expire(void *ctx)
 {
         ltimer_t *timer;
         timer = core_tls_get(ctx, VARIABLE_TIMER);

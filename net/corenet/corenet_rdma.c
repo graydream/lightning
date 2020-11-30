@@ -351,7 +351,7 @@ static void __corenet_rdma_close(rdma_conn_t *rdma_handler)
         __corenet_rdma_free_node(__corenet_rdma__, node);
 }
 
-inline void IO_FUNC
+inline void S_LTG
 corenet_rdma_get(rdma_conn_t *rdma_handler, int n, const char *caller, int verbose)
 {
         rdma_handler->ref += n;
@@ -366,7 +366,7 @@ corenet_rdma_get(rdma_conn_t *rdma_handler, int n, const char *caller, int verbo
 #endif
 }
 
-inline void IO_FUNC
+inline void S_LTG
 corenet_rdma_put(rdma_conn_t *rdma_handler, const char *caller, int verbose)
 {
         rdma_handler->ref--;
@@ -624,7 +624,7 @@ rdma_req_t *build_rdma_write_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
  * @see corerpc_rdma_recv_msg
  * @see __corenet_rdma_add
  */
-static inline int IO_FUNC
+static inline int S_LTG
 __corenet_rdma_handle_wc(struct ibv_wc *wc, __corenet_t *corenet)
 {
         rdma_conn_t *rdma_handler;
@@ -751,7 +751,7 @@ STATIC int __corenet_rdma_handle_wc_error(struct ibv_wc *wc, __corenet_t *corene
 
 #define MAX_POLLING 32
 
-int IO_FUNC corenet_rdma_poll(__corenet_t *corenet)
+int S_LTG corenet_rdma_poll(__corenet_t *corenet)
 {
         int ret, i, polling_count = 0;
         struct ibv_wc wc[MAX_POLLING];
@@ -838,7 +838,7 @@ static void __corenet_rdma_queue(corenet_rdma_t *corenet, corenet_node_t *node)
         return ;
 }
 
-int IO_FUNC corenet_rdma_send(const sockid_t *sockid, ltgbuf_t *buf, void **addr, uint32_t rkey, uint32_t size,
+int S_LTG corenet_rdma_send(const sockid_t *sockid, ltgbuf_t *buf, void **addr, uint32_t rkey, uint32_t size,
                               rdma_req_t *(*build_req)(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
                                                        void **addr, uint32_t rkey, uint32_t size))
 {
@@ -931,7 +931,7 @@ void corenet_rdma_commit(void *rdma_net)
         }
 }
 
-int IO_FUNC corenet_rdma_connected(const sockid_t *sockid)
+int S_LTG corenet_rdma_connected(const sockid_t *sockid)
 {
         int ret;
         corenet_node_t *node;

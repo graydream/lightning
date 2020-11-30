@@ -64,7 +64,7 @@ void core_latency_update(uint64_t used)
         DBUG("latency %llu / %llu\n", (LLU)core_latency->used, (LLU)core_latency->count);
 }
 
-uint64_t IO_FUNC core_latency_get()
+uint64_t S_LTG core_latency_get()
 {
         if (likely(core_latency && core_latency->count)) {
                 DBUG("latency %llu / %llu\n", (LLU)core_latency->used, (LLU)core_latency->count);

@@ -404,7 +404,7 @@ err_ret:
         return ret;
 }
 
-int IO_FUNC rpc_table_post(rpc_table_t *rpc_table, const msgid_t *msgid, int retval,
+int S_LTG rpc_table_post(rpc_table_t *rpc_table, const msgid_t *msgid, int retval,
                    ltgbuf_t *buf, uint64_t latency)
 {
         int ret;

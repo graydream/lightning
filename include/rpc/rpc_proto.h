@@ -24,7 +24,7 @@ int rpc_pack_len(void *buf, uint32_t len, int *msg_len, int *io_len);
 
 #define __RPC_HANDLER_NAME__ 128
 
-inline static void IO_FUNC request_trans(void *arg, coreid_t *dist,
+inline static void S_LTG request_trans(void *arg, coreid_t *dist,
                                          sockid_t *sockid, msgid_t *msgid,
                                          ltgbuf_t *buf, int *replen, void **ctx)
 {

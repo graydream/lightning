@@ -27,7 +27,7 @@ typedef struct {
 extern sche_t **__sche_array__;
 
 #ifdef NEW_SCHED
-int IO_FUNC swapcontext1(struct cpu_ctx *cur_ctx, struct cpu_ctx *new_ctx);
+int S_LTG swapcontext1(struct cpu_ctx *cur_ctx, struct cpu_ctx *new_ctx);
 __asm__ (
 "       .text                                                           \n"
 "       .p2align 4,,15                                                  \n"
@@ -241,7 +241,7 @@ static void __sche_task_post_remote(sche_t *sche, const task_t *task,
         return;
 }
 
-static void IO_FUNC __sche_task_post(sche_t *sche, reply_queue_t *reply_queue,
+static void S_LTG __sche_task_post(sche_t *sche, reply_queue_t *reply_queue,
                               const task_t *task, int retval, ltgbuf_t *buf)
 {
         int ret;
@@ -289,7 +289,7 @@ err_ret:
         return;
 }
 
-void IO_FUNC sche_task_post(const task_t *task, int retval, ltgbuf_t *buf)
+void S_LTG sche_task_post(const task_t *task, int retval, ltgbuf_t *buf)
 {
         sche_t *sche = __sche_array__[task->scheid];
 
@@ -314,7 +314,7 @@ inline void sche_task_setname(const char *name)
         strcpy(taskctx->name, name);
 }
 
-static int IO_FUNC __sche_task_hasfree(sche_t *sche)
+static int S_LTG __sche_task_hasfree(sche_t *sche)
 {
         if (unlikely((TASK_MAX - sche->free_task.count) >= TASK_MAX / 2))
                 return 0;
@@ -344,7 +344,7 @@ static void __sche_wait_task_resume(sche_t *sche)
         ltg_free((void **)&wait_task);
 }
 
-static void IO_FUNC __sche_trampoline(taskctx_t *taskctx)
+static void S_LTG __sche_trampoline(taskctx_t *taskctx)
 {
         sche_t *sche = taskctx->sche;
 
@@ -398,7 +398,7 @@ static void IO_FUNC __sche_trampoline(taskctx_t *taskctx)
 }
 
 #ifdef NEW_SCHED
-static void IO_FUNC __sche_makecontext(sche_t *sche, taskctx_t *taskctx)
+static void S_LTG __sche_makecontext(sche_t *sche, taskctx_t *taskctx)
 {
         (void) sche;
         char *stack_top = (char *)taskctx->stack +  DEFAULT_STACK_SIZE;
@@ -412,7 +412,7 @@ static void IO_FUNC __sche_makecontext(sche_t *sche, taskctx_t *taskctx)
         taskctx->ctx.rip = (void *)__sche_trampoline;
 }
 #else
-static void IO_FUNC __sche_makecontext(sche_t *sche, taskctx_t *taskctx)
+static void S_LTG __sche_makecontext(sche_t *sche, taskctx_t *taskctx)
 {
         (void) sche;
         getcontext(&(taskctx->ctx));
@@ -492,7 +492,7 @@ static void *__sche_task_new(sche_t *sche)
         return stack;
 }
 
-int IO_FUNC sche_task_new(const char *name, func_t func, void *arg, int _group)
+int S_LTG sche_task_new(const char *name, func_t func, void *arg, int _group)
 {
         int ret, group;
         sche_t *sche = sche_self();
@@ -571,7 +571,7 @@ typedef struct {
         int retval;
 } arg1_t;
 
-static void IO_FUNC __sche_task_run(void *arg)
+static void S_LTG __sche_task_run(void *arg)
 {
         arg1_t *ctx = arg;
 
@@ -586,7 +586,7 @@ static void IO_FUNC __sche_task_run(void *arg)
         }
 }
 
-int IO_FUNC sche_task_run(int group, func_va_t exec, ...)
+int S_LTG sche_task_run(int group, func_va_t exec, ...)
 {
         int ret;
         arg1_t ctx;

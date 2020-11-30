@@ -8,7 +8,7 @@
 #include "ltg_rpc.h"
 #include "ltg_core.h"
 
-void IO_FUNC corerpc_reply_rdma(void *ctx, void *arg)
+void S_LTG corerpc_reply_rdma(void *ctx, void *arg)
 {
         int ret;
         ltgbuf_t reply_buf;
@@ -39,7 +39,7 @@ void IO_FUNC corerpc_reply_rdma(void *ctx, void *arg)
         }
 }
 
-void IO_FUNC corerpc_reply_tcp(void *ctx, void *arg)
+void S_LTG corerpc_reply_tcp(void *ctx, void *arg)
 {
         int ret;
         ltgbuf_t reply_buf;
@@ -64,7 +64,7 @@ void IO_FUNC corerpc_reply_tcp(void *ctx, void *arg)
         }
 }
 
-void IO_FUNC corerpc_reply_buffer(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *buf)
+void S_LTG corerpc_reply_buffer(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *buf)
 {
 
         sockop_reply_t reply;
@@ -78,7 +78,7 @@ void IO_FUNC corerpc_reply_buffer(const sockid_t *sockid, const msgid_t *msgid, 
         sockid->reply(NULL, &reply);
 }
 
-void IO_FUNC corerpc_reply(const sockid_t *sockid, const msgid_t *msgid,
+void S_LTG corerpc_reply(const sockid_t *sockid, const msgid_t *msgid,
                                     const void *_buf, int len)
 {
         ltgbuf_t buf;
@@ -90,7 +90,7 @@ void IO_FUNC corerpc_reply(const sockid_t *sockid, const msgid_t *msgid,
         corerpc_reply_buffer(sockid, msgid, &buf);
 }
 
-void IO_FUNC corerpc_reply_buffer1(const sockid_t *sockid, const msgid_t *msgid,
+void S_LTG corerpc_reply_buffer1(const sockid_t *sockid, const msgid_t *msgid,
                                    ltgbuf_t *buf, uint64_t latency)
 {
 
@@ -105,7 +105,7 @@ void IO_FUNC corerpc_reply_buffer1(const sockid_t *sockid, const msgid_t *msgid,
         sockid->reply(NULL, &reply);
 }
 
-void IO_FUNC corerpc_reply1(const sockid_t *sockid, const msgid_t *msgid,
+void S_LTG corerpc_reply1(const sockid_t *sockid, const msgid_t *msgid,
                             const void *_buf, int len, uint64_t latency)
 {
         ltgbuf_t buf;

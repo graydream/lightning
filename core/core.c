@@ -89,7 +89,7 @@ STATIC void *__core_check_health__(void *_arg)
         }
 }
 
-static void IO_FUNC core_stat(core_t *core)
+static void S_LTG core_stat(core_t *core)
 {
         int sid, taskid, task_wait, task_used, task_runable, ring_count;
         uint64_t run_time, c_runtime;
@@ -145,7 +145,7 @@ static void IO_FUNC core_stat(core_t *core)
         }
 }
 
-void IO_FUNC core_worker_run(core_t *core)
+void S_LTG core_worker_run(core_t *core)
 {
         struct list_head *pos;
         routine_t *routine;
@@ -307,7 +307,7 @@ err_ret:
         return ret;
 }
 
-static void * IO_FUNC __core_worker(void *_args)
+static void * S_LTG __core_worker(void *_args)
 {
         int ret;
         core_t *core = _args;
@@ -869,7 +869,7 @@ int core_request(int coreid, int group, const char *name, func_va_t exec, ...)
         return core_request_va1(coreid, group, name, exec, ap);
 }
 
-void * IO_FUNC core_tls_get(void *_core, int type)
+void * S_LTG core_tls_get(void *_core, int type)
 {
         core_t *core = core_self();
 

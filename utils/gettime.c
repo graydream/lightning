@@ -28,7 +28,7 @@ typedef struct {
 #define GETTIME_CYCLE 100
 #define GETTIME_CYCLE_PRINT 100000000
 
-void IO_FUNC gettime_refresh(void *ctx)
+void S_LTG gettime_refresh(void *ctx)
 {
         gettime_t *gettime = core_tls_get(ctx, VARIABLE_GETTIME);
 
@@ -43,7 +43,7 @@ void IO_FUNC gettime_refresh(void *ctx)
         }
 }
 
-time_t IO_FUNC gettime()
+time_t S_LTG gettime()
 {
         struct timeval tv;
         
@@ -52,7 +52,7 @@ time_t IO_FUNC gettime()
         return tv.tv_sec;
 }
 
-int IO_FUNC _gettimeofday(struct timeval *tv, struct timezone *tz)
+int S_LTG _gettimeofday(struct timeval *tv, struct timezone *tz)
 {
         (void) tz;
         

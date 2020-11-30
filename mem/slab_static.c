@@ -50,7 +50,7 @@ err_ret:
         return ret;
 }
 
-void IO_FUNC *slab_static_alloc(size_t size)
+void S_LTG *slab_static_alloc(size_t size)
 {
         slab_t *slab = core_tls_get(NULL, VARIABLE_SLAB_STATIC);
 
@@ -61,7 +61,7 @@ void IO_FUNC *slab_static_alloc(size_t size)
         return slab_alloc(slab, size);
 }
 
-void IO_FUNC slab_static_free(void *ptr)
+void S_LTG slab_static_free(void *ptr)
 {
         slab_t *slab = core_tls_get(NULL, VARIABLE_SLAB_STATIC);
 
@@ -72,12 +72,12 @@ void IO_FUNC slab_static_free(void *ptr)
         slab_free(slab, ptr);
 }
 
-void IO_FUNC *slab_static_alloc_glob(size_t size)
+void S_LTG *slab_static_alloc_glob(size_t size)
 {
         return slab_alloc(__slab_public__, size);
 }
 
-int IO_FUNC slab_static_alloc1(void **_ptr, size_t size)
+int S_LTG slab_static_alloc1(void **_ptr, size_t size)
 {
         void *ptr = slab_static_alloc(size);
         if (ptr == NULL) {
@@ -88,7 +88,7 @@ int IO_FUNC slab_static_alloc1(void **_ptr, size_t size)
         }
 }
 
-void IO_FUNC slab_static_free1(void **ptr)
+void S_LTG slab_static_free1(void **ptr)
 {
         if (*ptr) {
                 slab_static_free(*ptr);

@@ -412,7 +412,7 @@ int ltgbuf_trans_sge(struct ibv_sge *sge, ltgbuf_t *src_buf, ltgbuf_t *dst_buf, 
         return num;
 }
 
-inline void IO_FUNC ltgbuf_merge(ltgbuf_t *dist, ltgbuf_t *src)
+inline void S_LTG ltgbuf_merge(ltgbuf_t *dist, ltgbuf_t *src)
 {
         BUFFER_CHECK(src);
         BUFFER_CHECK(dist);
@@ -431,7 +431,7 @@ inline void IO_FUNC ltgbuf_merge(ltgbuf_t *dist, ltgbuf_t *src)
         BUFFER_CHECK(dist);
 }
 
-void IO_FUNC ltgbuf_reference(ltgbuf_t *dist, const ltgbuf_t *src)
+void S_LTG ltgbuf_reference(ltgbuf_t *dist, const ltgbuf_t *src)
 {
         seg_t *seg;
         struct list_head *pos;
@@ -448,7 +448,7 @@ void IO_FUNC ltgbuf_reference(ltgbuf_t *dist, const ltgbuf_t *src)
         BUFFER_CHECK(dist);
 }
 
-inline int IO_FUNC ltgbuf_initwith(ltgbuf_t *buf, void *data, int size,
+inline int S_LTG ltgbuf_initwith(ltgbuf_t *buf, void *data, int size,
                                     void *arg, int (*cb)(void *arg))
 {
         seg_t *seg;
@@ -529,7 +529,7 @@ inline int ltgbuf_init1(ltgbuf_t *buf, int size)
         return 0;
 }
 
-void IO_FUNC ltgbuf_free(ltgbuf_t *buf)
+void S_LTG ltgbuf_free(ltgbuf_t *buf)
 {
         BUFFER_CHECK(buf);
 
@@ -539,7 +539,7 @@ void IO_FUNC ltgbuf_free(ltgbuf_t *buf)
         __ltgbuf_free1(buf);
 }
 
-int IO_FUNC ltgbuf_pop1(ltgbuf_t *buf, ltgbuf_t *newbuf, uint32_t len, int deep)
+int S_LTG ltgbuf_pop1(ltgbuf_t *buf, ltgbuf_t *newbuf, uint32_t len, int deep)
 {
         struct list_head *pos, *n;
         seg_t *seg;
@@ -611,7 +611,7 @@ int IO_FUNC ltgbuf_pop1(ltgbuf_t *buf, ltgbuf_t *newbuf, uint32_t len, int deep)
         return 0;
 }
 
-int IO_FUNC ltgbuf_pop(ltgbuf_t *buf, ltgbuf_t *newbuf, uint32_t len)
+int S_LTG ltgbuf_pop(ltgbuf_t *buf, ltgbuf_t *newbuf, uint32_t len)
 {
         return ltgbuf_pop1(buf, newbuf, len, 0);
 }

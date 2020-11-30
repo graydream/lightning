@@ -397,7 +397,7 @@ const char *netable_rname(const nid_t *nid)
         }
 }
 
-time_t IO_FUNC netable_conn_time(const nid_t *nid)
+time_t S_LTG netable_conn_time(const nid_t *nid)
 {
         entry_t *ent;
 

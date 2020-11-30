@@ -61,7 +61,7 @@ err_ret:
 #endif
 }
 
-int IO_FUNC pspin_lock(pspin_t *pspin)
+int S_LTG pspin_lock(pspin_t *pspin)
 {
         int ret;
 
@@ -87,7 +87,7 @@ err_ret:
 #endif
 }
 
-int IO_FUNC pspin_trylock(pspin_t *pspin)
+int S_LTG pspin_trylock(pspin_t *pspin)
 {
         if (pspin->locked) {
                 return EBUSY;
@@ -96,12 +96,12 @@ int IO_FUNC pspin_trylock(pspin_t *pspin)
         }
 }
 
-int IO_FUNC pspin_locked(pspin_t *pspin)
+int S_LTG pspin_locked(pspin_t *pspin)
 {
         return pspin->locked;
 }
 
-int IO_FUNC pspin_unlock(pspin_t *pspin)
+int S_LTG pspin_unlock(pspin_t *pspin)
 {
         int ret;
 

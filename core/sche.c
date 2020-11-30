@@ -95,12 +95,12 @@ static char zerobuf[KEEP_STACK_SIZE] = {0};
 
 static __thread sche_t *__sche__;
 
-inline IO_FUNC sche_t *sche_self()
+inline S_LTG sche_t *sche_self()
 {
         return __sche__;
 }
 
-static inline IO_FUNC sche_t *__sche_self(sche_t *sche)
+static inline S_LTG sche_t *__sche_self(sche_t *sche)
 {
         if (likely(sche)) {
 #if ENABLE_SCHEDULE_SELF_DEBUG
@@ -207,7 +207,7 @@ int sche_suspend()
                 return 0;
 }
 
-static void IO_FUNC __sche_queue__(sche_t *sche, taskctx_t *taskctx, int retval, ltgbuf_t *buf)
+static void S_LTG __sche_queue__(sche_t *sche, taskctx_t *taskctx, int retval, ltgbuf_t *buf)
 {
         LTG_ASSERT(retval <= INT32_MAX);
         taskctx->retval = retval;
@@ -321,7 +321,7 @@ static void __sche_backtrace_exec(sche_t *sche, taskctx_t *taskctx,
  * @param _tmo
  * @return
  */
-int IO_FUNC sche_yield1(const char *name, ltgbuf_t *buf, void *opaque, func_t func, int _tmo)
+int S_LTG sche_yield1(const char *name, ltgbuf_t *buf, void *opaque, func_t func, int _tmo)
 {
         sche_t *sche = sche_self();
         taskctx_t *taskctx;
@@ -396,7 +396,7 @@ retry:
         return taskctx->retval;
 }
 
-int IO_FUNC sche_yield(const char *name, ltgbuf_t *buf, void *opaque)
+int S_LTG sche_yield(const char *name, ltgbuf_t *buf, void *opaque)
 {
         return sche_yield1(name, buf, opaque, NULL, -1);
 }
@@ -418,7 +418,7 @@ static void  __sche_backtrace_set(taskctx_t *taskctx)
         }
 }
 
-static int IO_FUNC __sche_queue(sche_t *sche, const task_t  *task, int retval,
+static int S_LTG __sche_queue(sche_t *sche, const task_t  *task, int retval,
                         ltgbuf_t *buf, int warn)
 {
         int ret;
@@ -534,7 +534,7 @@ inline int sche_status()
  * @param arg
  * @return
  */
-inline void IO_FUNC sche_fingerprint_new(sche_t *sche, taskctx_t *taskctx)
+inline void S_LTG sche_fingerprint_new(sche_t *sche, taskctx_t *taskctx)
 {
 	(void)sche;
 	taskctx->fingerprint++;
@@ -696,7 +696,7 @@ err_ret:
         return ret;
 }
 
-inline static taskctx_t * IO_FUNC __sche_task_pop(sche_t *sche, int group)
+inline static taskctx_t * S_LTG __sche_task_pop(sche_t *sche, int group)
 {
         count_list_t *list;
         taskctx_t *taskctx;
@@ -716,7 +716,7 @@ inline static taskctx_t * IO_FUNC __sche_task_pop(sche_t *sche, int group)
 }
 
 
-static int IO_FUNC __sche_group_run(sche_t *sche, int group)
+static int S_LTG __sche_group_run(sche_t *sche, int group)
 {
         int count = 0;
         taskctx_t *taskctx;
@@ -804,7 +804,7 @@ static void __sche_reply_remote_run(sche_t *sche)
         }
 }
 
-static void IO_FUNC __sche_reply_local_run(sche_t *sche)
+static void S_LTG __sche_reply_local_run(sche_t *sche)
 {
         int ret, count = 0, i;
         reply_queue_t *reply_local = &sche->reply_local;
@@ -827,7 +827,7 @@ static void IO_FUNC __sche_reply_local_run(sche_t *sche)
         }
 }
 
-static int IO_FUNC __sche_run(sche_t *sche)
+static int S_LTG __sche_run(sche_t *sche)
 {
         int count = 0;
 
@@ -842,7 +842,7 @@ static int IO_FUNC __sche_run(sche_t *sche)
         return count;
 }
 
-void IO_FUNC sche_run(sche_t *_sche)
+void S_LTG sche_run(sche_t *_sche)
 {
         int count;
         sche_t *sche = __sche_self(_sche);
@@ -860,7 +860,7 @@ void IO_FUNC sche_run(sche_t *_sche)
         } while (count);
 }
 
-void IO_FUNC sche_post(sche_t *sche)
+void S_LTG sche_post(sche_t *sche)
 {
         int ret;
         uint64_t e = 1;
@@ -971,7 +971,7 @@ void sche_dump(sche_t *sche, int block)
         }
 }
 
-void IO_FUNC sche_scan(sche_t *_sche)
+void S_LTG sche_scan(sche_t *_sche)
 {
         int i, time_used, used = 0;
         sche_t *sche = __sche_self(_sche);

@@ -35,12 +35,12 @@ static int __corenet_tcp_remote(int fd, ltgbuf_t *buf, int op);
 static int __corenet_add(corenet_tcp_t *corenet, const sockid_t *sockid, void *ctx,
                          core_exec exec, func_t reset, func_t check, func_t recv, const char *name);
 
-static void IO_FUNC *__corenet_get()
+static void S_LTG *__corenet_get()
 {
         return core_tls_get(NULL, VARIABLE_CORENET_TCP);
 }
 
-static void IO_FUNC *__corenet_get_byctx(void *ctx)
+static void S_LTG *__corenet_get_byctx(void *ctx)
 {
         return core_tls_get(ctx, VARIABLE_CORENET_TCP);
 }

@@ -97,7 +97,7 @@ int plock_destroy(plock_t *rwlock)
         return 0;
 }
 
-STATIC int IO_FUNC __plock_trylock(plock_t *rwlock, char type, char force, task_t *task)
+STATIC int S_LTG __plock_trylock(plock_t *rwlock, char type, char force, task_t *task)
 {
         int ret;
 
@@ -143,7 +143,7 @@ err_ret:
         return ret;
 }
 
-STATIC int IO_FUNC __plock_unlock(plock_t *rwlock)
+STATIC int S_LTG __plock_unlock(plock_t *rwlock)
 {
         if (rwlock->writer != -1) {
                 LTG_ASSERT(rwlock->readers == 0);
@@ -332,7 +332,7 @@ err_ret:
         return ret;
 }
 
-STATIC int IO_FUNC __plock_lock(plock_t *rwlock, char type, int tmo, int prio)
+STATIC int S_LTG __plock_lock(plock_t *rwlock, char type, int tmo, int prio)
 {
         int ret;
         lock_wait_t lock_wait;
@@ -384,7 +384,7 @@ err_ret:
         return ret;
 }
 
-int IO_FUNC plock_rdlock(plock_t *rwlock)
+int S_LTG plock_rdlock(plock_t *rwlock)
 {
         return __plock_lock(rwlock, 'r', -1, 0);
 }
@@ -445,7 +445,7 @@ inline int plock_trywrlock(plock_t *rwlock)
         return __plock_trylock1(rwlock, 'w');
 }
 
-void IO_FUNC plock_unlock(plock_t *rwlock)
+void S_LTG plock_unlock(plock_t *rwlock)
 {
         int ret;
         lock_wait_t *lock_wait = NULL;

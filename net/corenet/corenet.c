@@ -17,7 +17,7 @@
 
 extern int ltg_nofile_max;
 
-static void IO_FUNC  __corenet_routine(void *_core, void *var, void *_corenet)
+static void S_LTG  __corenet_routine(void *_core, void *var, void *_corenet)
 {
         (void) _core;
         (void) _corenet;
@@ -45,7 +45,7 @@ static void __corenet_scan(void *_core, void *var, void *_corenet)
 }
 
 
-static void IO_FUNC __corenet_poller(void *_core, void *var, void *_corenet)
+static void S_LTG __corenet_poller(void *_core, void *var, void *_corenet)
 {
         __corenet_t *corenet = _corenet;
 

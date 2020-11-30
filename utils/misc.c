@@ -585,7 +585,7 @@ long int _random()
         return random();
 }
 
-void IO_FUNC *_opaque_encode(void *buf, uint32_t *len, ...)
+void S_LTG *_opaque_encode(void *buf, uint32_t *len, ...)
 {
         void *pos, *value;
         va_list ap;
@@ -626,7 +626,7 @@ void IO_FUNC *_opaque_encode(void *buf, uint32_t *len, ...)
         return buf + total;
 }
 
-const void IO_FUNC *_opaque_decode(const void *buf, uint32_t len, ...)
+const void S_LTG *_opaque_decode(const void *buf, uint32_t len, ...)
 {
         const void *pos;
         const void **value;

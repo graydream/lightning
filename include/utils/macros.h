@@ -11,10 +11,9 @@
 #define IO_INFO (1000 * 500)
 
 #if 1
-#define IO_FUNC  __attribute__((section(".xiop")))
-#define TGT_FUNC  __attribute__((section(".tgtop")))
+#define S_LTG  __attribute__((section(".xltg")))
 #else
-#define IO_FUNC
+#define S_LTG
 #endif
 
 #ifndef likely

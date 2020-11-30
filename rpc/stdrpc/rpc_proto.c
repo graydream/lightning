@@ -75,7 +75,7 @@ err_ret:
 
 static rpc_prog_t  __stdrpc_prog__[LTG_MSG_MAX_KEEP];
 
-static void IO_FUNC __rpc_request_task(void *arg)
+static void S_LTG __rpc_request_task(void *arg)
 {
         int ret, replen;
         sockid_t sockid;

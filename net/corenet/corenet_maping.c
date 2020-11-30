@@ -36,7 +36,7 @@ static  corenet_maping_t *__corenet_maping_get__()
         return core_tls_get(NULL, VARIABLE_MAPING);
 }
 
-static corenet_maping_t IO_FUNC *__corenet_maping_get_byctx(void *core)
+static corenet_maping_t S_LTG *__corenet_maping_get_byctx(void *core)
 {
         return core_tls_get(core, VARIABLE_MAPING);
 }
@@ -380,7 +380,7 @@ err_ret:
         return ret;
 }
 
-static int IO_FUNC __corenet_maping_get(const coreid_t *coreid,
+static int S_LTG __corenet_maping_get(const coreid_t *coreid,
                                         corenet_maping_t *entry,
                                         sockid_t *_sockid)
 {
@@ -422,7 +422,7 @@ static void __corenet_maping_connect_task(void *arg)
         }
 }
 
-static int IO_FUNC __corenet_maping_connect_wait(corenet_maping_t *entry)
+static int S_LTG __corenet_maping_connect_wait(corenet_maping_t *entry)
 {
         int ret;
         const nid_t *nid = &entry->nid;
@@ -461,7 +461,7 @@ err_ret:
         return ret;
 }
 
-int IO_FUNC corenet_maping(void *core, const coreid_t *coreid, sockid_t *sockid)
+int S_LTG corenet_maping(void *core, const coreid_t *coreid, sockid_t *sockid)
 {
         int ret;
         corenet_maping_t *entry;

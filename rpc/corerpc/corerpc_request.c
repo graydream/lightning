@@ -205,7 +205,7 @@ err_ret:
         return ret;
 }
 
-int IO_FUNC __corerpc_postwait__(const char *name, corerpc_op_t *op,
+int S_LTG __corerpc_postwait__(const char *name, corerpc_op_t *op,
                                  uint64_t *latency)
 {
         int ret;
@@ -237,7 +237,7 @@ err_ret:
         return ret;
 }
 
-static int IO_FUNC __corerpc_postwait(const char *name, const coreid_t *netctl,
+static int S_LTG __corerpc_postwait(const char *name, const coreid_t *netctl,
                                       const coreid_t *coreid, const void *request,
                                       int reqlen, int replen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
                                       int msg_type, int msg_size, int group, int timeout)
@@ -274,7 +274,7 @@ err_ret:
         return ret;
 }
 
-static int IO_FUNC __corerpc_postwait1(const char *name, const coreid_t *netctl,
+static int S_LTG __corerpc_postwait1(const char *name, const coreid_t *netctl,
                                 const coreid_t *coreid,
                                 const void *request, int reqlen, void *reply,
                                 int *_replen, int msg_type, int group, int timeout)
@@ -352,7 +352,7 @@ err_ret:
 }
 
 
-STATIC int IO_FUNC __corerpc_postwait_task(va_list ap)
+STATIC int S_LTG __corerpc_postwait_task(va_list ap)
 {
         const coreid_t *netctl = va_arg(ap, const coreid_t *);
         const char *name = va_arg(ap, const char *);
@@ -378,7 +378,7 @@ STATIC int IO_FUNC __corerpc_postwait_task(va_list ap)
                                   group, timeout);
 }
 
-int IO_FUNC corerpc_postwait(const char *name, const coreid_t *coreid,
+int S_LTG corerpc_postwait(const char *name, const coreid_t *coreid,
                              const void *request, int reqlen, int replen,
                              const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
                              int msg_type, int msg_size, int group, int timeout)
@@ -398,7 +398,7 @@ int IO_FUNC corerpc_postwait(const char *name, const coreid_t *coreid,
         }
 }
 
-STATIC int IO_FUNC __corerpc_postwait1_task(va_list ap)
+STATIC int S_LTG __corerpc_postwait1_task(va_list ap)
 {
         const coreid_t *netctl = va_arg(ap, const coreid_t *);
         const char *name = va_arg(ap, const char *);
@@ -423,7 +423,7 @@ STATIC int IO_FUNC __corerpc_postwait1_task(va_list ap)
 }
 
 
-int IO_FUNC corerpc_postwait1(const char *name, const coreid_t *coreid,
+int S_LTG corerpc_postwait1(const char *name, const coreid_t *coreid,
                               const void *request, int reqlen,  void *reply,
                               int *replen, int msg_type, int group, int timeout)
 {

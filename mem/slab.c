@@ -226,7 +226,7 @@ err_ret:
         return ret;
 }
 
-static void IO_FUNC *__slab_alloc__(slab_bucket_t *slab, uint32_t magic, uint32_t coreid)
+static void S_LTG *__slab_alloc__(slab_bucket_t *slab, uint32_t magic, uint32_t coreid)
 {
         int ret;
         slab_md_t *md;
@@ -247,7 +247,7 @@ static void IO_FUNC *__slab_alloc__(slab_bucket_t *slab, uint32_t magic, uint32_
         return md->ptr;
 }
 
-inline static void IO_FUNC  *__slab_alloc(slab_array_t *array, size_t size)
+inline static void S_LTG  *__slab_alloc(slab_array_t *array, size_t size)
 {
         for (int i = 0; i < array->count; i++) {
                 slab_bucket_t *slab = &array->slab_bucket[i];
@@ -279,7 +279,7 @@ err_ret:
         return NULL;
 }
 
-void IO_FUNC *slab_alloc(slab_t *slab, size_t size)
+void S_LTG *slab_alloc(slab_t *slab, size_t size)
 {
         int ret;
         void *ptr;
@@ -303,7 +303,7 @@ err_ret:
         return NULL;
 }
 
-void IO_FUNC __slab_free_local(void *ptr)
+void S_LTG __slab_free_local(void *ptr)
 {
         slab_md_t *md = ptr - SLAB_MD;
         slab_bucket_t *slab_bucket = md->slab_bucket;
@@ -314,7 +314,7 @@ void IO_FUNC __slab_free_local(void *ptr)
         list_add_tail(&md->hook, &slab_bucket->list);
 }
 
-void IO_FUNC __slab_free_public(slab_t *slab, void *ptr)
+void S_LTG __slab_free_public(slab_t *slab, void *ptr)
 {
         int ret;
         slab_md_t *md = ptr - SLAB_MD;
@@ -346,7 +346,7 @@ static int __slab_cross_free_va(va_list ap)
         return 0;
 }
 
-void IO_FUNC slab_free(slab_t *slab, void *ptr)
+void S_LTG slab_free(slab_t *slab, void *ptr)
 {
         slab_md_t *md = ptr - SLAB_MD;
 

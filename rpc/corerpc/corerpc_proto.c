@@ -49,7 +49,7 @@ static void __request_stale(void *arg)
 
 static rpc_prog_t __corerpc_prog__[LTG_MSG_MAX_KEEP];
 
-static int IO_FUNC __request_handler_redirect(va_list ap)
+static int S_LTG __request_handler_redirect(va_list ap)
 {
         request_handler_func handler = va_arg(ap, request_handler_func);
         ltgbuf_t *in = va_arg(ap, ltgbuf_t *);
@@ -61,7 +61,7 @@ static int IO_FUNC __request_handler_redirect(va_list ap)
         return handler(in, out, outlen);
 }
 
-static void IO_FUNC __corerpc_request_task(void *arg)
+static void S_LTG __corerpc_request_task(void *arg)
 {
         int ret, replen;
         sockid_t sockid;
@@ -137,7 +137,7 @@ err_ret:
         return;
 }
 
-static int IO_FUNC __corerpc_request_handler(corerpc_ctx_t *ctx,
+static int S_LTG __corerpc_request_handler(corerpc_ctx_t *ctx,
                                              const ltg_net_head_t *head,
                                              ltgbuf_t *buf)
 {
@@ -196,7 +196,7 @@ err_ret:
 
 extern rpc_table_t *corerpc_self();
 
-static void IO_FUNC __corerpc_reply_handler(const ltg_net_head_t *head, ltgbuf_t *buf)
+static void S_LTG __corerpc_reply_handler(const ltg_net_head_t *head, ltgbuf_t *buf)
 {
         int ret, retval;
         rpc_table_t *__rpc_table_private__ = corerpc_self();
@@ -274,7 +274,7 @@ static int __corerpc_len(void *buf, uint32_t len)
 
 #if ENABLE_RDMA
 
-static int IO_FUNC __corerpc_rdma_handler(corerpc_ctx_t *ctx, ltgbuf_t *msg_buf)
+static int S_LTG __corerpc_rdma_handler(corerpc_ctx_t *ctx, ltgbuf_t *msg_buf)
 {
         ltg_net_head_t head;
         ANALYSIS_BEGIN(0);
@@ -299,7 +299,7 @@ static int IO_FUNC __corerpc_rdma_handler(corerpc_ctx_t *ctx, ltgbuf_t *msg_buf)
         return 0;
 }
 
-int IO_FUNC corerpc_rdma_recv_data(void *_ctx, void *_msg_buf)
+int S_LTG corerpc_rdma_recv_data(void *_ctx, void *_msg_buf)
 {
         corerpc_ctx_t *ctx = _ctx;
         ltgbuf_t *msg_buf  = _msg_buf;
@@ -314,7 +314,7 @@ err_ret:
         return ret;
 }
 
-int IO_FUNC corerpc_rdma_recv_msg(void *_ctx, void *iov, int *_count)
+int S_LTG corerpc_rdma_recv_msg(void *_ctx, void *iov, int *_count)
 {
         int len = 0, left = 0;
         ltgbuf_t _buf;

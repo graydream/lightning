@@ -17,7 +17,7 @@
 
 extern int ltg_nofile_max;
 
-static void IO_FUNC __core_event_poller(void *_core, void *var, void *_corenet)
+static void S_LTG __core_event_poller(void *_core, void *var, void *_corenet)
 {
         int ret, count;
         struct pollfd pfd[1];

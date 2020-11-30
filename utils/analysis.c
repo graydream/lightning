@@ -517,7 +517,7 @@ err_ret:
 
 #endif
 
-void IO_FUNC analysis_merge(void *ctx)
+void S_LTG analysis_merge(void *ctx)
 {
         analysis_t *ana = core_tls_get(ctx, VARIABLE_ANALYSIS);
 
