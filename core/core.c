@@ -130,7 +130,7 @@ static void S_LTG core_stat(core_t *core)
                 DINFO("%s[%d] "
                       "pps:%jd "
                       "task:%lu/%lu/%lu "
-                      "task count %lu used %lu c_run_time %lu "
+                      "task count %ju used %lu c_run_time %lu "
                       "cpu %ju\n",
                       core->name, core->hash,
                       (core->stat_nr2 - core->stat_nr1) * 1000000 / used,
