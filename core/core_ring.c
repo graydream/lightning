@@ -22,6 +22,103 @@
 #define RING_SIZE (1<<12)
 #define RING_ARRAY_SIZE 128
 
+#define QUEUE_BULK 1
+
+#if QUEUE_BULK
+static __thread struct list_head __queue__;
+
+typedef struct {
+        struct list_head hook;
+        int coreid;
+	struct ringbuf *request;
+        struct list_head list;
+} ring_fwd_t;
+
+static void __core_ring_queue__(int coreid, ring_ctx_t *ctx)
+{
+        int found = 0;
+        ring_fwd_t *ring_fwd;
+        struct list_head *pos, *queue = &__queue__;
+
+        DBUG("corenet_fwd\n");
+
+        
+        list_for_each(pos, queue) {
+                ring_fwd = (void *)pos;
+
+                if (coreid == ring_fwd->coreid) {
+                        LTG_ASSERT(ring_fwd->request == ctx->request);
+                        list_add_tail(&ctx->hook, &ring_fwd->list);
+                        found = 1;
+                        break;
+                }
+        }
+
+        if (found == 0) {
+                ring_fwd = slab_stream_alloc(sizeof(*ring_fwd));
+                LTG_ASSERT(ring_fwd);
+                INIT_LIST_HEAD(&ring_fwd->list);
+                ring_fwd->request = ctx->request;
+                ring_fwd->coreid = coreid;
+                list_add_tail(&ctx->hook, &ring_fwd->list);
+                list_add_tail(&ring_fwd->hook, queue);
+        }
+}
+
+static void __core_ring_commit__(struct ringbuf *request, struct list_head *list)
+{
+        int count;
+        void *array[128];
+        ring_ctx_t *ctx;
+        struct list_head *pos, *n;
+
+        count = 0;
+        list_for_each_safe(pos, n, list) {
+                ctx = (void *)pos;
+                list_del(pos);
+
+                array[count] = ctx;
+                count++;
+
+                if (count == 128) {
+                        libringbuf_sp_enqueue_bulk(request, array, count);
+                        count = 0;
+                }
+        }
+        
+        if (count) {
+                libringbuf_sp_enqueue_bulk(request, array, count);
+        }
+}
+
+static void __core_ring_commit(void *_core, void *var, void *arg)
+{
+        struct list_head *pos, *n;
+        struct list_head list;
+        ring_fwd_t *ring_fwd;
+
+        (void)var;
+        (void)arg;
+        (void) _core;
+
+        INIT_LIST_HEAD(&list);
+        list_splice_init(&__queue__, &list);
+
+        list_for_each_safe(pos, n, &list) {
+                ring_fwd = (void *)pos;
+                list_del(pos);
+
+                __core_ring_commit__(ring_fwd->request,
+                                     &ring_fwd->list);
+
+                slab_stream_free(ring_fwd);
+        }
+        
+}
+
+
+#endif
+
 int core_ring_init(core_t *core)
 {
         int ret;
@@ -43,6 +140,16 @@ int core_ring_init(core_t *core)
         }
 
         core->ring = ring;
+        
+#if QUEUE_BULK
+        DINFO("core ring bulk\n");
+        
+        INIT_LIST_HEAD(&__queue__);
+        
+        ret = core_register_poller("__core_ring_commit", __core_ring_commit, NULL);
+        if (ret)
+                GOTO(err_ret, ret);
+#endif
         
         return 0;
 err_ret:
@@ -212,6 +319,10 @@ inline static void __core_ring_queue(int coreid, ring_ctx_t *ctx,
         ctx->request_ctx = requestctx;
         ctx->reply_ctx = replyctx;
 
+#if QUEUE_BULK
+        __core_ring_queue__(coreid, ctx);
+#endif
+
         return ;
 }
 
@@ -224,7 +335,9 @@ inline void core_ring_queue(int coreid, ring_ctx_t *ctx,
 
         ctx->group = -1;
         
+#if !QUEUE_BULK
         libringbuf_sp_enqueue(ctx->request, (void *)ctx);
+#endif
 
         if (unlikely(ltgconf_global.polling_timeout)) {
                 core_t *rcore = core_get(coreid);
@@ -276,8 +389,10 @@ inline int core_ring_wait(int coreid, int group, const char *name,
 
         ctx->reply_ctx = (void *)&task;
         ctx->group = group;
-        
+
+#if !QUEUE_BULK
         libringbuf_sp_enqueue(ctx->request, (void *)ctx);
+#endif
 
         if (unlikely(ltgconf_global.polling_timeout)) {
                 core_t *rcore = core_get(coreid);
