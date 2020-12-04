@@ -42,6 +42,8 @@ int netctl_init(uint64_t mask)
         if (ret)
                 GOTO(err_ret, ret);
 
+        core_occupy("netctl", mask);
+        
         coremask_trans(&__netctl_coremask__, mask);
         __mask__ = mask;
         
