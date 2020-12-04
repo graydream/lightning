@@ -97,8 +97,7 @@ static void S_LTG __corerpc_request_task(void *arg)
         ltgbuf_init(&out, replen);
 
         if (likely(netctl())) {
-                DBUG("%s netctl to bactl\n", name);
-                ret = core_ring_wait(coreid.idx, -1, "cds_rpc",
+                ret = core_ring_wait(coreid.idx, -1, "netctl",
                                      __request_handler_redirect,
                                      handler, &buf, &out, &outlen);
                 if (unlikely(ret))
