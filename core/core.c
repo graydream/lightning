@@ -100,8 +100,8 @@ static void S_LTG core_stat(core_t *core)
 
         _microsec_update_now(&core->stat_t2);
         uint64_t used = _microsec_time_used(&core->stat_t1, &core->stat_t2);
-        if (used > 0) {
-
+        uint64_t second =  used / (1000 * 1000);
+        if (second) {
 #if !SCHEDULE_TASKCTX_RUNTIME
                 DINFO("%s[%d] "
                       "pps:%jd "
@@ -130,13 +130,16 @@ static void S_LTG core_stat(core_t *core)
                 DINFO("%s[%d] "
                       "pps:%jd "
                       "task:%lu/%lu/%lu "
-                      "task count %ju used %lu c_run_time %lu "
+                      "ring:%u "
+                      "tps %ju "
                       "cpu %ju\n",
                       core->name, core->hash,
                       (core->stat_nr2 - core->stat_nr1) * 1000000 / used,
                       avg_task_count, avg_task_runtime, avg_lat,
-                      task_used, used,c_runtime, 
-                      (run_time * 100) / used 
+                      //avg task queue len, avg task cpu time, avg task latency
+                      ring_count, //ringbuffer len
+                      task_used / second, //task per second,
+                      (run_time * 100) / used
                 );
 #endif
                 core->stat_t1 = core->stat_t2;
@@ -716,6 +719,8 @@ void core_occupy(const char *name, uint64_t coremask)
                 LTG_ASSERT(core_used(i));
 
                 core = core_get(i);
+
+                DINFO("core[%d] %s set %s\n", i, core->name, name);
 
                 if (strcmp(core->name, "core")) {
                         snprintf(tmp, MAX_NAME_LEN, "%s|%s", core->name, name);
