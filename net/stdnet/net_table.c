@@ -120,7 +120,7 @@ err_ret:
         return ret;
 }
 
-inline static ltg_net_conn_t *__netable_nidfind(const nid_t *nid)
+inline static ltg_net_conn_t S_LTG *__netable_nidfind(const nid_t *nid)
 {
         LTG_ASSERT(nid->id < NODEID_MAX);
         return __net_table__[nid->id]->ent;
@@ -410,7 +410,7 @@ time_t S_LTG netable_conn_time(const nid_t *nid)
 
 
 
-int netable_connected(const nid_t *nid)
+int S_LTG netable_connected(const nid_t *nid)
 {
         entry_t *ent;
 

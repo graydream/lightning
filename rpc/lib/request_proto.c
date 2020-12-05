@@ -8,7 +8,7 @@
 #include "ltg_rpc.h"
 #include "ltg_core.h"
 
-int rpc_request_prep(ltgbuf_t *buf, const msgid_t *msgid, const void *request,
+int S_LTG rpc_request_prep(ltgbuf_t *buf, const msgid_t *msgid, const void *request,
                      int reqlen, int replen, const ltgbuf_t *data, int prog,
                      int merge, int priority, int coreid)
 {

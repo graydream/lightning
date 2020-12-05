@@ -351,8 +351,8 @@ static void __corenet_rdma_close(rdma_conn_t *rdma_handler)
         __corenet_rdma_free_node(__corenet_rdma__, node);
 }
 
-inline void S_LTG
-corenet_rdma_get(rdma_conn_t *rdma_handler, int n, const char *caller, int verbose)
+inline void S_LTG corenet_rdma_get(rdma_conn_t *rdma_handler, int n,
+                                   const char *caller, int verbose)
 {
         rdma_handler->ref += n;
 
@@ -815,7 +815,7 @@ int S_LTG corenet_rdma_poll(__corenet_t *corenet)
         return 0;
 }
 
-static void __corenet_rdma_queue(corenet_rdma_t *corenet, corenet_node_t *node)
+static void S_LTG __corenet_rdma_queue(corenet_rdma_t *corenet, corenet_node_t *node)
 {
 	/*struct list_head *pos;
 	corenet_node_t *_node;
@@ -881,7 +881,7 @@ err_lock:
         return ret;
 }
 
-static inline int __corenet_rdma_commit(corenet_node_t *node)
+static inline int S_LTG __corenet_rdma_commit(corenet_node_t *node)
 {
         int ret;
         rdma_conn_t *handler;
@@ -909,7 +909,7 @@ static inline int __corenet_rdma_commit(corenet_node_t *node)
         return 0;
 }
 
-void corenet_rdma_commit(void *rdma_net)
+void S_LTG corenet_rdma_commit(void *rdma_net)
 {
         struct list_head *pos, *n;
         corenet_rdma_t *__corenet_rdma__ = rdma_net;

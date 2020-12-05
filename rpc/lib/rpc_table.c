@@ -15,7 +15,7 @@
 
 rpc_table_t *__rpc_table__;
 
-static int __rpc_table_used(rpc_table_t *rpc_table, slot_t *slot)
+static int S_LTG __rpc_table_used(rpc_table_t *rpc_table, slot_t *slot)
 {
         int ret;
 
@@ -34,7 +34,7 @@ static int __rpc_table_used(rpc_table_t *rpc_table, slot_t *slot)
         }
 }
 
-static int __rpc_table_use(rpc_table_t *rpc_table, slot_t *slot)
+static int S_LTG __rpc_table_use(rpc_table_t *rpc_table, slot_t *slot)
 {
         if (likely(rpc_table->private)) {
                 return pspin_trylock(&slot->used_pspin);
@@ -60,7 +60,7 @@ static void __rpc_table_free(rpc_table_t *rpc_table, slot_t *slot)
         //__rpc_table()->cur = slot->msgid.idx;
 }
 
-static int __rpc_table_lock(rpc_table_t *rpc_table, slot_t *slot)
+static int S_LTG __rpc_table_lock(rpc_table_t *rpc_table, slot_t *slot)
 {
         if (likely(rpc_table->private))
                 return 0;
@@ -270,7 +270,7 @@ static void  *__rpc_table_scan_worker(void *arg)
 }
 
 
-static slot_t *__rpc_table_getslot_sequence(rpc_table_t *rpc_table)
+static slot_t S_LTG *__rpc_table_getslot_sequence(rpc_table_t *rpc_table)
 {
         int ret, retry = 0;
         slot_t *slot;
@@ -299,7 +299,7 @@ static slot_t *__rpc_table_getslot_sequence(rpc_table_t *rpc_table)
         return NULL;
 }
 
-static void __rpc_table_new(rpc_table_t *rpc_table, slot_t *slot)
+static void S_LTG __rpc_table_new(rpc_table_t *rpc_table, slot_t *slot)
 {
         int rand, retry = 0;
 
@@ -315,7 +315,7 @@ static void __rpc_table_new(rpc_table_t *rpc_table, slot_t *slot)
         }
 }
 
-int rpc_table_getslot(rpc_table_t *rpc_table, msgid_t *msgid, const char *name)
+int S_LTG rpc_table_getslot(rpc_table_t *rpc_table, msgid_t *msgid, const char *name)
 {
         int ret;
         slot_t *slot;
@@ -340,7 +340,7 @@ err_ret:
         return ret;
 }
 
-static slot_t *__rpc_table_lock_slot(rpc_table_t *rpc_table, const msgid_t *msgid)
+static slot_t S_LTG *__rpc_table_lock_slot(rpc_table_t *rpc_table, const msgid_t *msgid)
 {
         int ret;
         slot_t *slot;
@@ -366,7 +366,7 @@ static slot_t *__rpc_table_lock_slot(rpc_table_t *rpc_table, const msgid_t *msgi
         return slot;
 }
 
-int rpc_table_setslot(rpc_table_t *rpc_table, const msgid_t *msgid, func3_t func,
+int S_LTG rpc_table_setslot(rpc_table_t *rpc_table, const msgid_t *msgid, func3_t func,
                       void *arg, const sockid_t *sockid, const nid_t *nid, int timeout)
 {
         int ret;

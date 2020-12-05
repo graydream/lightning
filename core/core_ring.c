@@ -115,7 +115,6 @@ static void __core_ring_commit(void *_core, void *var, void *arg)
 
                 slab_stream_free(ring_bulk);
         }
-        
 }
 
 
@@ -273,7 +272,7 @@ void __core_ring_connect(core_t *rcore, core_t *lcore,
 {
         if (unlikely(rcore->ring->ringbuf[lcore->hash] == NULL)) {
                 int ret = core_request(rcore->hash, -1, "ring_connect",
-                                    __core_ring_connect__, lcore->hash);
+                                       __core_ring_connect__, lcore->hash);
                 LTG_ASSERT(ret == 0);
         }
 
