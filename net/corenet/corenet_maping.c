@@ -422,7 +422,7 @@ static void __corenet_maping_connect_task(void *arg)
         }
 }
 
-static int S_LTG __corenet_maping_connect_wait(corenet_maping_t *entry)
+static int __corenet_maping_connect_wait_task(corenet_maping_t *entry)
 {
         int ret;
         const nid_t *nid = &entry->nid;
@@ -459,6 +459,36 @@ err_lock:
         ltg_spin_unlock(&entry->lock);
 err_ret:
         return ret;
+}
+
+static int __corenet_maping_connect_wait_retry(corenet_maping_t *entry)
+{
+        int ret;
+        const nid_t *nid = &entry->nid;
+
+        DWARN("connect sync\n");
+        
+        __corenet_maping_close_entry(entry, NULL);
+        
+        DINFO("connect to %s\n", netable_rname(nid));
+        ret = __corenet_maping_connect(nid);
+        if (ret) {
+                DWARN("connect to %s fail\n", netable_rname(nid));
+                GOTO(err_ret, ret);
+        }
+
+        return 0;
+err_ret:
+        return ret;
+}
+
+static int __corenet_maping_connect_wait(corenet_maping_t *entry)
+{
+        if (sche_status() == SCHEDULE_STATUS_RUNNING) {
+                return __corenet_maping_connect_wait_task(entry);
+        } else {
+                return __corenet_maping_connect_wait_retry(entry);
+        }
 }
 
 int S_LTG corenet_maping(void *core, const coreid_t *coreid, sockid_t *sockid)

@@ -287,12 +287,8 @@ void __core_ring_connect(core_t *rcore, core_t *lcore,
         *reply = lcore->ring->ringbuf[rcore->hash];
 }
 
-inline static void __core_request_run__(void *_ctx)
+void S_LTG core_ring_reply(ring_ctx_t *ring_ctx)
 {
-        ring_ctx_t *ring_ctx = _ctx;
-        int reply_coreid = ring_ctx->reply_coreid;
-
-        ring_ctx->request_func(ring_ctx->request_ctx);
         ring_ctx->type = OP_REPLY;
 
 #if QUEUE_BULK
@@ -304,12 +300,30 @@ inline static void __core_request_run__(void *_ctx)
 #endif
 
         if (unlikely(ltgconf_global.polling_timeout)) {
+                int reply_coreid = ring_ctx->reply_coreid;
                 core_t *rcore = core_get(reply_coreid);
                 sche_post(rcore->sche);
         }
 }
 
-inline static void __core_ring_queue(int coreid, ring_ctx_t *ctx,
+inline static void __core_ring_run_task(void *_ctx)
+{
+        ring_ctx_t *ring_ctx = _ctx;
+
+        ring_ctx->request_func(ring_ctx->request_ctx);
+
+        core_ring_reply(ring_ctx);
+}
+
+inline static void __core_ring_run_queue(void *_ctx)
+{
+        ring_ctx_t *ring_ctx = _ctx;
+
+        ring_ctx->request_func(ring_ctx->request_ctx);
+}
+
+
+inline static void __core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
                                      func_t request, void *requestctx,
                                      func_t reply, void *replyctx)
 {
@@ -322,7 +336,12 @@ inline static void __core_ring_queue(int coreid, ring_ctx_t *ctx,
         __core_ring_connect(rcore, core, &ctx->request, &ctx->reply);
         LTG_ASSERT(ctx->request && ctx->reply);
 
-        ctx->task_run = __core_request_run__;
+        if (type == RING_TASK) {
+                ctx->task_run = __core_ring_run_task;
+        } else {
+                ctx->task_run = __core_ring_run_queue;
+        }
+
         ctx->type = OP_REQUEST;
         ctx->reply_coreid = core->hash;
         ctx->request_func = request;
@@ -343,7 +362,9 @@ inline void core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
 {
         LTG_ASSERT(type == RING_TASK || type == RING_QUEUE);
         
-        __core_ring_queue(coreid, ctx, request, requestctx, reply, replyctx);
+        __core_ring_queue(coreid, type, ctx,
+                          request, requestctx,
+                          reply, replyctx);
         LTG_ASSERT(ctx->request && ctx->reply);
 
         ctx->group = -1;
@@ -396,7 +417,7 @@ inline int core_ring_wait(int coreid, int type, const char *name,
         ctx = &ring_ctx;
         ctx->run_type = type;
         ctx->group = -1;
-        __core_ring_queue(coreid, ctx,
+        __core_ring_queue(coreid, type, ctx,
                           __core_ring_request, &request_ctx,
                           __core_ring_reply, NULL);
 

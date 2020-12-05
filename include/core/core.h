@@ -151,7 +151,6 @@ core_t *core_get(int hash);
 core_t *core_self();
 
 int core_request(int coreid, int group, const char *name, func_va_t exec, ...);
-int core_ring_wait(int hash, int priority, const char *name, func_va_t exec, ...);
 void core_tls_set(int type, void *ptr);
 void *core_tls_get(void *core, int type);
 
@@ -173,13 +172,12 @@ uint32_t get_io();
 
 int core_event_init();
 
-#if 1
+int core_ring_wait(int hash, int type, const char *name, func_va_t exec, ...);
+void core_ring_reply(ring_ctx_t *ring_ctx);
 void core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
                      func_t request, void *requestctx,
                      func_t reply, void *replyctx);
-#endif
 void  core_ring_poller(void *_core, void *var, void *arg);
-void  tgt_core_ring_poller(void *_core, void *var, void *arg);
 void core_worker_run(core_t *core);
 
 #define CORE_ANALYSIS_BEGIN(mark)               \

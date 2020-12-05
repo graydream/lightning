@@ -9,15 +9,30 @@
 #include "ltg_core.h"
 
 typedef struct {
+        corerpc_op_t *op;
+        const char *name;
+        task_t task;
+        ring_ctx_t ring_ctx;
+        int retval;
+        int coreid;
+        ltgbuf_t buf;
+} corerpc_ring_ctx_t;
+
+typedef struct {
         sem_t sem;
         task_t task;
         uint64_t latency;
         corerpc_op_t op;
+        int coreid;
+        corerpc_ring_ctx_t *ctx;
 } rpc_ctx_t;
 
 extern rpc_table_t *corerpc_self_byctx(void *);
 extern rpc_table_t *corerpc_self();
 extern int corerpc_inited;
+
+#define SEND_TASK 2
+#define SEND_QUEUE 3
 
 #define SEND_ASYNC 0
 
@@ -41,7 +56,7 @@ static void __corerpc_request_reset(const msgid_t *msgid)
 }
 
 STATIC int S_LTG __corerpc_getslot(void *_ctx, const char *name,
-                                   rpc_ctx_t *ctx, func3_t func3)
+                                   rpc_ctx_t *ctx, func3_t func3, int type)
 {
         int ret;
         rpc_table_t *__rpc_table_private__ = corerpc_self_byctx(_ctx);
@@ -53,7 +68,9 @@ STATIC int S_LTG __corerpc_getslot(void *_ctx, const char *name,
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        ctx->task = sche_task_get();
+        if (type == SEND_TASK) {
+                ctx->task = sche_task_get();
+        }
 
         ret = rpc_table_setslot(__rpc_table_private__, &op->msgid,
                                 func3, ctx, &op->sockid,
@@ -166,7 +183,7 @@ err_ret:
 }
 
 static int S_LTG __corerpc_send_sock(void *core, const char *name,
-                                     rpc_ctx_t *ctx, func3_t func3)
+                                     rpc_ctx_t *ctx, func3_t func3, int type)
 {
         int ret;
         corerpc_op_t *op = &ctx->op;
@@ -175,7 +192,7 @@ static int S_LTG __corerpc_send_sock(void *core, const char *name,
 
         DBUG("%s\n", name);
 
-        ret = __corerpc_getslot(core, name, ctx, func3);
+        ret = __corerpc_getslot(core, name, ctx, func3, type);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -204,7 +221,7 @@ err_ret:
         return ret;
 }
 
-static int S_LTG __corerpc_send(const char *name, rpc_ctx_t *ctx, func3_t func)
+static int S_LTG __corerpc_send(const char *name, rpc_ctx_t *ctx, func3_t func, int type)
 {
         int ret;
         core_t *core = core_self();
@@ -224,7 +241,7 @@ static int S_LTG __corerpc_send(const char *name, rpc_ctx_t *ctx, func3_t func)
         DBUG("send to %s/%d, sd %u\n", netable_rname(&op->netctl.nid),
              op->netctl.idx, op->sockid.sd);
 
-        ret = __corerpc_send_sock(core, name, ctx, func);
+        ret = __corerpc_send_sock(core, name, ctx, func, type);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
         }
@@ -243,7 +260,7 @@ static int S_LTG __corerpc_postwait(const char *name, const corerpc_op_t *op)
 
         ctx.op = *op;
 
-        ret = __corerpc_send(name, &ctx, __corerpc_post_task);
+        ret = __corerpc_send(name, &ctx, __corerpc_post_task, SEND_TASK);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -280,7 +297,7 @@ int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
 
         LTG_ASSERT(ltgconf_global.daemon);
         core_t *core = core_self();
-        ret = __corerpc_send_sock(core, name, &ctx, __corerpc_post_task);
+        ret = __corerpc_send_sock(core, name, &ctx, __corerpc_post_task, SEND_TASK);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
         }
@@ -297,57 +314,93 @@ err_ret:
 
 #if SEND_ASYNC
 
-typedef struct {
-        corerpc_op_t *op;
-        const char *name;
-        task_t task;
-} corerpc_ring_t;
-
 static void S_LTG __corerpc_post_queue(void *arg1, void *arg2, void *arg3, void *arg4)
 {
         rpc_ctx_t *ctx = arg1;
         int retval = *(int *)arg2;
         ltgbuf_t *buf = arg3;
-        uint64_t latency = *(uint64_t *)arg4;
+        corerpc_ring_ctx_t *ring = ctx->ctx;
 
-        ctx->latency = latency;
+        (void) arg4;
 
-        sche_task_post(&ctx->task, retval, buf);
+        coreid_t coreid;
+        int ret = core_getid(&coreid);
+        if (unlikely(ret))
+                UNIMPLEMENTED(__DUMP__);
+
+        LTG_ASSERT(ctx->coreid == coreid.idx);
+        
+        ring->retval = retval;
+        ltgbuf_init(&ring->buf, 0);
+        ltgbuf_merge(&ring->buf, buf);
+
+        DBUG("buflen %d\n", buf->len);
+
+        core_ring_reply(&ring->ring_ctx);
+        slab_stream_free(ctx);
 }
 
-STATIC void S_LTG __corerpc_queue_exec(void *_ring)
+static void S_LTG __corerpc_queue_exec(void *_ring)
 {
         int ret;
-        corerpc_ring_t *ring = _ring;
+        corerpc_ring_ctx_t *ring = _ring;
         rpc_ctx_t *ctx = slab_stream_alloc(sizeof(*ctx));
 
         ctx->op = *ring->op;
+        ctx->ctx = ring;
+
+        coreid_t coreid;
+        ret = core_getid(&coreid);
+        if (unlikely(ret))
+                UNIMPLEMENTED(__DUMP__);
+
+        ctx->coreid = coreid.idx;
         
-        ret = __corerpc_send(ring->name, ctx, __corerpc_post_queue);
+        ret = __corerpc_send(ring->name, ctx, __corerpc_post_queue, SEND_QUEUE);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
         return;
 err_ret:
+        ring->retval = ret;
+        ltgbuf_init(&ring->buf, 0);
+        core_ring_reply(&ring->ring_ctx);
+        slab_stream_free(ctx);
         return;
 }
 
-inline static void S_LTG __corerpc_queue_reply(void *_ctx)
+inline static void S_LTG __corerpc_queue_reply(void *_ring)
 {
-        
+        corerpc_ring_ctx_t *ring = _ring;
+
+        int ret;
+        coreid_t coreid;
+        ret = core_getid(&coreid);
+        if (unlikely(ret))
+                UNIMPLEMENTED(__DUMP__);
+
+        LTG_ASSERT(ring->coreid == coreid.idx);
+
+        sche_task_post(&ring->task, ring->retval, &ring->buf);
 }
 
 static int S_LTG __corerpc_ring_wait(int netctl, const char *name,
-                                     const corerpc_op_t *op)
+                                     corerpc_op_t *op)
 {
         int ret;
-        ring_ctx_t ring_ctx;
-        corerpc_ring_t ring;
+        corerpc_ring_ctx_t ring;
 
         ring.op = op;
         ring.name = name;
+        
+        coreid_t coreid;
+        ret = core_getid(&coreid);
+        if (unlikely(ret))
+                UNIMPLEMENTED(__DUMP__);
 
-        core_ring_queue(netctl, RING_QUEUE, &ring_ctx,
+        ring.coreid = coreid.idx;
+        
+        core_ring_queue(netctl, RING_QUEUE, &ring.ring_ctx,
                         __corerpc_queue_exec, &ring,
                         __corerpc_queue_reply, &ring);
 

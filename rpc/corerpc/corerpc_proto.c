@@ -217,8 +217,6 @@ static void S_LTG __corerpc_request_queue(rpc_request_t *rpc_request)
                 GOTO(err_ret, ret);
         }
 
-        sche_task_setname(name);
-
         DBUG("name %s\n", name);
         SOCKID_DUMP(&ctx->sockid);
         MSGID_DUMP(&ctx->msgid);
