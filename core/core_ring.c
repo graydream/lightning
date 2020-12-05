@@ -29,45 +29,41 @@ static __thread struct list_head __queue__;
 
 typedef struct {
         struct list_head hook;
-        int coreid;
-	struct ringbuf *request;
+	struct ringbuf *ring;
         struct list_head list;
-} ring_fwd_t;
+} ring_bulk_t;
 
-static void __core_ring_queue__(int coreid, ring_ctx_t *ctx)
+static void __core_ring_queue__(struct ringbuf *ring, ring_ctx_t *ctx)
 {
         int found = 0;
-        ring_fwd_t *ring_fwd;
+        ring_bulk_t *ring_bulk;
         struct list_head *pos, *queue = &__queue__;
 
-        DBUG("corenet_fwd\n");
-
+        DBUG("corenet_fwd %p %p\n", ring, ctx);
         
         list_for_each(pos, queue) {
-                ring_fwd = (void *)pos;
+                ring_bulk = (void *)pos;
 
-                if (coreid == ring_fwd->coreid) {
-                        LTG_ASSERT(ring_fwd->request == ctx->request);
-                        list_add_tail(&ctx->hook, &ring_fwd->list);
+                if (ring == ring_bulk->ring) {
+                        list_add_tail(&ctx->hook, &ring_bulk->list);
                         found = 1;
                         break;
                 }
         }
 
         if (found == 0) {
-                ring_fwd = slab_stream_alloc(sizeof(*ring_fwd));
-                LTG_ASSERT(ring_fwd);
-                INIT_LIST_HEAD(&ring_fwd->list);
-                ring_fwd->request = ctx->request;
-                ring_fwd->coreid = coreid;
-                list_add_tail(&ctx->hook, &ring_fwd->list);
-                list_add_tail(&ring_fwd->hook, queue);
+                ring_bulk = slab_stream_alloc(sizeof(*ring_bulk));
+                LTG_ASSERT(ring_bulk);
+                INIT_LIST_HEAD(&ring_bulk->list);
+                ring_bulk->ring = ring;
+                list_add_tail(&ctx->hook, &ring_bulk->list);
+                list_add_tail(&ring_bulk->hook, queue);
         }
 }
 
-static void __core_ring_commit__(struct ringbuf *request, struct list_head *list)
+static void __core_ring_commit__(struct ringbuf *ring, struct list_head *list)
 {
-        int count;
+        int ret, count;
         void *array[128];
         ring_ctx_t *ctx;
         struct list_head *pos, *n;
@@ -81,13 +77,19 @@ static void __core_ring_commit__(struct ringbuf *request, struct list_head *list
                 count++;
 
                 if (count == 128) {
-                        libringbuf_sp_enqueue_bulk(request, array, count);
+                        DBUG("bulk %d\n", count);
+                        
+                        ret = libringbuf_sp_enqueue_bulk(ring, array, count);
+                        LTG_ASSERT(ret == 0);
                         count = 0;
                 }
         }
         
         if (count) {
-                libringbuf_sp_enqueue_bulk(request, array, count);
+                DBUG("bulk %d\n", count);
+                        
+                ret = libringbuf_sp_enqueue_bulk(ring, array, count);
+                LTG_ASSERT(ret == 0);
         }
 }
 
@@ -95,7 +97,7 @@ static void __core_ring_commit(void *_core, void *var, void *arg)
 {
         struct list_head *pos, *n;
         struct list_head list;
-        ring_fwd_t *ring_fwd;
+        ring_bulk_t *ring_bulk;
 
         (void)var;
         (void)arg;
@@ -105,13 +107,13 @@ static void __core_ring_commit(void *_core, void *var, void *arg)
         list_splice_init(&__queue__, &list);
 
         list_for_each_safe(pos, n, &list) {
-                ring_fwd = (void *)pos;
+                ring_bulk = (void *)pos;
                 list_del(pos);
 
-                __core_ring_commit__(ring_fwd->request,
-                                     &ring_fwd->list);
+                __core_ring_commit__(ring_bulk->ring,
+                                     &ring_bulk->list);
 
-                slab_stream_free(ring_fwd);
+                slab_stream_free(ring_bulk);
         }
         
 }
@@ -142,7 +144,7 @@ int core_ring_init(core_t *core)
         core->ring = ring;
         
 #if QUEUE_BULK
-        DINFO("core ring bulk\n");
+        DBUG("core ring bulk\n");
         
         INIT_LIST_HEAD(&__queue__);
         
@@ -182,8 +184,8 @@ static inline void __core_ring_poller__(struct ringbuf *ringbuf)
         int count;
         
         while (1) {
-                count = libringbuf_dequeue_burst(ringbuf, array,
-                                                 RING_ARRAY_SIZE);
+                count = libringbuf_sc_dequeue_burst(ringbuf, array,
+                                                    RING_ARRAY_SIZE);
                 if (count == 0)
                         break;
 
@@ -290,7 +292,13 @@ inline static void __core_request_run__(void *_ctx)
         ring_ctx->request_func(ring_ctx->request_ctx);
         ring_ctx->type = OP_REPLY;
 
+#if QUEUE_BULK
+        DBUG("reply bulk\n");
+        
+        __core_ring_queue__(ring_ctx->reply, ring_ctx);
+#else
         libringbuf_sp_enqueue(ring_ctx->reply, (void *)ring_ctx);
+#endif
 
         if (unlikely(ltgconf_global.polling_timeout)) {
                 core_t *rcore = core_get(reply_coreid);
@@ -320,7 +328,7 @@ inline static void __core_ring_queue(int coreid, ring_ctx_t *ctx,
         ctx->reply_ctx = replyctx;
 
 #if QUEUE_BULK
-        __core_ring_queue__(coreid, ctx);
+        __core_ring_queue__(ctx->request, ctx);
 #endif
 
         return ;
