@@ -49,6 +49,7 @@ static void __request_stale(void *arg)
 
 static rpc_prog_t __corerpc_prog__[LTG_MSG_MAX_KEEP];
 
+#if !ENABLE_NETCTL_QUEUE
 static int S_LTG __request_handler_redirect(va_list ap)
 {
         request_handler_func handler = va_arg(ap, request_handler_func);
@@ -60,6 +61,7 @@ static int S_LTG __request_handler_redirect(va_list ap)
 
         return handler(in, out, outlen);
 }
+#endif
 
 static void S_LTG __corerpc_request_task(void *arg)
 {
@@ -96,6 +98,11 @@ static void S_LTG __corerpc_request_task(void *arg)
 
         ltgbuf_init(&out, replen);
 
+#if ENABLE_NETCTL_QUEUE
+        ret = handler(&buf, &out, &outlen);
+        if (unlikely(ret))
+                GOTO(err_free, ret);
+#else
         if (likely(netctl())) {
                 ret = core_ring_wait(coreid.idx, -1, "netctl",
                                      __request_handler_redirect,
@@ -107,6 +114,7 @@ static void S_LTG __corerpc_request_task(void *arg)
                 if (unlikely(ret))
                         GOTO(err_free, ret);
         }
+#endif
 
         LTG_ASSERT(outlen <= replen);
         if (unlikely(outlen < (int)out.len)) {
@@ -135,6 +143,100 @@ err_ret:
 #endif
         return;
 }
+
+#if ENABLE_NETCTL_QUEUE
+
+typedef struct {
+        ring_ctx_t ctx;
+        ltgbuf_t out;
+        ltgbuf_t in;
+        int replen;
+        int outlen;
+        int retval;
+        msgid_t msgid;
+        sockid_t sockid;
+        request_handler_func handler;
+} corerpc_ring_t;
+
+inline static void S_LTG __corerpc_request_queue_task(void *_ctx)
+{
+        corerpc_ring_t *ctx = _ctx;
+
+
+        DBUG("corerpc request queue task\n");
+        
+        ctx->retval = ctx->handler(&ctx->in, &ctx->out, &ctx->outlen);
+}
+
+static void S_LTG __corerpc_request_queue_reply(void *_ctx)
+{
+        int ret;
+        corerpc_ring_t *ctx = _ctx;
+
+        DBUG("corerpc request queue task, retval %d\n", ctx->retval);
+
+        ret = ctx->retval;
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+        
+        LTG_ASSERT(ctx->outlen <= ctx->replen);
+        if (unlikely(ctx->outlen < (int)ctx->out.len)) {
+                ltgbuf_droptail(&ctx->out, ctx->replen - ctx->outlen);
+        }
+        
+        corerpc_reply_buffer(&ctx->sockid, &ctx->msgid, &ctx->out);
+
+        ltgbuf_free(&ctx->in);
+        ltgbuf_free(&ctx->out);
+
+        slab_stream_free(ctx);
+        
+        return ;
+err_ret:
+        ltgbuf_free(&ctx->out);
+        ltgbuf_free(&ctx->in);
+        corerpc_reply_error(&ctx->sockid, &ctx->msgid, ret);
+        slab_stream_free(ctx);
+        return;
+}
+
+static void S_LTG __corerpc_request_queue(rpc_request_t *rpc_request)
+{
+        int ret;
+        const char *name;
+        coreid_t coreid;
+        corerpc_ring_t *ctx = slab_stream_alloc(sizeof(*ctx));
+
+        request_trans(rpc_request, &coreid, &ctx->sockid, &ctx->msgid, &ctx->in,
+                      &ctx->replen, NULL);
+
+        ctx->handler = NULL;
+        rpc_request->handler(&ctx->in, &ctx->handler, &name);
+        if (unlikely(ctx->handler == NULL)) {
+                ret = ENOSYS;
+                GOTO(err_ret, ret);
+        }
+
+        sche_task_setname(name);
+
+        DBUG("name %s\n", name);
+        SOCKID_DUMP(&ctx->sockid);
+        MSGID_DUMP(&ctx->msgid);
+
+        ltgbuf_init(&ctx->out, ctx->replen);
+
+        core_ring_queue(coreid.idx, &ctx->ctx,
+                        __corerpc_request_queue_task, ctx,
+                        __corerpc_request_queue_reply, ctx);
+
+        return;
+err_ret:
+        ltgbuf_free(&ctx->in);
+        corerpc_reply_error(&ctx->sockid, &ctx->msgid, ret);
+        slab_stream_free(ctx);
+        return;
+}
+#endif
 
 static int S_LTG __corerpc_request_handler(corerpc_ctx_t *ctx,
                                              const ltg_net_head_t *head,
@@ -185,7 +287,15 @@ static int S_LTG __corerpc_request_handler(corerpc_ctx_t *ctx,
 
                 sche_task_new("corenet", __request_nosys, rpc_request, 0);
         } else {
+#if ENABLE_NETCTL_QUEUE
+                if (likely(netctl())) {
+                        __corerpc_request_queue(rpc_request);
+                } else {
+                        sche_task_new("corenet", __corerpc_request_task, rpc_request, 0);
+                }
+#else
                 sche_task_new("corenet", __corerpc_request_task, rpc_request, 0);
+#endif
         }
 
         return 0;

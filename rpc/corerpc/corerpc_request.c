@@ -416,7 +416,7 @@ STATIC int S_LTG __corerpc_postwait1_task(va_list ap)
         (void) netctl;
 
         DBUG("%s redirect to netctl\n", name);
-        
+
         return __corerpc_postwait1(name, netctl, coreid, request, reqlen,
                                    reply, replen, msg_type,
                                    group, timeout);

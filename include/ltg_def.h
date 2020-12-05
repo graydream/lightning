@@ -71,4 +71,6 @@ typedef long long LLD;
 
 #define SCHEDULE_TASKCTX_RUNTIME 1
 
+#define ENABLE_NETCTL_QUEUE 1
+
 #endif
