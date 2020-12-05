@@ -104,7 +104,7 @@ static void S_LTG __corerpc_request_task(void *arg)
                 GOTO(err_free, ret);
 #else
         if (likely(netctl())) {
-                ret = core_ring_wait(coreid.idx, -1, "netctl",
+                ret = core_ring_wait(coreid.idx, RING_TASK, "netctl",
                                      __request_handler_redirect,
                                      handler, &buf, &out, &outlen);
                 if (unlikely(ret))
@@ -225,7 +225,7 @@ static void S_LTG __corerpc_request_queue(rpc_request_t *rpc_request)
 
         ltgbuf_init(&ctx->out, ctx->replen);
 
-        core_ring_queue(coreid.idx, &ctx->ctx,
+        core_ring_queue(coreid.idx, RING_TASK, &ctx->ctx,
                         __corerpc_request_queue_task, ctx,
                         __corerpc_request_queue_reply, ctx);
 

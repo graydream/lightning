@@ -168,8 +168,12 @@ static inline void __core_ring_poller_run(void **array, int count)
                 if (ring_ctx->type == OP_REPLY) {
                         ring_ctx->reply_func(ring_ctx->reply_ctx);
                 } else if (ring_ctx->type == OP_REQUEST) {
-                        sche_task_new("ring", ring_ctx->task_run,
-                                      (void *)ring_ctx, ring_ctx->group);
+                        if (ring_ctx->run_type == RING_TASK) {
+                                sche_task_new("ring", ring_ctx->task_run,
+                                              (void *)ring_ctx, ring_ctx->group);
+                        } else {
+                                ring_ctx->task_run(ring_ctx);
+                        }
 
                 } else {
                         DWARN("%p\n", ring_ctx);
@@ -307,8 +311,8 @@ inline static void __core_request_run__(void *_ctx)
 }
 
 inline static void __core_ring_queue(int coreid, ring_ctx_t *ctx,
-                              func_t request, void *requestctx,
-                              func_t reply, void *replyctx)
+                                     func_t request, void *requestctx,
+                                     func_t reply, void *replyctx)
 {
         core_t *rcore;
         core_t *core = core_self();
@@ -334,14 +338,17 @@ inline static void __core_ring_queue(int coreid, ring_ctx_t *ctx,
         return ;
 }
 
-inline void core_ring_queue(int coreid, ring_ctx_t *ctx,
-                              func_t request, void *requestctx,
-                              func_t reply, void *replyctx)
+inline void core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
+                            func_t request, void *requestctx,
+                            func_t reply, void *replyctx)
 {
+        LTG_ASSERT(type == RING_TASK || type == RING_QUEUE);
+        
         __core_ring_queue(coreid, ctx, request, requestctx, reply, replyctx);
         LTG_ASSERT(ctx->request && ctx->reply);
 
         ctx->group = -1;
+        ctx->run_type = type;
         
 #if !QUEUE_BULK
         libringbuf_sp_enqueue(ctx->request, (void *)ctx);
@@ -372,7 +379,7 @@ inline static void __core_ring_request(void *arg)
         request_ctx->retval = request_ctx->exec(request_ctx->ap);
 }
 
-inline int core_ring_wait(int coreid, int group, const char *name,
+inline int core_ring_wait(int coreid, int type, const char *name,
                           func_va_t exec, ...)
 {
         int ret;
@@ -380,14 +387,16 @@ inline int core_ring_wait(int coreid, int group, const char *name,
         ring_ctx_t ring_ctx, *ctx;
         task_t task;
 
-        DBUG("core ring request\n");
+        LTG_ASSERT(type == RING_TASK || type == RING_QUEUE);
         
-        (void) group;
+        DBUG("core ring request\n");
         
         va_start(request_ctx.ap, exec);
         request_ctx.exec = exec;
 
         ctx = &ring_ctx;
+        ctx->run_type = type;
+        ctx->group = -1;
         __core_ring_queue(coreid, ctx,
                           __core_ring_request, &request_ctx,
                           __core_ring_reply, NULL);
@@ -396,7 +405,6 @@ inline int core_ring_wait(int coreid, int group, const char *name,
         LTG_ASSERT(ret == 0);
 
         ctx->reply_ctx = (void *)&task;
-        ctx->group = group;
 
 #if !QUEUE_BULK
         libringbuf_sp_enqueue(ctx->request, (void *)ctx);

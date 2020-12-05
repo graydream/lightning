@@ -274,47 +274,6 @@ err_ret:
         return ret;
 }
 
-static int S_LTG __corerpc_postwait1(const char *name, const coreid_t *netctl,
-                                const coreid_t *coreid,
-                                const void *request, int reqlen, void *reply,
-                                int *_replen, int msg_type, int group, int timeout)
-{
-        int ret, replen;
-        ltgbuf_t *rbuf, tmp;
-
-        ANALYSIS_BEGIN(0);
-        
-        if (reply) {
-                replen = *_replen;
-                ltgbuf_init(&tmp, replen);
-                rbuf = &tmp;
-        } else {
-                rbuf = NULL;
-                replen = 0;
-        }
-
-        ret = __corerpc_postwait(name, netctl, coreid, request, reqlen, replen,
-                               NULL, rbuf, msg_type, replen, group, timeout);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        if (rbuf) {
-                LTG_ASSERT(*_replen >= (int)rbuf->len);
-                ltgbuf_popmsg(rbuf, reply, rbuf->len);
-                ltgbuf_free(rbuf);
-        }
-
-        ANALYSIS_END(0, IO_INFO, name);
-        
-        return 0;
-err_ret:
-        if (rbuf) {
-                ltgbuf_free(rbuf);
-        }
-        ANALYSIS_END(0, IO_INFO, name);
-        return ret;
-}
-
 int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
                           const sockid_t *sockid, const void *request,
                           int reqlen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
@@ -379,15 +338,15 @@ STATIC int S_LTG __corerpc_postwait_task(va_list ap)
 }
 
 int S_LTG corerpc_postwait(const char *name, const coreid_t *coreid,
-                             const void *request, int reqlen, int replen,
-                             const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
-                             int msg_type, int msg_size, int group, int timeout)
+                           const void *request, int reqlen, int replen,
+                           const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
+                           int msg_type, int msg_size, int group, int timeout)
 {
         coreid_t netctl;
 
         if (netctl_get(coreid, &netctl)) {
                 DBUG("%s redirect to netctl\n", name);
-                return core_ring_wait(netctl.idx, -1, name, __corerpc_postwait_task,
+                return core_ring_wait(netctl.idx, RING_TASK, name, __corerpc_postwait_task,
                                       &netctl, name, coreid, request, reqlen, replen,
                                       wbuf, rbuf, msg_type, msg_size,
                                       group, timeout);
@@ -398,46 +357,42 @@ int S_LTG corerpc_postwait(const char *name, const coreid_t *coreid,
         }
 }
 
-STATIC int S_LTG __corerpc_postwait1_task(va_list ap)
-{
-        const coreid_t *netctl = va_arg(ap, const coreid_t *);
-        const char *name = va_arg(ap, const char *);
-        const coreid_t *coreid = va_arg(ap, const coreid_t *);
-        const void *request = va_arg(ap, const void *);
-        int reqlen = va_arg(ap, int);
-        void *reply = va_arg(ap, void *);
-        int *replen = va_arg(ap, int *);
-        int msg_type = va_arg(ap, int);
-        int group = va_arg(ap, int);
-        int timeout = va_arg(ap, int);
-
-        va_end(ap);
-
-        (void) netctl;
-
-        DBUG("%s redirect to netctl\n", name);
-
-        return __corerpc_postwait1(name, netctl, coreid, request, reqlen,
-                                   reply, replen, msg_type,
-                                   group, timeout);
-}
-
-
 int S_LTG corerpc_postwait1(const char *name, const coreid_t *coreid,
-                              const void *request, int reqlen,  void *reply,
-                              int *replen, int msg_type, int group, int timeout)
+                            const void *request, int reqlen, void *reply,
+                            int *_replen, int msg_type, int group, int timeout)
 {
-        coreid_t netctl;
+        int ret, replen;
+        ltgbuf_t *rbuf, tmp;
 
-        if (netctl_get(coreid, &netctl)) {
-                DBUG("%s redirect to netctl\n", name);
-                return core_ring_wait(netctl.idx, -1, name, __corerpc_postwait1_task,
-                                      &netctl, name, coreid, request, reqlen,
-                                      reply, replen, msg_type,
-                                      group, timeout);
+        ANALYSIS_BEGIN(0);
+        
+        if (reply) {
+                replen = *_replen;
+                ltgbuf_init(&tmp, replen);
+                rbuf = &tmp;
         } else {
-                return __corerpc_postwait1(name, NULL, coreid, request, reqlen,
-                                           reply, replen, msg_type,
-                                           group, timeout);
+                rbuf = NULL;
+                replen = 0;
         }
+
+        ret = corerpc_postwait(name, coreid, request, reqlen, replen, NULL,
+                               rbuf, msg_type, replen, group, timeout);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+        
+        if (rbuf) {
+                LTG_ASSERT(*_replen >= (int)rbuf->len);
+                ltgbuf_popmsg(rbuf, reply, rbuf->len);
+                ltgbuf_free(rbuf);
+        }
+
+        ANALYSIS_END(0, IO_INFO, name);
+        
+        return 0;
+err_ret:
+        if (rbuf) {
+                ltgbuf_free(rbuf);
+        }
+        ANALYSIS_END(0, IO_INFO, name);
+        return ret;
 }

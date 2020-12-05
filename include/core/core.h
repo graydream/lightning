@@ -28,6 +28,11 @@ typedef enum {
         VARIABLE_LATENCY,
 } va_type_t;
 
+typedef enum {
+        RING_QUEUE,
+        RING_TASK,
+} core_ring_type_t;
+
 typedef int (*core_exec)(void *ctx, void *buf, int *count);
 typedef int (*core_exec1)(void *ctx, void *msg_buf);
 typedef int (*core_reconnect)(int *fd, void *ctx);
@@ -37,6 +42,8 @@ typedef void (*core_exit)();
 #define CORE_MAX 64
 #define LTG_TLS_MAX_KEEP (LTG_TLS_MAX * 2)
 
+
+
 typedef struct {
         struct list_head hook;
 	func_va_t func_va;
@@ -44,6 +51,7 @@ typedef struct {
 	int type;
 	int reply_coreid;
 	int group;
+        int run_type;
 	//int retval;
 	//task_t task;
 
@@ -166,9 +174,9 @@ uint32_t get_io();
 int core_event_init();
 
 #if 1
-void core_ring_queue(int coreid, ring_ctx_t *ctx,
-                      func_t request, void *requestctx,
-                      func_t reply, void *replyctx);
+void core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
+                     func_t request, void *requestctx,
+                     func_t reply, void *replyctx);
 #endif
 void  core_ring_poller(void *_core, void *var, void *arg);
 void  tgt_core_ring_poller(void *_core, void *var, void *arg);
