@@ -332,7 +332,9 @@ static void S_LTG __corerpc_post_queue(void *arg1, void *arg2, void *arg3, void 
         
         ring->retval = retval;
         ltgbuf_init(&ring->buf, 0);
-        ltgbuf_merge(&ring->buf, buf);
+        if (buf) {
+                ltgbuf_merge(&ring->buf, buf);
+        }
 
         DBUG("buflen %d\n", buf->len);
 

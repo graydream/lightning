@@ -308,6 +308,12 @@ inline void sche_task_setname(const char *name)
         sche_t *sche = sche_self();
         taskctx_t *taskctx;
 
+#if 0
+        if (netctl()) {
+                DINFO("%s\n", name);
+        }
+#endif
+        
         LTG_ASSERT(sche->running_task != -1);
         taskctx = &sche->tasks[sche->running_task];
         LTG_ASSERT(taskctx->state == TASK_STAT_RUNNING);
@@ -539,6 +545,12 @@ int S_LTG sche_task_new(const char *name, func_t func, void *arg, int _group)
         taskctx->group = group;
         sche->task_count++;
 
+#if 0
+        if (netctl()) {
+                DINFO("%s\n", name);
+        }
+#endif
+        
         list_add_tail(&taskctx->running_hook, &sche->running_task_list);
 
 #if ENABLE_SCHEDULE_LOCK_CHECK
