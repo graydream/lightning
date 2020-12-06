@@ -25,7 +25,7 @@
          (ceil - v) > (v - floor) ? floor : ceil;        \
          })
 
-inline uint64_t get_rdtsc(void)
+inline uint64_t INLINE get_rdtsc(void)
 {
         uint32_t lo, hi;
         __asm__ __volatile__ (

@@ -134,7 +134,7 @@ void S_LTG *htab_find(htab_t t, void *comparator)
         htab_entry_t *entry;
 
         entry = htab_lookup(t, comparator, (*t->key_func)(comparator),
-                                 t->compare_func, &success);
+                            t->compare_func, &success);
 
         if (success)
                 return (*entry)->value;
