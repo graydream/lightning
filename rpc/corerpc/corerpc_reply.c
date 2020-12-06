@@ -39,7 +39,7 @@ void S_LTG corerpc_reply_rdma(void *ctx, void *arg)
         }
 }
 
-void S_LTG corerpc_reply_tcp(void *ctx, void *arg)
+void corerpc_reply_tcp(void *ctx, void *arg)
 {
         int ret;
         ltgbuf_t reply_buf;
@@ -78,7 +78,8 @@ void S_LTG corerpc_reply_buffer(const sockid_t *sockid, const msgid_t *msgid, lt
         sockid->reply(NULL, &reply);
 }
 
-void S_LTG corerpc_reply(const sockid_t *sockid, const msgid_t *msgid,
+#if 0
+void corerpc_reply(const sockid_t *sockid, const msgid_t *msgid,
                                     const void *_buf, int len)
 {
         ltgbuf_t buf;
@@ -90,8 +91,8 @@ void S_LTG corerpc_reply(const sockid_t *sockid, const msgid_t *msgid,
         corerpc_reply_buffer(sockid, msgid, &buf);
 }
 
-void S_LTG corerpc_reply_buffer1(const sockid_t *sockid, const msgid_t *msgid,
-                                   ltgbuf_t *buf, uint64_t latency)
+void corerpc_reply_buffer1(const sockid_t *sockid, const msgid_t *msgid,
+                                 ltgbuf_t *buf, uint64_t latency)
 {
 
         sockop_reply_t reply;
@@ -105,8 +106,8 @@ void S_LTG corerpc_reply_buffer1(const sockid_t *sockid, const msgid_t *msgid,
         sockid->reply(NULL, &reply);
 }
 
-void S_LTG corerpc_reply1(const sockid_t *sockid, const msgid_t *msgid,
-                            const void *_buf, int len, uint64_t latency)
+void corerpc_reply1(const sockid_t *sockid, const msgid_t *msgid,
+                          const void *_buf, int len, uint64_t latency)
 {
         ltgbuf_t buf;
 
@@ -116,6 +117,7 @@ void S_LTG corerpc_reply1(const sockid_t *sockid, const msgid_t *msgid,
 
         corerpc_reply_buffer1(sockid, msgid, &buf, latency);
 }
+#endif
 
 
 void corerpc_reply_error(const sockid_t *sockid, const msgid_t *msgid, int _error)
