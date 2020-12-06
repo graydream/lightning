@@ -141,14 +141,14 @@ err_free:
 
 /*seg ext object*/
 
-static void __seg_ext_free(seg_t *seg)
+static void S_LTG __seg_ext_free(seg_t *seg)
 {
         seg->ext.cb(seg->ext.arg);
 
         __seg_free_head(seg, 0);
 }
 
-static seg_t *__seg_ext_share(ltgbuf_t *buf, seg_t *src)
+static seg_t S_LTG *__seg_ext_share(ltgbuf_t *buf, seg_t *src)
 {
         seg_t *seg;
 
@@ -160,7 +160,7 @@ static seg_t *__seg_ext_share(ltgbuf_t *buf, seg_t *src)
         return seg;
 }
 
-static seg_t *__seg_ext_trans(ltgbuf_t *buf, seg_t *seg)
+static seg_t S_LTG *__seg_ext_trans(ltgbuf_t *buf, seg_t *seg)
 {
         seg_t *newseg = __seg_alloc_head(buf, seg->len, 0);
 
@@ -173,7 +173,7 @@ static seg_t *__seg_ext_trans(ltgbuf_t *buf, seg_t *seg)
         return newseg;
 }
 
-inline seg_t *seg_ext_create(ltgbuf_t *buf, void *data, uint32_t size,
+seg_t S_LTG *seg_ext_create(ltgbuf_t *buf, void *data, uint32_t size,
                              void *arg, int (*cb)(void *arg))
 {
         seg_t *seg;

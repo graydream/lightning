@@ -157,7 +157,7 @@ err_ret:
         return ret;
 }
 
-static inline void __core_ring_poller_run(void **array, int count)
+static void S_LTG __core_ring_poller_run(void **array, int count)
 {
         ring_ctx_t *ring_ctx = NULL;
         
@@ -173,7 +173,6 @@ static inline void __core_ring_poller_run(void **array, int count)
                         } else {
                                 ring_ctx->task_run(ring_ctx);
                         }
-
                 } else {
                         DWARN("%p\n", ring_ctx);
                         UNIMPLEMENTED(__DUMP__);
@@ -181,7 +180,7 @@ static inline void __core_ring_poller_run(void **array, int count)
         }
 }
 
-static inline void __core_ring_poller__(struct ringbuf *ringbuf)
+static void S_LTG __core_ring_poller__(struct ringbuf *ringbuf)
 {
         void *array[128];
         int count;
@@ -203,7 +202,7 @@ typedef struct {
         struct ringbuf *ringbuf;
 } ringlist_t;
 
-inline void core_ring_poller(void *_core, void *var, void *arg)
+void S_LTG core_ring_poller(void *_core, void *var, void *arg)
 {
         core_t *core = _core;
         core_ring_t *ring = core->ring;
@@ -306,7 +305,7 @@ void S_LTG core_ring_reply(ring_ctx_t *ring_ctx)
         }
 }
 
-inline static void __core_ring_run_task(void *_ctx)
+static void S_LTG __core_ring_run_task(void *_ctx)
 {
         ring_ctx_t *ring_ctx = _ctx;
 
@@ -315,7 +314,7 @@ inline static void __core_ring_run_task(void *_ctx)
         core_ring_reply(ring_ctx);
 }
 
-inline static void __core_ring_run_queue(void *_ctx)
+static void S_LTG __core_ring_run_queue(void *_ctx)
 {
         ring_ctx_t *ring_ctx = _ctx;
 
@@ -356,9 +355,9 @@ static void S_LTG __core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
         return ;
 }
 
-inline void S_LTG core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
-                            func_t request, void *requestctx,
-                            func_t reply, void *replyctx)
+void S_LTG core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
+                           func_t request, void *requestctx,
+                           func_t reply, void *replyctx)
 {
         LTG_ASSERT(type == RING_TASK || type == RING_QUEUE);
         

@@ -86,7 +86,6 @@ sche_t **__sche_array__ = NULL;
 static ltg_spinlock_t __sche_array_lock__;
 
 extern int swapcontext1(struct cpu_ctx *cur_ctx, struct cpu_ctx *new_ctx);
-static int __sche_isfree(taskctx_t *taskctx);
 static void __sche_backtrace__(const char *name, int id, int idx, uint32_t seq);
 static void __sche_backtrace_set(taskctx_t *taskctx);
 
@@ -95,12 +94,12 @@ static char zerobuf[KEEP_STACK_SIZE] = {0};
 
 static __thread sche_t *__sche__;
 
-inline S_LTG sche_t *sche_self()
+inline sche_t INLINE *sche_self()
 {
         return __sche__;
 }
 
-static inline S_LTG sche_t *__sche_self(sche_t *sche)
+static S_LTG sche_t *__sche_self(sche_t *sche)
 {
         if (likely(sche)) {
 #if ENABLE_SCHEDULE_SELF_DEBUG
@@ -141,7 +140,7 @@ static inline void __sche_check_running_used(sche_t *sche, taskctx_t *taskctx, u
 #endif
 */
 
-static inline void INLINE __sche_check_yield_used(sche_t *sche, taskctx_t *taskctx, uint64_t used)
+static void S_LTG __sche_check_yield_used(sche_t *sche, taskctx_t *taskctx, uint64_t used)
 {
         /* notice: time_used is seconds */
         if (unlikely(taskctx->sleeping || taskctx->sleep)) {
@@ -172,7 +171,7 @@ static inline void INLINE __sche_check_yield_used(sche_t *sche, taskctx_t *taskc
         }
 }
 
-static inline void __sche_check_scan_used(sche_t *sche, taskctx_t *taskctx, uint64_t time_used)
+static void __sche_check_scan_used(sche_t *sche, taskctx_t *taskctx, uint64_t time_used)
 {
         /* notice: time_used is seconds */
         if (unlikely(taskctx->sleeping)) {
@@ -221,7 +220,7 @@ static void S_LTG __sche_queue__(sche_t *sche, taskctx_t *taskctx, int retval, l
         count_list_add_tail(&taskctx->hook, &sche->runable[taskctx->group]);
 }
 
-static void __sche_exec__(sche_t *sche, taskctx_t *taskctx)
+static void S_LTG __sche_exec__(sche_t *sche, taskctx_t *taskctx)
 {
 
         LTG_ASSERT(taskctx->state != TASK_STAT_FREE && taskctx->state != TASK_STAT_RUNNING);
@@ -243,7 +242,7 @@ static void __sche_exec__(sche_t *sche, taskctx_t *taskctx)
         sche->counter++;
 }
 
-void sche_stack_assert(sche_t *_sche)
+void S_LTG sche_stack_assert(sche_t *_sche)
 {
         sche_t *sche = __sche_self(_sche);
         taskctx_t *taskctx;
@@ -501,7 +500,7 @@ inline int sche_stat(int *sid, int *taskid, int *runable, int *wait, int *count,
 }
 
 
-inline int sche_running()
+int S_LTG sche_running()
 {
         sche_t *sche = sche_self();
 
@@ -514,7 +513,7 @@ inline int sche_running()
         return 1;
 }
 
-inline int sche_status()
+int S_LTG sche_status()
 {
         sche_t *sche = sche_self();
 
@@ -538,14 +537,6 @@ inline void INLINE sche_fingerprint_new(sche_t *sche, taskctx_t *taskctx)
 {
 	(void)sche;
 	taskctx->fingerprint++;
-}
-
-static inline int __sche_isfree(taskctx_t *taskctx)
-{
-        if (taskctx->state == TASK_STAT_FREE) {
-                return 1;
-        } else
-                return 0;
 }
 
 static int __sche_create__(sche_t **_sche, const char *name, int idx,
@@ -696,7 +687,7 @@ err_ret:
         return ret;
 }
 
-inline static taskctx_t * S_LTG __sche_task_pop(sche_t *sche, int group)
+static taskctx_t * S_LTG __sche_task_pop(sche_t *sche, int group)
 {
         count_list_t *list;
         taskctx_t *taskctx;
@@ -860,7 +851,7 @@ void S_LTG sche_run(sche_t *_sche)
         } while (count);
 }
 
-void S_LTG sche_post(sche_t *sche)
+void sche_post(sche_t *sche)
 {
         int ret;
         uint64_t e = 1;
@@ -971,7 +962,7 @@ void sche_dump(sche_t *sche, int block)
         }
 }
 
-void S_LTG sche_scan(sche_t *_sche)
+void sche_scan(sche_t *_sche)
 {
         int i, time_used, used = 0;
         sche_t *sche = __sche_self(_sche);
@@ -1121,7 +1112,7 @@ void sche_value_get(int key, uint32_t *value)
         }
 }
 
-int sche_getid()
+int S_LTG sche_getid()
 {
         sche_t *sche = sche_self();
 

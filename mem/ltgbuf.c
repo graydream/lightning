@@ -49,7 +49,7 @@ inline static int __coreid()
                 return core->hash;
 }
 
-int ltgbuf_rdma_popmsg(ltgbuf_t *buf, void *dist, uint32_t len)
+int S_LTG ltgbuf_rdma_popmsg(ltgbuf_t *buf, void *dist, uint32_t len)
 {
         struct list_head *pos;
         seg_t *seg;
@@ -391,7 +391,8 @@ void ltgbuf_clone_glob(ltgbuf_t *newbuf, const ltgbuf_t *buf)
         BUFFER_CHECK(buf);
 }
 
-int ltgbuf_trans_sge(struct ibv_sge *sge, ltgbuf_t *src_buf, ltgbuf_t *dst_buf, uint32_t lkey)
+int S_LTG ltgbuf_trans_sge(struct ibv_sge *sge, ltgbuf_t *src_buf,
+                           ltgbuf_t *dst_buf, uint32_t lkey)
 {
         struct list_head *pos;
         int num = 0;

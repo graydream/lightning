@@ -48,7 +48,7 @@ static void __corenet_scan(void *_core, void *var, void *_corenet)
 static void S_LTG __corenet_poller(void *_core, void *var, void *_corenet)
 {
         __corenet_t *corenet = _corenet;
-
+        
         if (likely(ltgconf_global.rdma && ltgconf_global.daemon)) {
                 corenet_rdma_poll(corenet);
         } else {

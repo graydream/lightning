@@ -164,8 +164,6 @@ void S_LTG core_worker_run(core_t *core)
         list_for_each(pos, &core->poller_list) {
                 routine = (void *)pos;
                 routine->func(core, core, routine->ctx);
-
-                //sche_run(core->sche);
         }
 
         sche_run(core->sche);
@@ -504,7 +502,7 @@ err_ret:
         return ret;
 }
 
-core_t *core_get(int hash)
+core_t S_LTG *core_get(int hash)
 {
         LTG_ASSERT(core_used(hash));
         return __core_array__[hash];
@@ -928,7 +926,7 @@ void coremask_trans(coremask_t *_coremask, uint64_t mask)
         DBUG("mask 0x%x %s\n", mask, tmp);
 }
 
-int coremask_hash(const coremask_t *coremask, uint64_t id)
+int S_LTG coremask_hash(const coremask_t *coremask, uint64_t id)
 {
         LTG_ASSERT(coremask->count);
 

@@ -158,7 +158,7 @@ typedef struct {
         request_handler_func handler;
 } corerpc_ring_t;
 
-inline static void S_LTG __corerpc_request_queue_task(void *_ctx)
+static void S_LTG __corerpc_request_queue_task(void *_ctx)
 {
         corerpc_ring_t *ctx = _ctx;
 
@@ -444,7 +444,8 @@ int S_LTG corerpc_rdma_recv_msg(void *_ctx, void *iov, int *_count)
                 void **addr = (void **)net_head->msgid.data_prop.remote_addr;
                 uint32_t rkey = net_head->msgid.data_prop.rkey;
 
-                corenet_rdma_send(sockid, &_buf, addr, rkey, net_head->blocks, build_rdma_read_req);
+                corenet_rdma_send(sockid, &_buf, addr, rkey, net_head->blocks,
+                                  build_rdma_read_req);
         } else {
                 __corerpc_rdma_handler(ctx,  &_buf);
         }

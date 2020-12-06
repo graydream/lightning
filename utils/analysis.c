@@ -28,7 +28,7 @@ struct {
 
 analysis_t *default_analysis = NULL;
 
-static int __analysis_count(analysis_t *ana, const char *name, uint64_t _time)
+static int S_LTG __analysis_count(analysis_t *ana, const char *name, uint64_t _time)
 {
         int ret;
         entry_t *ent;
@@ -205,7 +205,7 @@ err_ret:
         return ret;
 }
 
-static int __analysis__(analysis_t *ana, int *count)
+static int S_LTG __analysis__(analysis_t *ana, int *count)
 {
         int ret, i;
         analysis_queue_t *tmp;

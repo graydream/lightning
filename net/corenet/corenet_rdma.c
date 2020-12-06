@@ -366,8 +366,8 @@ inline void S_LTG corenet_rdma_get(rdma_conn_t *rdma_handler, int n,
 #endif
 }
 
-inline void S_LTG
-corenet_rdma_put(rdma_conn_t *rdma_handler, const char *caller, int verbose)
+void S_LTG corenet_rdma_put(rdma_conn_t *rdma_handler, const char *caller,
+                            int verbose)
 {
         rdma_handler->ref--;
 
@@ -504,8 +504,8 @@ rdma_req_t *build_post_send_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
         return req;
 }
 
-rdma_req_t  *build_rdma_read_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
-                                 void **addr, uint32_t rkey, uint32_t size)
+rdma_req_t S_LTG *build_rdma_read_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
+                                      void **addr, uint32_t rkey, uint32_t size)
 {
         struct ibv_send_wr *sr, *tail, head;
         rdma_req_t *req ;
@@ -624,8 +624,7 @@ rdma_req_t *build_rdma_write_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
  * @see corerpc_rdma_recv_msg
  * @see __corenet_rdma_add
  */
-static inline int S_LTG
-__corenet_rdma_handle_wc(struct ibv_wc *wc, __corenet_t *corenet)
+static int S_LTG __corenet_rdma_handle_wc(struct ibv_wc *wc, __corenet_t *corenet)
 {
         rdma_conn_t *rdma_handler;
         corenet_rdma_t *__corenet_rdma__ = corenet->rdma_net;
@@ -838,8 +837,9 @@ static void S_LTG __corenet_rdma_queue(corenet_rdma_t *corenet, corenet_node_t *
         return ;
 }
 
-int S_LTG corenet_rdma_send(const sockid_t *sockid, ltgbuf_t *buf, void **addr, uint32_t rkey, uint32_t size,
-                              rdma_req_t *(*build_req)(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
+int S_LTG corenet_rdma_send(const sockid_t *sockid, ltgbuf_t *buf, void **addr,
+                            uint32_t rkey, uint32_t size,
+                            rdma_req_t *(*build_req)(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
                                                        void **addr, uint32_t rkey, uint32_t size))
 {
         int ret;
@@ -851,7 +851,8 @@ int S_LTG corenet_rdma_send(const sockid_t *sockid, ltgbuf_t *buf, void **addr, 
         LTG_ASSERT(sockid->type == SOCKID_CORENET);
 
         node = &__corenet_rdma__->array[sockid->sd];
-        if (unlikely(node->handler.is_closing == 1 || node->sockid.seq != sockid->seq || node->sockid.sd == -1)) {
+        if (unlikely(node->handler.is_closing == 1 || node->sockid.seq
+                     != sockid->seq || node->sockid.sd == -1)) {
                 ret = ECONNRESET;
                 GOTO(err_lock, ret);
         }
@@ -863,18 +864,11 @@ int S_LTG corenet_rdma_send(const sockid_t *sockid, ltgbuf_t *buf, void **addr, 
         node->last_sr = &req->wr.sr[req->ref - 1];
         node->send_count += req->ref;
 
-//        LTG_ASSERT(node->send_count <= MAX_SGE);
-
-#if 0
-	if (node->send_count >= 4) {
-	        corenet_rdma_commit((void *)__corenet_rdma__);
-	        return 0;
-        }
-#endif
-
 	__corenet_rdma_queue(__corenet_rdma__, node);
 
+#if 0
         corenet_rdma_commit(__corenet_rdma__);
+#endif
 
         return 0;
 err_lock:

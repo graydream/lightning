@@ -12,6 +12,8 @@
 #include "ltg_utils.h"
 #include "core/core.h"
 
+#define ENABLE_JEM 0
+
 #define powerof2(x)     ((((x) - 1) & (x)) == 0)
 
 inline static void *__malloc__(size_t size)
@@ -23,7 +25,7 @@ inline static void *__malloc__(size_t size)
 #endif
 }
 
-static void *__calloc__(size_t n, size_t elem_size)
+static void S_LTG *__calloc__(size_t n, size_t elem_size)
 {
 #if ENABLE_JEM
         return je_calloc(n, elem_size);
@@ -95,7 +97,7 @@ int ltg_malign(void **_ptr, size_t align, size_t size)
 }
 
 
-int ltg_malloc(void **_ptr, size_t size)
+int S_LTG ltg_malloc(void **_ptr, size_t size)
 {
         int ret, i;
         void *ptr = NULL;

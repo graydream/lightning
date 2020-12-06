@@ -19,7 +19,7 @@ uint32_t key_from_str(char *s)
         return hash_str(s);
 }
 
-static htab_entry_t *htab_lookup(htab_t t, void *comparator, uint32_t k,
+static htab_entry_t S_LTG *htab_lookup(htab_t t, void *comparator, uint32_t k,
                                      int (*compare_func)(const void *, const void *),
                                      int *success)
 {
@@ -128,7 +128,7 @@ err_ret:
  *            comparator: a value to access the table entry
  * Returns: the element references to by comparator, or null
  */
-void *htab_find(htab_t t, void *comparator)
+void S_LTG *htab_find(htab_t t, void *comparator)
 {
         int success;
         htab_entry_t *entry;

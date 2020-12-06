@@ -320,10 +320,6 @@ int S_LTG rpc_table_getslot(rpc_table_t *rpc_table, msgid_t *msgid, const char *
         int ret;
         slot_t *slot;
 
-#if 0
-        LTG_ASSERT(!sche_suspend());
-#endif
-
         slot = __rpc_table_getslot_sequence(rpc_table);
         if (unlikely(slot == NULL)) {
                 ret = ENOSPC;
