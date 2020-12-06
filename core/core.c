@@ -25,7 +25,7 @@ int core_ring_count(core_t *core);
 int core_request_va1(int hash, int priority, const char *name,
                      func_va_t exec, va_list ap);
 
-core_t *core_self()
+inline core_t INLINE *core_self()
 {
         //return core_tls_get(NULL, VARIABLE_CORE);
         return __core__;

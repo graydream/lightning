@@ -12,7 +12,7 @@
 #include "core/sche.h"
 
 /*shared*/
-static void __seg_free_head(seg_t *seg, int sys)
+static void S_LTG __seg_free_head(seg_t *seg, int sys)
 {
         if (unlikely(seg->local == 0)) {
                 DBUG("free %p, local %d\n", seg, seg->local);
@@ -25,7 +25,7 @@ static void __seg_free_head(seg_t *seg, int sys)
         }
 }
 
-static seg_t *__seg_alloc_head(ltgbuf_t *buf, uint32_t size, int sys)
+static seg_t S_LTG *__seg_alloc_head(ltgbuf_t *buf, uint32_t size, int sys)
 {
         seg_t *seg;
 
@@ -196,7 +196,7 @@ inline seg_t *seg_ext_create(ltgbuf_t *buf, void *data, uint32_t size,
 
 #if ENABLE_HUGEPAGE
 
-static void __seg_huge_free(seg_t *seg)
+static void S_LTG __seg_huge_free(seg_t *seg)
 {
         LTG_ASSERT(seg->huge.head);
 
@@ -213,7 +213,7 @@ static void __seg_huge_free(seg_t *seg)
         __seg_free_head(seg, 0);
 }
 
-static seg_t *__seg_huge_share(ltgbuf_t *buf, seg_t *src)
+inline static seg_t INLINE *__seg_huge_share(ltgbuf_t *buf, seg_t *src)
 {
         seg_t *newseg;
 
@@ -244,7 +244,7 @@ static seg_t *__seg_huge_trans(ltgbuf_t *buf, seg_t *seg)
         return newseg;
 }
 
-inline seg_t *seg_huge_create(ltgbuf_t *buf, uint32_t *size)
+inline seg_t INLINE *seg_huge_create(ltgbuf_t *buf, uint32_t *size)
 {
         int ret;
         uint32_t newsize = *size;
@@ -285,7 +285,7 @@ err_free:
 
 #else
 
-inline seg_t *seg_huge_create(ltgbuf_t *buf, uint32_t *size)
+inline seg_t INLINE *seg_huge_create(ltgbuf_t *buf, uint32_t *size)
 {
         return seg_sys_create(buf, *size);
 }
@@ -297,7 +297,7 @@ static seg_t *__seg_huge_share(ltgbuf_t *buf, seg_t *src)
 
 #endif
 
-inline void seg_add_tail(ltgbuf_t *buf, seg_t *seg)
+inline void INLINE seg_add_tail(ltgbuf_t *buf, seg_t *seg)
 {
         LTG_ASSERT(seg->len);
         list_add_tail(&seg->hook, &buf->list);

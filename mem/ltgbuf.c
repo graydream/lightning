@@ -350,7 +350,7 @@ int ltgbuf_appendmem(ltgbuf_t *buf, const void *src, uint32_t len) {
         return __ltgbuf_appendmem(buf, src, len, 0);
 }
 
-STATIC void __ltgbuf_free1(ltgbuf_t *buf)
+STATIC void S_LTG __ltgbuf_free1(ltgbuf_t *buf)
 {
         int count;
         seg_t *seg;
@@ -412,7 +412,7 @@ int ltgbuf_trans_sge(struct ibv_sge *sge, ltgbuf_t *src_buf, ltgbuf_t *dst_buf, 
         return num;
 }
 
-inline void S_LTG ltgbuf_merge(ltgbuf_t *dist, ltgbuf_t *src)
+void S_LTG ltgbuf_merge(ltgbuf_t *dist, ltgbuf_t *src)
 {
         BUFFER_CHECK(src);
         BUFFER_CHECK(dist);
@@ -448,8 +448,8 @@ void S_LTG ltgbuf_reference(ltgbuf_t *dist, const ltgbuf_t *src)
         BUFFER_CHECK(dist);
 }
 
-inline int S_LTG ltgbuf_initwith(ltgbuf_t *buf, void *data, int size,
-                                    void *arg, int (*cb)(void *arg))
+int S_LTG ltgbuf_initwith(ltgbuf_t *buf, void *data, int size,
+                          void *arg, int (*cb)(void *arg))
 {
         seg_t *seg;
 
@@ -465,7 +465,7 @@ inline int S_LTG ltgbuf_initwith(ltgbuf_t *buf, void *data, int size,
         return 0;
 }
 
-inline int ltgbuf_init(ltgbuf_t *buf, int size)
+inline int S_LTG ltgbuf_init(ltgbuf_t *buf, int size)
 {
         seg_t *seg;
         uint32_t newsize = size;
@@ -896,7 +896,7 @@ void *ltgbuf_head(const ltgbuf_t *buf)
         return ((seg_t *)buf->list.next)->handler.ptr;
 }
 
-void *ltgbuf_head1(const ltgbuf_t *buf, uint32_t size)
+void S_LTG *ltgbuf_head1(const ltgbuf_t *buf, uint32_t size)
 {
         BUFFER_CHECK(buf);
 

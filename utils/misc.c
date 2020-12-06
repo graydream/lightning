@@ -315,7 +315,7 @@ inline void init_global_hz(void)
         LTG_ASSERT(__global_hz__ != 0);
 }
 
-inline void _microsec_update_now(ltg_time_t *now)
+inline void INLINE _microsec_update_now(ltg_time_t *now)
 {
 #if SCHEDULE_TASKCTX_RUNTIME
         LTG_ASSERT(__global_hz__ != 0);
@@ -325,7 +325,7 @@ inline void _microsec_update_now(ltg_time_t *now)
 #endif
 }
 
-inline int64_t _microsec_time_used_from_now(ltg_time_t *prev)
+inline int64_t INLINE _microsec_time_used_from_now(ltg_time_t *prev)
 {
 #if SCHEDULE_TASKCTX_RUNTIME
         LTG_ASSERT(__global_hz__ != 0);
@@ -339,7 +339,7 @@ inline int64_t _microsec_time_used_from_now(ltg_time_t *prev)
 #endif
 }
 
-inline int64_t _sec_time_used_from_now(ltg_time_t *prev)
+inline int64_t INLINE _sec_time_used_from_now(ltg_time_t *prev)
 {
 #if SCHEDULE_TASKCTX_RUNTIME
         LTG_ASSERT(__global_hz__ != 0);
@@ -350,7 +350,7 @@ inline int64_t _sec_time_used_from_now(ltg_time_t *prev)
 #endif
 }
 
-inline int64_t _microsec_time_used(ltg_time_t *t1, ltg_time_t *t2)
+inline int64_t INLINE _microsec_time_used(ltg_time_t *t1, ltg_time_t *t2)
 {
 #if SCHEDULE_TASKCTX_RUNTIME
         LTG_ASSERT(__global_hz__ != 0);

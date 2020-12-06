@@ -141,7 +141,7 @@ static inline void __sche_check_running_used(sche_t *sche, taskctx_t *taskctx, u
 #endif
 */
 
-static inline void __sche_check_yield_used(sche_t *sche, taskctx_t *taskctx, uint64_t used)
+static inline void INLINE __sche_check_yield_used(sche_t *sche, taskctx_t *taskctx, uint64_t used)
 {
         /* notice: time_used is seconds */
         if (unlikely(taskctx->sleeping || taskctx->sleep)) {
@@ -534,7 +534,7 @@ inline int sche_status()
  * @param arg
  * @return
  */
-inline void S_LTG sche_fingerprint_new(sche_t *sche, taskctx_t *taskctx)
+inline void INLINE sche_fingerprint_new(sche_t *sche, taskctx_t *taskctx)
 {
 	(void)sche;
 	taskctx->fingerprint++;

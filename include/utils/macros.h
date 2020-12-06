@@ -16,6 +16,8 @@
 #define S_LTG
 #endif
 
+#define INLINE  __attribute__((always_inline))
+
 #ifndef likely
 #define likely(x)       __builtin_expect(!!(x), 1)
 #endif

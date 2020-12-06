@@ -33,7 +33,7 @@ typedef struct {
         struct list_head list;
 } ring_bulk_t;
 
-static void __core_ring_queue__(struct ringbuf *ring, ring_ctx_t *ctx)
+static void S_LTG __core_ring_queue__(struct ringbuf *ring, ring_ctx_t *ctx)
 {
         int found = 0;
         ring_bulk_t *ring_bulk;
@@ -61,7 +61,7 @@ static void __core_ring_queue__(struct ringbuf *ring, ring_ctx_t *ctx)
         }
 }
 
-static void __core_ring_commit__(struct ringbuf *ring, struct list_head *list)
+static void S_LTG __core_ring_commit__(struct ringbuf *ring, struct list_head *list)
 {
         int ret, count;
         void *array[128];
@@ -93,7 +93,7 @@ static void __core_ring_commit__(struct ringbuf *ring, struct list_head *list)
         }
 }
 
-static void __core_ring_commit(void *_core, void *var, void *arg)
+static void S_LTG __core_ring_commit(void *_core, void *var, void *arg)
 {
         struct list_head *pos, *n;
         struct list_head list;
@@ -266,7 +266,7 @@ static int __core_ring_connect__(va_list ap)
         return 0;
 }
 
-void __core_ring_connect(core_t *rcore, core_t *lcore,
+void S_LTG __core_ring_connect(core_t *rcore, core_t *lcore,
                          struct ringbuf **request,
                          struct ringbuf **reply)
 {
@@ -323,7 +323,7 @@ inline static void __core_ring_run_queue(void *_ctx)
 }
 
 
-inline static void __core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
+static void S_LTG __core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
                                      func_t request, void *requestctx,
                                      func_t reply, void *replyctx)
 {
@@ -356,7 +356,7 @@ inline static void __core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
         return ;
 }
 
-inline void core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
+inline void S_LTG core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
                             func_t request, void *requestctx,
                             func_t reply, void *replyctx)
 {
@@ -399,7 +399,7 @@ inline static void __core_ring_request(void *arg)
         request_ctx->retval = request_ctx->exec(request_ctx->ap);
 }
 
-inline int core_ring_wait(int coreid, int type, const char *name,
+int S_LTG core_ring_wait(int coreid, int type, const char *name,
                           func_va_t exec, ...)
 {
         int ret;

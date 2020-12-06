@@ -142,7 +142,7 @@ err_ret:
         return ret;
 }
 
-static inline mem_ring_t *__hpage_list_find(mem_ring_head_t *head, uint32_t alloc_size)
+static inline mem_ring_t INLINE *__hpage_list_find(mem_ring_head_t *head, uint32_t alloc_size)
 {
         struct list_head *pos;
         mem_ring_t *hpage = NULL;
@@ -178,8 +178,8 @@ static inline int __mem_ring_mark_delete(mem_ring_head_t *head, mem_ring_t *hpag
         return 0;
 }
 
-static inline int __mem_ring_new(mem_ring_head_t *head, uint32_t *size,
-                                 mem_handler_t *mem_handler)
+inline static int INLINE __mem_ring_new(mem_ring_head_t *head, uint32_t *size,
+                                         mem_handler_t *mem_handler)
 {
         int ret, new_page = 0;
         mem_ring_t *hpage;
@@ -253,7 +253,7 @@ err_ret:
         return ret;
 }
 
-int mem_ring_new(uint32_t *size, mem_handler_t *mem_handler)
+inline int INLINE mem_ring_new(uint32_t *size, mem_handler_t *mem_handler)
 {
         int ret;
         mem_ring_head_t *head;
