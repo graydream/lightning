@@ -34,7 +34,7 @@ extern int corerpc_inited;
 #define SEND_TASK 2
 #define SEND_QUEUE 3
 
-#define SEND_ASYNC 0
+#define SEND_ASYNC 1
 
 static void S_LTG __corerpc_post_task(void *arg1, void *arg2, void *arg3, void *arg4)
 {
@@ -406,7 +406,7 @@ static int S_LTG __corerpc_ring_wait(int netctl, const char *name,
 
         ring.task = sche_task_get();
         
-        ret = sche_yield(name, NULL, NULL);
+        ret = sche_yield(name, op->rbuf, NULL);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
         }

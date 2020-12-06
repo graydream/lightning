@@ -17,6 +17,7 @@ extern int ltg_nofile_max;
 typedef struct {
         struct list_head hook;
         int type;
+        int retval;
         task_t task;
 } conn_wait_ctx_t;
 
@@ -53,7 +54,7 @@ static corenet_maping_t S_LTG *__corenet_maping_get_byctx(void *core)
 }
 
 static void __corenet_maping_resume(struct list_head *list, const nid_t *nid,
-                                      int res)
+                                    int res)
 {
         struct list_head *pos, *n;
         conn_wait_ctx_t *ctx;
@@ -62,13 +63,15 @@ static void __corenet_maping_resume(struct list_head *list, const nid_t *nid,
         
         list_for_each_safe(pos, n, list) {
                 ctx = (conn_wait_ctx_t *)pos;
+                ctx->retval = res;
+
                 if (ctx->type == TYPE_TASK) {
                         sche_task_post(&ctx->task, res, NULL);
                 } else if (ctx->type == TYPE_QUEUE) {
-                        UNIMPLEMENTED(__DUMP__);
+                        //nothing to do here;
                 }
 
-                list_del(&ctx->hook);
+                list_del_init(&ctx->hook);
         }
 }
 
@@ -77,7 +80,8 @@ STATIC void __corenet_maping_close_finally__(const nid_t *nid, const sockid_t *s
         (void) nid;
         
         if (ltgconf_global.rdma && sockid->rdma_handler != NULL)
-                corenet_rdma_close((rdma_conn_t *)sockid->rdma_handler, __FUNCTION__);
+                corenet_rdma_close((rdma_conn_t *)sockid->rdma_handler,
+                                   __FUNCTION__);
         else
                 corenet_tcp_close(sockid);
 
@@ -372,28 +376,44 @@ static void __corenet_maping_connect_task(void *arg)
         }
 }
 
-static int __corenet_maping_connect_wait_task(corenet_maping_t *entry)
+static int __corenet_maping_connect_wait_task(corenet_maping_t *entry,
+                                              conn_wait_ctx_t *ctx)
+{
+        int ret;
+
+        (void) entry;
+
+        ctx->task = sche_task_get();
+        
+        ret = sche_yield("maping_connect", NULL, NULL);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
+        return 0;
+err_ret:
+        return ret;
+}
+
+static int __corenet_maping_connect_wait_queue(corenet_maping_t *entry,
+                                               conn_wait_ctx_t *ctx)
 {
         int ret;
         const nid_t *nid = &entry->nid;
-        conn_wait_ctx_t ctx;
+        core_t *core = core_self();
 
-        coreid_check(entry->coreid);
+        DINFO("connect to %s\n", netable_rname(nid));
         
-        if (list_empty(&entry->wait_list)) {
-                DBUG("connect to %s\n", netable_rname(nid));
+        ANALYSIS_BEGIN(0);
 
-                sche_task_new("corenet_maping", __corenet_maping_connect_task,
-                              entry, -1);
+        while (!list_empty(&ctx->hook)) {
+                core_worker_run(core);
         }
 
-        ctx.task = sche_task_get();
-        ctx.type = TYPE_TASK;
-        
-        list_add(&ctx.hook, &entry->wait_list);
-        
-        DBUG("connect to %s wait\n", netable_rname(nid));
-        ret = sche_yield("maping_connect", NULL, NULL);
+        ANALYSIS_QUEUE(0, IO_WARN, NULL);
+ 
+        DINFO("connect to %s return, %d\n", netable_rname(nid), ctx->retval);
+       
+        ret = ctx->retval;
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -404,12 +424,37 @@ err_ret:
 
 static int __corenet_maping_connect_wait(corenet_maping_t *entry)
 {
-        if (sche_status() == SCHEDULE_STATUS_RUNNING) {
-                return __corenet_maping_connect_wait_task(entry);
-        } else {
-                UNIMPLEMENTED(__DUMP__);
-                return 0;
+        int ret;
+        conn_wait_ctx_t ctx;
+        const nid_t *nid = &entry->nid;
+
+        coreid_check(entry->coreid);
+        
+        if (list_empty(&entry->wait_list)) {
+                DBUG("connect to %s\n", netable_rname(nid));
+
+                sche_task_new("corenet_maping", __corenet_maping_connect_task,
+                              entry, -1);
         }
+
+        ctx.retval = 0;
+        list_add(&ctx.hook, &entry->wait_list);
+        
+        if (sche_status() == SCHEDULE_STATUS_RUNNING) {
+                ctx.type = TYPE_TASK;
+                ret = __corenet_maping_connect_wait_task(entry, &ctx);
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+        } else {
+                ctx.type = TYPE_QUEUE;
+                ret =  __corenet_maping_connect_wait_queue(entry, &ctx);
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+        }
+
+        return 0;
+err_ret:
+        return ret;
 }
 
 int S_LTG corenet_maping(void *core, const coreid_t *coreid, sockid_t *sockid)
