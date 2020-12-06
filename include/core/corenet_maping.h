@@ -11,6 +11,7 @@ typedef int (*corerpc_request)(void *ctx, void *);
 
 typedef struct {
         nid_t nid;
+        int coreid;
         uint64_t coremask;
         sockid_t sockid[CORE_MAX];
 

@@ -28,6 +28,18 @@ typedef struct {
 
 int corenet_hb_add(const coreid_t *coreid, const sockid_t *sockid);
 
+void coreid_check(int _coreid)
+{
+        int ret;
+        coreid_t coreid;
+
+        ret = core_getid(&coreid);
+        if (unlikely(ret))
+                UNIMPLEMENTED(__DUMP__);
+        
+        LTG_ASSERT(_coreid == coreid.idx);
+}
+
 static void __corenet_maping_close_entry(corenet_maping_t *entry,
                                          const sockid_t *_sockid);
 
@@ -68,6 +80,9 @@ static void __corenet_maping_resume(void *_arg)
         maping = __corenet_maping_get__();
 
         entry = &maping[nid->id];
+
+        coreid_check(entry->coreid);
+
         ret = ltg_spin_lock(&entry->lock);
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
@@ -292,6 +307,8 @@ STATIC int __corenet_maping_update(const nid_t *nid, const sockid_t *_sockid,
         coreid_t coreid = {*nid, 0};
 
         entry = &__corenet_maping_get__()[nid->id];
+
+        coreid_check(entry->coreid);
         
         ret = ltg_spin_lock(&entry->lock);
         if (unlikely(ret))
@@ -414,6 +431,8 @@ static void __corenet_maping_connect_task(void *arg)
         const nid_t *nid = &entry->nid;
 
         __corenet_maping_close_entry(entry, NULL);
+
+        coreid_check(entry->coreid);
         
         DINFO("connect to %s\n", netable_rname(nid));
         ret = __corenet_maping_connect(nid);
@@ -427,6 +446,8 @@ static int __corenet_maping_connect_wait_task(corenet_maping_t *entry)
         int ret;
         const nid_t *nid = &entry->nid;
 
+        coreid_check(entry->coreid);
+        
         ret = ltg_spin_lock(&entry->lock);
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
@@ -466,18 +487,38 @@ static int __corenet_maping_connect_wait_retry(corenet_maping_t *entry)
         int ret;
         const nid_t *nid = &entry->nid;
 
-        DWARN("connect sync\n");
+        coreid_check(entry->coreid);
         
-        __corenet_maping_close_entry(entry, NULL);
-        
-        DINFO("connect to %s\n", netable_rname(nid));
-        ret = __corenet_maping_connect(nid);
-        if (ret) {
-                DWARN("connect to %s fail\n", netable_rname(nid));
-                GOTO(err_ret, ret);
+        ret = ltg_spin_lock(&entry->lock);
+        if (unlikely(ret))
+                UNIMPLEMENTED(__DUMP__);
+
+        ret = __corenet_maping_connect_wait__(entry, nid);
+        if (unlikely(ret))
+                GOTO(err_lock, ret);
+
+        if (entry->loading == 0) {
+                entry->loading = 1;
+
+                ltg_spin_unlock(&entry->lock);
+
+                DBUG("connect to %s\n", netable_rname(nid));
+
+                sche_task_new("corenet_maping",
+                              __corenet_maping_connect_task,
+                              entry, -1);
+        } else {
+                ltg_spin_unlock(&entry->lock);
         }
 
+        DBUG("connect to %s wait\n", netable_rname(nid));
+        ret = sche_yield("maping_connect", NULL, NULL);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
         return 0;
+err_lock:
+        ltg_spin_unlock(&entry->lock);
 err_ret:
         return ret;
 }
@@ -570,11 +611,16 @@ static int __corenet_maping_init__(corenet_maping_t **_maping)
         int ret, i;
         corenet_maping_t *maping, *entry;
         nid_t nid;
+        coreid_t coreid;
 
         ret = ltg_malloc((void **)&maping, sizeof(*maping) *  NODEID_MAX);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
+        ret = core_getid(&coreid);
+        if (unlikely(ret))
+                UNIMPLEMENTED(__DUMP__);
+        
         for (i = 0; i < NODEID_MAX; i++) {
                 nid.id = i;
                 entry = &maping[i];
@@ -586,6 +632,7 @@ static int __corenet_maping_init__(corenet_maping_t **_maping)
                 entry->loading = 0;
                 entry->coremask = 0;
                 entry->nid = nid;
+                entry->coreid = coreid.idx;
         }
 
         core_tls_set(VARIABLE_MAPING, maping);

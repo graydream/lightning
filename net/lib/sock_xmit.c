@@ -113,14 +113,13 @@ int sock_poll_sd1(const int *sd, int sd_count, short event, uint64_t usec,
 {
         int ret;
 
-        if (sche_status() == SCHEDULE_STATUS_RUNNING) {
+        if (sche_running()) {
                 ret = sche_newthread(SCHE_THREAD_MISC, _random(), FALSE,
                                          "poll", 100, __sock_poll__, sd, sd_count, 
                                          (int)event, usec, pfd, retval);
                 if (unlikely(ret))
                         goto err_ret;
         } else {
-                DWARN("connect sync\n");
                 ret = __sock_poll_sd1(sd, sd_count, event, usec, pfd, retval);
                 if (unlikely(ret))
                         goto err_ret;
