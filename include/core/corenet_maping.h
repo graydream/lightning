@@ -15,11 +15,8 @@ typedef struct {
         uint64_t coremask;
         sockid_t sockid[CORE_MAX];
 
-        ltg_spinlock_t lock;
-        struct list_head list;
-        char loading;
+        struct list_head wait_list;
         corerpc_request request;
-
         int (*connected)(const sockid_t *);
 } corenet_maping_t;
 

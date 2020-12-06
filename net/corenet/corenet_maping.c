@@ -15,16 +15,15 @@
 extern int ltg_nofile_max;
 
 typedef struct {
-        nid_t nid;
-        sockid_t sockid;
-        int res;
-} arg_t;
-
-typedef struct {
         struct list_head hook;
-        nid_t nid;
+        int type;
         task_t task;
-} wait_t;
+} conn_wait_ctx_t;
+
+typedef enum {
+        TYPE_TASK = 100,
+        TYPE_QUEUE,
+} conn_wait_type_t;
 
 int corenet_hb_add(const coreid_t *coreid, const sockid_t *sockid);
 
@@ -53,63 +52,24 @@ static corenet_maping_t S_LTG *__corenet_maping_get_byctx(void *core)
         return core_tls_get(core, VARIABLE_MAPING);
 }
 
-static void __corenet_maping_resume__(struct list_head *list, const nid_t *nid, int res)
+static void __corenet_maping_resume(struct list_head *list, const nid_t *nid,
+                                      int res)
 {
         struct list_head *pos, *n;
-        wait_t *wait;
+        conn_wait_ctx_t *ctx;
 
+        (void) nid;
+        
         list_for_each_safe(pos, n, list) {
-                wait = (wait_t *)pos;
-                if (!nid_cmp(&wait->nid, nid)) {
-                        sche_task_post(&wait->task, res, NULL);
-
-                        list_del(&wait->hook);
-                        ltg_free((void **)&wait);
+                ctx = (conn_wait_ctx_t *)pos;
+                if (ctx->type == TYPE_TASK) {
+                        sche_task_post(&ctx->task, res, NULL);
+                } else if (ctx->type == TYPE_QUEUE) {
+                        UNIMPLEMENTED(__DUMP__);
                 }
+
+                list_del(&ctx->hook);
         }
-}
-
-static void __corenet_maping_resume(void *_arg)
-{
-        int ret;
-        arg_t *arg = _arg;
-        corenet_maping_t *maping, *entry;
-        nid_t *nid = &arg->nid;
-        int res = arg->res;
-
-        maping = __corenet_maping_get__();
-
-        entry = &maping[nid->id];
-
-        coreid_check(entry->coreid);
-
-        ret = ltg_spin_lock(&entry->lock);
-        if (unlikely(ret))
-                UNIMPLEMENTED(__DUMP__);
-
-        entry->loading = 0;
-        __corenet_maping_resume__(&entry->list, nid, res);
-
-        ltg_spin_unlock(&entry->lock);
-
-        ltg_free((void **)&arg);
-}
-
-void corenet_maping_resume(core_t *core, const nid_t *nid, int res)
-{
-        int ret;
-        arg_t *arg;
-
-        ret = ltg_malloc((void **)&arg, sizeof(*arg));
-        if (unlikely(ret))
-                UNIMPLEMENTED(__DUMP__);
-
-        arg->nid = *nid;
-        arg->res = res;
-
-        ret = sche_request(core->sche, -1, __corenet_maping_resume, arg, "corenet_resume");
-        if (unlikely(ret))
-                UNIMPLEMENTED(__DUMP__);
 }
 
 STATIC void __corenet_maping_close_finally__(const nid_t *nid, const sockid_t *sockid)
@@ -310,10 +270,6 @@ STATIC int __corenet_maping_update(const nid_t *nid, const sockid_t *_sockid,
 
         coreid_check(entry->coreid);
         
-        ret = ltg_spin_lock(&entry->lock);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
         if (ltgconf_global.rdma) {
                 entry->request = corerpc_rdma_request;
                 entry->connected = corenet_rdma_connected;
@@ -345,23 +301,17 @@ STATIC int __corenet_maping_update(const nid_t *nid, const sockid_t *_sockid,
         }
 
         memcpy(entry->sockid, _sockid, sizeof(*_sockid) * CORE_MAX);
-        entry->loading = 0;
         entry->coremask = coremask;
 
-        __corenet_maping_resume__(&entry->list, nid, 0);
+        __corenet_maping_resume(&entry->wait_list, nid, 0);
         
-        ltg_spin_unlock(&entry->lock);
-
         return 0;
-err_ret:
-        return ret;
 }
 
 STATIC int __corenet_maping_connect(const nid_t *nid)
 {
         int ret;
         sockid_t sockid[CORE_MAX];
-        core_t *core = core_self();
         uint64_t coremask;
 
         memset(sockid, 0x00, sizeof(sockid_t) * CORE_MAX);
@@ -373,26 +323,6 @@ STATIC int __corenet_maping_connect(const nid_t *nid)
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
-err_ret:
-        corenet_maping_resume(core, nid, ret);
-        return ret;
-}
-
-static int __corenet_maping_connect_wait__(corenet_maping_t *entry, const nid_t *nid)
-{
-        int ret;
-        wait_t *wait;
-
-        ret = ltg_malloc((void **)&wait, sizeof(*wait));
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        wait->nid = *nid;
-        wait->task = sche_task_get();
-
-        list_add(&wait->hook, &entry->list);
-
-        return 0;
 err_ret:
         return ret;
 }
@@ -437,6 +367,7 @@ static void __corenet_maping_connect_task(void *arg)
         DINFO("connect to %s\n", netable_rname(nid));
         ret = __corenet_maping_connect(nid);
         if (ret) {
+                __corenet_maping_resume(&entry->wait_list, nid, ret);
                 DWARN("connect to %s fail\n", netable_rname(nid));
         }
 }
@@ -445,80 +376,28 @@ static int __corenet_maping_connect_wait_task(corenet_maping_t *entry)
 {
         int ret;
         const nid_t *nid = &entry->nid;
+        conn_wait_ctx_t ctx;
 
         coreid_check(entry->coreid);
         
-        ret = ltg_spin_lock(&entry->lock);
-        if (unlikely(ret))
-                UNIMPLEMENTED(__DUMP__);
-
-        ret = __corenet_maping_connect_wait__(entry, nid);
-        if (unlikely(ret))
-                GOTO(err_lock, ret);
-
-        if (entry->loading == 0) {
-                entry->loading = 1;
-
-                ltg_spin_unlock(&entry->lock);
-
+        if (list_empty(&entry->wait_list)) {
                 DBUG("connect to %s\n", netable_rname(nid));
 
-                sche_task_new("corenet_maping",
-                              __corenet_maping_connect_task,
+                sche_task_new("corenet_maping", __corenet_maping_connect_task,
                               entry, -1);
-        } else {
-                ltg_spin_unlock(&entry->lock);
         }
 
+        ctx.task = sche_task_get();
+        ctx.type = TYPE_TASK;
+        
+        list_add(&ctx.hook, &entry->wait_list);
+        
         DBUG("connect to %s wait\n", netable_rname(nid));
         ret = sche_yield("maping_connect", NULL, NULL);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
         return 0;
-err_lock:
-        ltg_spin_unlock(&entry->lock);
-err_ret:
-        return ret;
-}
-
-static int __corenet_maping_connect_wait_retry(corenet_maping_t *entry)
-{
-        int ret;
-        const nid_t *nid = &entry->nid;
-
-        coreid_check(entry->coreid);
-        
-        ret = ltg_spin_lock(&entry->lock);
-        if (unlikely(ret))
-                UNIMPLEMENTED(__DUMP__);
-
-        ret = __corenet_maping_connect_wait__(entry, nid);
-        if (unlikely(ret))
-                GOTO(err_lock, ret);
-
-        if (entry->loading == 0) {
-                entry->loading = 1;
-
-                ltg_spin_unlock(&entry->lock);
-
-                DBUG("connect to %s\n", netable_rname(nid));
-
-                sche_task_new("corenet_maping",
-                              __corenet_maping_connect_task,
-                              entry, -1);
-        } else {
-                ltg_spin_unlock(&entry->lock);
-        }
-
-        DBUG("connect to %s wait\n", netable_rname(nid));
-        ret = sche_yield("maping_connect", NULL, NULL);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        return 0;
-err_lock:
-        ltg_spin_unlock(&entry->lock);
 err_ret:
         return ret;
 }
@@ -528,7 +407,8 @@ static int __corenet_maping_connect_wait(corenet_maping_t *entry)
         if (sche_status() == SCHEDULE_STATUS_RUNNING) {
                 return __corenet_maping_connect_wait_task(entry);
         } else {
-                return __corenet_maping_connect_wait_retry(entry);
+                UNIMPLEMENTED(__DUMP__);
+                return 0;
         }
 }
 
@@ -624,12 +504,7 @@ static int __corenet_maping_init__(corenet_maping_t **_maping)
         for (i = 0; i < NODEID_MAX; i++) {
                 nid.id = i;
                 entry = &maping[i];
-                ret = ltg_spin_init(&entry->lock);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
-
-                INIT_LIST_HEAD(&entry->list);
-                entry->loading = 0;
+                INIT_LIST_HEAD(&entry->wait_list);
                 entry->coremask = 0;
                 entry->nid = nid;
                 entry->coreid = coreid.idx;
