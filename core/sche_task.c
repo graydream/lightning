@@ -374,7 +374,7 @@ static void S_LTG __sche_trampoline(taskctx_t *taskctx)
 
 #if SCHEDULE_TASKCTX_RUNTIME
 	if (likely(taskctx->sleep == 0))
-                sche->c_runtime += _microsec_time_used_from_now(&taskctx->ctime);
+                sche->c_runtime += _microsec_time_used_from_now_count(&taskctx->ctime);
 #else
         sche->task_count--;
 #endif

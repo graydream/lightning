@@ -235,7 +235,7 @@ static void S_LTG __sche_exec__(sche_t *sche, taskctx_t *taskctx)
         swapcontext1(&(taskctx->main), &(taskctx->ctx));
         
 #if SCHEDULE_TASKCTX_RUNTIME
-        sche->run_time += _microsec_time_used_from_now(&taskctx->rtime);
+        sche->run_time += _microsec_time_used_from_now_count(&taskctx->rtime);
 #endif
 
         sche->running_task = -1;
@@ -481,8 +481,8 @@ inline int sche_stat(int *sid, int *taskid, int *runable, int *wait, int *count,
                 *wait = __sche_task_wait(sche);
                 *taskid = sche->running_task;
                 *count = sche->task_count;
-                *run_time = sche->run_time;
-                *c_runtime = sche->c_runtime;
+                *run_time = _microsec_time_used_from_now_trans(sche->run_time);
+                *c_runtime = _microsec_time_used_from_now_trans(sche->c_runtime);
 #if SCHEDULE_TASKCTX_RUNTIME
                 sche->task_count = 0;
                 sche->run_time = 0;
