@@ -874,7 +874,9 @@ int IO_FUNC corenet_rdma_send(const sockid_t *sockid, ltgbuf_t *buf, void **addr
 
 	__corenet_rdma_queue(__corenet_rdma__, node);
 
+#if 0
         corenet_rdma_commit(__corenet_rdma__);
+#endif
 
         return 0;
 err_lock:
