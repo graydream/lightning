@@ -19,8 +19,8 @@
 #define OP_REQUEST 1
 #define OP_REPLY 2
 
-#define RING_SIZE (1<<12)
-#define RING_ARRAY_SIZE 128
+#define RING_SIZE (1<<14)
+#define RING_ARRAY_SIZE (1<<10)
 
 #define QUEUE_BULK 1
 
@@ -63,12 +63,11 @@ static void S_LTG __core_ring_queue__(struct ringbuf *ring, ring_ctx_t *ctx)
 
 static void S_LTG __core_ring_commit__(struct ringbuf *ring, struct list_head *list)
 {
-        int ret, count;
-        void *array[128];
+        int ret, count = 0;
+        void *array[RING_ARRAY_SIZE];
         ring_ctx_t *ctx;
         struct list_head *pos, *n;
 
-        count = 0;
         list_for_each_safe(pos, n, list) {
                 ctx = (void *)pos;
                 list_del(pos);
@@ -76,7 +75,7 @@ static void S_LTG __core_ring_commit__(struct ringbuf *ring, struct list_head *l
                 array[count] = ctx;
                 count++;
 
-                if (count == 128) {
+                if (unlikely(count == RING_ARRAY_SIZE)) {
                         DBUG("bulk %d\n", count);
 
 #if ENABLE_RING_MP
@@ -89,9 +88,9 @@ static void S_LTG __core_ring_commit__(struct ringbuf *ring, struct list_head *l
                 }
         }
         
-        if (count) {
+        if (likely(count)) {
                 DBUG("bulk %d\n", count);
-                        
+
 #if ENABLE_RING_MP
                 ret = libringbuf_mp_enqueue_bulk(ring, array, count);
 #else
@@ -143,7 +142,7 @@ int core_ring_init(core_t *core)
                 UNIMPLEMENTED(__DUMP__);
 
 #if ENABLE_RING_MP
-        ring->ringbuf = libringbuf_create((1<<12), RING_F_SC_DEQ);
+        ring->ringbuf = libringbuf_create(RING_SIZE, RING_F_SC_DEQ);
 #else
         INIT_LIST_HEAD(&ring->list);
 
@@ -194,17 +193,13 @@ static void S_LTG __core_ring_poller_run(void **array, int count)
 
 static void S_LTG __core_ring_poller__(struct ringbuf *ringbuf)
 {
-        void *array[128];
+        void *array[RING_ARRAY_SIZE];
         int count;
         
-        while (1) {
-                count = libringbuf_sc_dequeue_burst(ringbuf, array,
-                                                    RING_ARRAY_SIZE);
-                if (count == 0)
-                        break;
+        count = libringbuf_sc_dequeue_burst(ringbuf, array,
+                                            RING_ARRAY_SIZE);
 
-                DBUG("count %u\n", count);
-
+        if (count) {
                 __core_ring_poller_run(array, count);
         }
 }
@@ -270,7 +265,7 @@ static void __core_ring_new(core_ring_t *ring, int idx)
         if (ret)
                 UNIMPLEMENTED(__DUMP__);
 
-        ring->ringbuf[idx] = libringbuf_create((1<<12),
+        ring->ringbuf[idx] = libringbuf_create(RING_SIZE,
                                                RING_F_SP_ENQ
                                                | RING_F_SC_DEQ);
 
