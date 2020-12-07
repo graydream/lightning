@@ -939,7 +939,7 @@ int ltgbuf_trans(struct iovec *_iov, int *iov_count, const ltgbuf_t *buf)
         return size;
 }
 
-void ltgbuf_trans_addr(void **addr, const ltgbuf_t *buf)
+void S_LTG ltgbuf_trans_addr(void **addr, const ltgbuf_t *buf)
 {
         struct list_head *pos;
         seg_t *seg;

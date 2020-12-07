@@ -13,6 +13,11 @@
 
 #define CORE_CHECK 0
 
+#if 0
+#undef ENABLE_NETCTL_QUEUE
+#define ENABLE_NETCTL_QUEUE 0
+#endif
+
 typedef struct {
         corerpc_op_t *op;
         const char *name;
@@ -223,7 +228,8 @@ err_ret:
         return ret;
 }
 
-static int S_LTG __corerpc_send(const char *name, rpc_ctx_t *ctx, func3_t func, int type)
+static int S_LTG __corerpc_send(const char *name, rpc_ctx_t *ctx, func3_t func,
+                                int type)
 {
         int ret;
         core_t *core = core_self();
@@ -316,7 +322,8 @@ err_ret:
 
 #if ENABLE_NETCTL_QUEUE
 
-static void S_LTG __corerpc_post_queue(void *arg1, void *arg2, void *arg3, void *arg4)
+static void S_LTG __corerpc_post_queue(void *arg1, void *arg2, void *arg3,
+                                       void *arg4)
 {
         rpc_ctx_t *ctx = arg1;
         int retval = *(int *)arg2;
@@ -414,13 +421,13 @@ static int S_LTG __corerpc_ring_wait(int netctl, const char *name,
 
         ring.coreid = coreid.idx;
 #endif
+
+        ring.task = sche_task_get();
         
         core_ring_queue(netctl, RING_QUEUE, &ring.ring_ctx,
                         __corerpc_queue_exec, &ring,
                         __corerpc_queue_reply, &ring);
 
-        ring.task = sche_task_get();
-        
         ret = sche_yield(name, op->rbuf, NULL);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
