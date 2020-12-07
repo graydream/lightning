@@ -31,9 +31,11 @@ typedef struct {
         struct list_head hook;
 	struct ringbuf *ring;
         struct list_head list;
+        int rcoreid;
 } ring_bulk_t;
 
-static void S_LTG __core_ring_queue__(struct ringbuf *ring, ring_ctx_t *ctx)
+static void S_LTG __core_ring_queue__(int rcoreid, struct ringbuf *ring,
+                                      ring_ctx_t *ctx)
 {
         int found = 0;
         ring_bulk_t *ring_bulk;
@@ -56,12 +58,14 @@ static void S_LTG __core_ring_queue__(struct ringbuf *ring, ring_ctx_t *ctx)
                 LTG_ASSERT(ring_bulk);
                 INIT_LIST_HEAD(&ring_bulk->list);
                 ring_bulk->ring = ring;
+                ring_bulk->rcoreid = rcoreid;
                 list_add_tail(&ctx->hook, &ring_bulk->list);
                 list_add_tail(&ring_bulk->hook, queue);
         }
 }
 
-static void S_LTG __core_ring_commit__(struct ringbuf *ring, struct list_head *list)
+static void S_LTG __core_ring_commit__(int rcoreid, struct ringbuf *ring,
+                                       struct list_head *list)
 {
         int ret, count = 0;
         void *array[RING_ARRAY_SIZE];
@@ -98,6 +102,11 @@ static void S_LTG __core_ring_commit__(struct ringbuf *ring, struct list_head *l
 #endif
                 LTG_ASSERT(ret == 0);
         }
+
+        if (unlikely(ltgconf_global.polling_timeout)) {
+                core_t *rcore = core_get(rcoreid);
+                sche_post(rcore->sche);
+        }
 }
 
 static void S_LTG __core_ring_commit(void *_core, void *var, void *arg)
@@ -117,7 +126,7 @@ static void S_LTG __core_ring_commit(void *_core, void *var, void *arg)
                 ring_bulk = (void *)pos;
                 list_del(pos);
 
-                __core_ring_commit__(ring_bulk->ring,
+                __core_ring_commit__(ring_bulk->rcoreid, ring_bulk->ring,
                                      &ring_bulk->list);
 
                 slab_stream_free(ring_bulk);
@@ -319,16 +328,16 @@ void S_LTG core_ring_reply(ring_ctx_t *ring_ctx)
 #if QUEUE_BULK
         DBUG("reply bulk\n");
         
-        __core_ring_queue__(ring_ctx->reply, ring_ctx);
+        __core_ring_queue__(ring_ctx->reply_coreid, ring_ctx->reply, ring_ctx);
 #else
         libringbuf_enqueue(ring_ctx->reply, (void *)ring_ctx);
-#endif
 
         if (unlikely(ltgconf_global.polling_timeout)) {
                 int reply_coreid = ring_ctx->reply_coreid;
                 core_t *rcore = core_get(reply_coreid);
                 sche_post(rcore->sche);
         }
+#endif
 }
 
 static void S_LTG __core_ring_run_task(void *_ctx)
@@ -375,7 +384,7 @@ static void S_LTG __core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
         ctx->reply_ctx = replyctx;
 
 #if QUEUE_BULK
-        __core_ring_queue__(ctx->request, ctx);
+        __core_ring_queue__(rcore->hash, ctx->request, ctx);
 #endif
 
         return ;
@@ -397,13 +406,13 @@ void S_LTG core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
         
 #if !QUEUE_BULK
         libringbuf_enqueue(ctx->request, (void *)ctx);
-#endif
 
         if (unlikely(ltgconf_global.polling_timeout)) {
                 core_t *rcore = core_get(coreid);
                 sche_post(rcore->sche);
         }
-        
+#endif
+
         return ;
 }
 
@@ -453,13 +462,13 @@ int S_LTG core_ring_wait(int coreid, int type, const char *name,
 
 #if !QUEUE_BULK
         libringbuf_enqueue(ctx->request, (void *)ctx);
-#endif
 
         if (unlikely(ltgconf_global.polling_timeout)) {
                 core_t *rcore = core_get(coreid);
                 sche_post(rcore->sche);
         }
-        
+#endif
+
         ret = sche_yield1(name, NULL, NULL, NULL, -1);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
