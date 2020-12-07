@@ -42,8 +42,6 @@ typedef void (*core_exit)();
 #define CORE_MAX 64
 #define LTG_TLS_MAX_KEEP (LTG_TLS_MAX * 2)
 
-
-
 typedef struct {
         struct list_head hook;
 	func_va_t func_va;
@@ -76,8 +74,12 @@ typedef struct __routine {
 #define ENABLE_RING_REQUEST_QUEUE 0
 
 typedef struct {
+#if ENABLE_RING_MP
+        struct ringbuf *ringbuf;
+#else
         struct ringbuf **ringbuf;
         struct list_head list;
+#endif
 } core_ring_t;
 
 //typedef core_t;

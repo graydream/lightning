@@ -15,9 +15,14 @@
 #include "ltg_net.h"
 #include "ltg_utils.h"
 
+#define NETCTL_HASH 0
+
 static coremask_t __netctl_coremask__;
 static uint64_t __mask__ = 0;
+
+#if !NETCTL_HASH
 static __thread int __cur__ = 0;
+#endif
 
 static int __register_ring_poller(va_list ap)
 {
@@ -60,8 +65,13 @@ int netctl_get(const coreid_t *coreid, coreid_t *netctl)
         }
 
         *netctl = *coreid;
+#if NETCTL_HASH
+        int idx = coreid->idx % __netctl_coremask__.count;
+        netctl->idx = __netctl_coremask__.coreid[idx];
+#else
         netctl->idx = __netctl_coremask__.coreid[__cur__];
         __cur__ = (__cur__ + 1) % __netctl_coremask__.count;
+#endif
 
         return 1;
 }

@@ -133,7 +133,7 @@ static int __mem_ring_new__(mem_ring_head_t *head, mem_ring_t **_hpage, uint32_t
         *_hpage = hpage;
         *size = new_size;
 
-        MEM_RING_DUMP_L(DINFO, hpage, "\n");
+        MEM_RING_DUMP_L(DBUG, hpage, "\n");
 
         return 0;
 err_free:
@@ -195,7 +195,7 @@ retry:
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
 
-                MEM_RING_HEAD_DUMP_L(DINFO, head, "new_page %d alloc %u size %u\n",
+                MEM_RING_HEAD_DUMP_L(DBUG, head, "new_page %d alloc %u size %u\n",
                                      new_page, alloc_size, new_size);
 
                 if (alloc_size > new_size) {

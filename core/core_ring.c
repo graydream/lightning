@@ -78,8 +78,12 @@ static void S_LTG __core_ring_commit__(struct ringbuf *ring, struct list_head *l
 
                 if (count == 128) {
                         DBUG("bulk %d\n", count);
-                        
+
+#if ENABLE_RING_MP
+                        ret = libringbuf_mp_enqueue_bulk(ring, array, count);
+#else
                         ret = libringbuf_sp_enqueue_bulk(ring, array, count);
+#endif
                         LTG_ASSERT(ret == 0);
                         count = 0;
                 }
@@ -88,7 +92,11 @@ static void S_LTG __core_ring_commit__(struct ringbuf *ring, struct list_head *l
         if (count) {
                 DBUG("bulk %d\n", count);
                         
+#if ENABLE_RING_MP
+                ret = libringbuf_mp_enqueue_bulk(ring, array, count);
+#else
                 ret = libringbuf_sp_enqueue_bulk(ring, array, count);
+#endif
                 LTG_ASSERT(ret == 0);
         }
 }
@@ -134,11 +142,15 @@ int core_ring_init(core_t *core)
         if (ret)
                 UNIMPLEMENTED(__DUMP__);
 
+#if ENABLE_RING_MP
+        ring->ringbuf = libringbuf_create((1<<12), RING_F_SC_DEQ);
+#else
         INIT_LIST_HEAD(&ring->list);
-        
+
         for (int i = 0; i < CORE_MAX; i++) {
                 ring->ringbuf[i] = NULL;
         }
+#endif
 
         core->ring = ring;
         
@@ -197,25 +209,31 @@ static void S_LTG __core_ring_poller__(struct ringbuf *ringbuf)
         }
 }
 
+#if !ENABLE_RING_MP
 typedef struct {
         struct list_head hook;
         struct ringbuf *ringbuf;
 } ringlist_t;
+#endif
 
 void S_LTG core_ring_poller(void *_core, void *var, void *arg)
 {
         core_t *core = _core;
         core_ring_t *ring = core->ring;
-        ringlist_t *ringlist;
-        struct list_head *pos;
 
         (void)var;
         (void)arg;
-        
+
+#if ENABLE_RING_MP
+        __core_ring_poller__(ring->ringbuf);
+#else
+        ringlist_t *ringlist;
+        struct list_head *pos;
         list_for_each(pos, &ring->list) {
                 ringlist = (void *)pos;
                 __core_ring_poller__(ringlist->ringbuf);
         }
+#endif
 }
 
 int core_ring_count(core_t *core)
@@ -223,15 +241,20 @@ int core_ring_count(core_t *core)
         int count = 0;
         core_ring_t *ring = core->ring;
 
+#if ENABLE_RING_MP
+        count = libringbuf_count(ring->ringbuf);
+#else
         for (int i = 0; i < CORE_MAX; i++) {
                 if (ring->ringbuf[i]) {
                         count += libringbuf_count(ring->ringbuf[i]);
                 }
         }
+#endif
 
         return count;
 }
 
+#if !ENABLE_RING_MP
 static void __core_ring_new(core_ring_t *ring, int idx)
 {
         int ret;
@@ -264,11 +287,16 @@ static int __core_ring_connect__(va_list ap)
 
         return 0;
 }
+#endif
 
 void S_LTG __core_ring_connect(core_t *rcore, core_t *lcore,
-                         struct ringbuf **request,
-                         struct ringbuf **reply)
+                               struct ringbuf **request,
+                               struct ringbuf **reply)
 {
+#if ENABLE_RING_MP
+        *request = rcore->ring->ringbuf;
+        *reply = lcore->ring->ringbuf;
+#else
         if (unlikely(rcore->ring->ringbuf[lcore->hash] == NULL)) {
                 int ret = core_request(rcore->hash, -1, "ring_connect",
                                        __core_ring_connect__, lcore->hash);
@@ -284,6 +312,7 @@ void S_LTG __core_ring_connect(core_t *rcore, core_t *lcore,
 
         *request = rcore->ring->ringbuf[lcore->hash];
         *reply = lcore->ring->ringbuf[rcore->hash];
+#endif
 }
 
 void S_LTG core_ring_reply(ring_ctx_t *ring_ctx)
@@ -295,7 +324,7 @@ void S_LTG core_ring_reply(ring_ctx_t *ring_ctx)
         
         __core_ring_queue__(ring_ctx->reply, ring_ctx);
 #else
-        libringbuf_sp_enqueue(ring_ctx->reply, (void *)ring_ctx);
+        libringbuf_enqueue(ring_ctx->reply, (void *)ring_ctx);
 #endif
 
         if (unlikely(ltgconf_global.polling_timeout)) {
@@ -370,7 +399,7 @@ void S_LTG core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
         ctx->run_type = type;
         
 #if !QUEUE_BULK
-        libringbuf_sp_enqueue(ctx->request, (void *)ctx);
+        libringbuf_enqueue(ctx->request, (void *)ctx);
 #endif
 
         if (unlikely(ltgconf_global.polling_timeout)) {
@@ -426,7 +455,7 @@ int S_LTG core_ring_wait(int coreid, int type, const char *name,
         ctx->reply_ctx = (void *)&task;
 
 #if !QUEUE_BULK
-        libringbuf_sp_enqueue(ctx->request, (void *)ctx);
+        libringbuf_enqueue(ctx->request, (void *)ctx);
 #endif
 
         if (unlikely(ltgconf_global.polling_timeout)) {
