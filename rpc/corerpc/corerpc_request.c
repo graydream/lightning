@@ -27,7 +27,7 @@ typedef struct {
 #if CORE_CHECK
         int coreid;
 #endif
-        ltgbuf_t buf;
+        ltgbuf_t *rbuf;
 } corerpc_ring_ctx_t;
 
 typedef struct {
@@ -55,11 +55,18 @@ static void S_LTG __corerpc_post_task(void *arg1, void *arg2, void *arg3, void *
         sche_task_post(&ctx->task, retval, buf);
 }
 
-static void __corerpc_request_reset(const msgid_t *msgid)
+static void __corerpc_request_reset(const msgid_t *msgid, int retval)
 {
         rpc_table_t *__rpc_table_private__ = corerpc_self();
-        sche_task_reset();
+
+        (void) retval;
+
+        DBUG("reset (%d, %d)\n", msgid->idx, msgid->figerprint);
+#if 1
+        rpc_table_post(__rpc_table_private__, msgid, retval, NULL, 0);
+#else
         rpc_table_free(__rpc_table_private__, msgid);
+#endif
 }
 
 STATIC int S_LTG __corerpc_getslot(void *_ctx, const char *name,
@@ -77,6 +84,9 @@ STATIC int S_LTG __corerpc_getslot(void *_ctx, const char *name,
 
         if (type == SEND_TASK) {
                 ctx->task = sche_task_get();
+        } else {
+                ctx->task.taskid = -1;
+                ctx->task.fingerprint = -1;
         }
 
         ret = rpc_table_setslot(__rpc_table_private__, &op->msgid,
@@ -204,12 +214,22 @@ static int S_LTG __corerpc_send_sock(void *core, const char *name,
                 GOTO(err_ret, ret);
 
         ret = op->sockid.request(core, op);
-        if (unlikely(ret)) {
-                sche_task_reset();
+        if (unlikely(ret)) { 
+                if (sche_running()) {
+                        sche_task_reset();
+                }
+
+                __corerpc_request_reset(&op->msgid, ret);
                 corenet_maping_close(&op->netctl.nid, &op->sockid);
+                //reset rpc table, do not return errno;
+
+                goto out;
+#if 0
+                sche_task_reset();
 		ret = _errno_net(ret);
 		LTG_ASSERT(ret == ENONET || ret == ESHUTDOWN);
-		GOTO(err_free, ret);
+                GOTO(err_ret, ret);
+#endif
 	}
 
         DBUG("%s msgid (%u, %x) to %s\n", name, &op->msgid.idx,
@@ -218,12 +238,10 @@ static int S_LTG __corerpc_send_sock(void *core, const char *name,
         SOCKID_DUMP(&op->sockid);
         MSGID_DUMP(&op->msgid);
 
+out:
         ANALYSIS_QUEUE(0, IO_INFO, NULL);
-
+        
         return 0;
-
-err_free:
-        __corerpc_request_reset(&op->msgid);
 err_ret:
         return ret;
 }
@@ -342,12 +360,12 @@ static void S_LTG __corerpc_post_queue(void *arg1, void *arg2, void *arg3,
 #endif
         
         ring->retval = retval;
-        ltgbuf_init(&ring->buf, 0);
-        if (buf) {
-                ltgbuf_merge(&ring->buf, buf);
+        if (buf && buf->len) {
+                LTG_ASSERT(ring->rbuf);
+                LTG_ASSERT(ring->rbuf->len >= buf->len);
+                ltgbuf_clone1(ring->rbuf, buf, 0);
+                ltgbuf_free(buf);
         }
-
-        DBUG("buflen %d\n", buf->len);
 
         core_ring_reply(&ring->ring_ctx);
         slab_stream_free(ctx);
@@ -370,17 +388,16 @@ static void S_LTG __corerpc_queue_exec(void *_ring)
 
         ctx->coreid = coreid.idx;
 #endif
-        
+
         ret = __corerpc_send(ring->name, ctx, __corerpc_post_queue, SEND_QUEUE);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
         return;
 err_ret:
-        DWARN("send fail\n");
-#if 0
+        DWARN("send fail %p\n", ctx);
+#if 1
         ring->retval = ret;
-        ltgbuf_init(&ring->buf, 0);
         core_ring_reply(&ring->ring_ctx);
         slab_stream_free(ctx);
 #endif
@@ -401,7 +418,7 @@ static void S_LTG __corerpc_queue_reply(void *_ring)
         LTG_ASSERT(ring->coreid == coreid.idx);
 #endif
 
-        sche_task_post(&ring->task, ring->retval, &ring->buf);
+        sche_task_post(&ring->task, ring->retval, NULL);
 }
 
 static int S_LTG __corerpc_ring_wait(int netctl, const char *name,
@@ -412,6 +429,7 @@ static int S_LTG __corerpc_ring_wait(int netctl, const char *name,
 
         ring.op = op;
         ring.name = name;
+        ring.rbuf = op->rbuf;
 
 #if CORE_CHECK
         coreid_t coreid;
@@ -423,6 +441,12 @@ static int S_LTG __corerpc_ring_wait(int netctl, const char *name,
 #endif
 
         ring.task = sche_task_get();
+
+#if 0
+        if (ring.rbuf) {
+                LTG_ASSERT((int)ring.rbuf->len == op->replen);
+        }
+#endif
         
         core_ring_queue(netctl, RING_QUEUE, &ring.ring_ctx,
                         __corerpc_queue_exec, &ring,
@@ -437,7 +461,6 @@ static int S_LTG __corerpc_ring_wait(int netctl, const char *name,
 err_ret:
         return ret;
 }
-
 
 #else
 

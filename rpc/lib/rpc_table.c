@@ -362,8 +362,9 @@ static slot_t S_LTG *__rpc_table_lock_slot(rpc_table_t *rpc_table, const msgid_t
         return slot;
 }
 
-int S_LTG rpc_table_setslot(rpc_table_t *rpc_table, const msgid_t *msgid, func3_t func,
-                      void *arg, const sockid_t *sockid, const nid_t *nid, int timeout)
+int S_LTG rpc_table_setslot(rpc_table_t *rpc_table, const msgid_t *msgid,
+                            func3_t func, void *arg, const sockid_t *sockid,
+                            const nid_t *nid, int timeout)
 {
         int ret;
         slot_t *slot;
