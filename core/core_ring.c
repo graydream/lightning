@@ -225,7 +225,9 @@ void S_LTG core_ring_poller(void *_core, void *var, void *arg)
         (void)arg;
 
 #if ENABLE_RING_MP
-        __core_ring_poller__(ring->ringbuf);
+        if (libringbuf_count(ring->ringbuf)) {
+                __core_ring_poller__(ring->ringbuf);
+        }
 #else
         ringlist_t *ringlist;
         struct list_head *pos;

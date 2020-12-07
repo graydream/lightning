@@ -914,6 +914,10 @@ void S_LTG corenet_rdma_commit(void *rdma_net)
                 return;
         }
 
+        if (list_empty(&__corenet_rdma__->corenet.forward_list)) {
+                return;
+        }
+        
         list_for_each_safe(pos, n, &__corenet_rdma__->corenet.forward_list) {
                 node = container_of(pos, corenet_node_t, send_list);
                 LTG_ASSERT(node->in_use == 1);
