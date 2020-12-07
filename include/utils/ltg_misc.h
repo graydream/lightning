@@ -49,6 +49,10 @@ void _backtrace(const char *name);
 void init_global_hz(void);
 void _microsec_update_now(ltg_time_t *now);
 int64_t _microsec_time_used_from_now(ltg_time_t *prev);
+
+int64_t _microsec_time_used_from_now_count(ltg_time_t *prev);
+int64_t _microsec_time_used_from_now_trans(uint64_t count);
+
 int64_t _sec_time_used_from_now(ltg_time_t *prev);
 int64_t _microsec_time_used(ltg_time_t *t1, ltg_time_t *t2);
 int64_t _sec_time_used(ltg_time_t *t1, ltg_time_t *t2);
