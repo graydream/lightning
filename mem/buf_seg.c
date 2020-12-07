@@ -31,6 +31,7 @@ static seg_t S_LTG *__seg_alloc_head(ltgbuf_t *buf, uint32_t size, int sys)
 
         if (likely(buf->used < SEG_KEEP)) {
                 seg = &buf->array[buf->used];
+                memset(seg, 0x0, sizeof(*seg));
                 seg->local = 1;
                 buf->used++;
         } else {
@@ -43,14 +44,12 @@ static seg_t S_LTG *__seg_alloc_head(ltgbuf_t *buf, uint32_t size, int sys)
                         LTG_ASSERT(ret == 0);
                 }
 
+                memset(seg, 0x0, sizeof(*seg));
                 seg->local = 0;
         }
 
-#if 1
-        memset(seg, 0x0, sizeof(*seg));
         seg->len = size;
-#else
-        seg->len = size;
+#if 0
         seg->shared = 0;
         seg->huge.head = NULL;
         seg->handler.ptr = NULL;
