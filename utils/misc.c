@@ -339,6 +339,29 @@ inline int64_t _microsec_time_used_from_now(ltg_time_t *prev)
 #endif
 }
 
+inline int64_t _microsec_time_used_from_now_count(ltg_time_t *prev)
+{
+#if SCHEDULE_TASKCTX_RUNTIME
+        return get_rdtsc() - prev->tv;
+#else
+        struct timeval now;
+        _gettimeofday(&now, NULL);
+
+        return ((LLU)now.tv_sec - (LLU)prev->tv.tv_sec) * 1000 * 1000
+                + (now.tv_usec - prev->tv.tv_usec);
+#endif
+}
+
+inline int64_t _microsec_time_used_from_now_trans(uint64_t count)
+{
+#if SCHEDULE_TASKCTX_RUNTIME
+        LTG_ASSERT(__global_hz__ != 0);
+        return count * 1000 * 1000 / __global_hz__;
+#else
+        return count;
+#endif
+}
+
 inline int64_t _sec_time_used_from_now(ltg_time_t *prev)
 {
 #if SCHEDULE_TASKCTX_RUNTIME
