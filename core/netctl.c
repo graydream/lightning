@@ -17,12 +17,19 @@
 
 #define NETCTL_HASH 0
 
-static coremask_t __netctl_coremask__;
+//static coremask_t __netctl_coremask__;
 static uint64_t __mask__ = 0;
+
+typedef struct {
+        coremask_t mask;
+        int numaid[CORE_MAX];
+} netctl_t;
 
 #if !NETCTL_HASH
 static __thread int __cur__ = 0;
 #endif
+
+static netctl_t __netctl__;
 
 static int __register_ring_poller(va_list ap)
 {
@@ -39,9 +46,33 @@ static int __register_ring_poller(va_list ap)
 int netctl_init(uint64_t mask)
 {
         int ret;
+        netctl_t *netctl;
 
         DINFO("netctl mask 0x%x\n", mask);
 
+        __mask__ = mask;
+        
+        netctl = &__netctl__;
+        
+        coremask_trans(&netctl->mask, mask);
+
+        for (int i = 0; i < netctl->mask.count; i++) {
+                if (!ltgconf_global.numa) { 
+                        netctl->numaid[i] = 0;
+                        continue;
+                }
+
+                core_t *core =  core_get(netctl->mask.coreid[i]);
+                LTG_ASSERT(core);
+
+                if (core->main_core == NULL) {
+                        netctl->numaid[i] = 0;
+                        continue;
+                }
+                
+                netctl->numaid[i] = core->main_core->node_id;
+        }
+        
         ret = core_init_modules1("netctl", mask,
                                  __register_ring_poller, NULL);
         if (ret)
@@ -49,29 +80,43 @@ int netctl_init(uint64_t mask)
 
         core_occupy("netctl", mask);
         
-        coremask_trans(&__netctl_coremask__, mask);
-        __mask__ = mask;
-        
         return 0;
 err_ret:
         return ret;
 }
 
 
-int netctl_get(const coreid_t *coreid, coreid_t *netctl)
+int netctl_get(const coreid_t *coreid, coreid_t *_netctl)
 {
-        if (__netctl_coremask__.count == 0) {
+        int numaid, retry = 0;
+        netctl_t *netctl = &__netctl__;
+        
+        if (netctl->mask.count == 0) {
                 return 0;
         }
 
-        *netctl = *coreid;
-#if NETCTL_HASH
-        int idx = coreid->idx % __netctl_coremask__.count;
-        netctl->idx = __netctl_coremask__.coreid[idx];
-#else
-        netctl->idx = __netctl_coremask__.coreid[__cur__];
-        __cur__ = (__cur__ + 1) % __netctl_coremask__.count;
-#endif
+        core_t *core = core_self();
+        if (likely(ltgconf_global.numa && core->main_core)) {
+                numaid = core->main_core->node_id;
+        } else {
+                numaid = 0;
+        }
+        
+        *_netctl = *coreid;
+
+        while (1) {
+                __cur__ = (__cur__ + 1) % netctl->mask.count;
+
+                if (netctl->numaid[__cur__] != numaid
+                    && retry > netctl->mask.count) {
+                        retry++;
+                        continue;
+                }
+                
+                _netctl->idx = netctl->mask.coreid[__cur__];
+
+                break;
+        }
 
         return 1;
 }
