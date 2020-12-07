@@ -69,8 +69,8 @@ static void S_LTG __core_ring_commit__(struct ringbuf *ring, struct list_head *l
         struct list_head *pos, *n;
 
         list_for_each_safe(pos, n, list) {
-                ctx = (void *)pos;
                 list_del(pos);
+                ctx = (void *)pos;
 
                 array[count] = ctx;
                 count++;

@@ -48,7 +48,7 @@ struct seg_t {
         uint8_t local;
         uint8_t shared;
         uint16_t __pad__;
-        seg_ops_t sop;
+        seg_ops_t *sop;
 
         struct {
                 void *ptr;
@@ -152,6 +152,7 @@ int ltgbuf_initwith(ltgbuf_t *buf, void *data, int size, void *arg, int (*cb)(vo
 int ltgbuf_rdma_popmsg(ltgbuf_t *buf, void *dist, uint32_t len);
 int ltgbuf_nvme_init2(nvmeio_t *io, uint32_t size, uint64_t offset, ltgbuf_t *buf);
 
+void seg_init();
 seg_t *seg_solid_create(ltgbuf_t *buf, uint32_t size);
 seg_t *seg_huge_create(ltgbuf_t *buf, uint32_t *size);
 seg_t *seg_sys_create(ltgbuf_t *buf, uint32_t size);

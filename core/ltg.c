@@ -101,6 +101,8 @@ static int __ltg_init_stage1(const nid_t *nid, const char *name)
         fnotify_init();
         dmsg_init(ltgconf_global.system_name);
 
+        seg_init();
+        
         if (ltgconf_global.daemon) {
                 net_setnid(nid);
         }

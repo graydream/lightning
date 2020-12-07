@@ -11,6 +11,11 @@
 #include "ltg_utils.h"
 #include "core/sche.h"
 
+static seg_ops_t __sop_huge__;
+static seg_ops_t __sop_sys__;
+static seg_ops_t __sop_ext__;
+static seg_ops_t __sop_solid__;
+
 /*shared*/
 static void S_LTG __seg_free_head(seg_t *seg, int sys)
 {
@@ -50,14 +55,16 @@ static seg_t S_LTG *__seg_alloc_head(ltgbuf_t *buf, uint32_t size, int sys)
 
         seg->len = size;
         seg->shared = 0;
+#if 0
         seg->huge.head = NULL;
         seg->handler.ptr = NULL;
-        seg->sop.seg_share = NULL;
-        seg->sop.seg_free = NULL;
-        seg->sop.seg_trans = NULL;
+        seg->sop->seg_share = NULL;
+        seg->sop->seg_free = NULL;
+        seg->sop->seg_trans = NULL;
 
         DBUG("ptr %p %u %u %p\n", seg->handler.ptr, seg->len, size, seg->huge.head);
         LTG_ASSERT(seg->len == size && seg->huge.head == NULL);
+#endif
 
         return seg;
 }
@@ -129,9 +136,7 @@ inline seg_t *seg_sys_create(ltgbuf_t *buf, uint32_t size)
         seg->handler.ptr = seg->sys.base;
         seg->handler.phyaddr = 0;
         
-        seg->sop.seg_free = __seg_sys_free;
-        seg->sop.seg_share = __seg_sys_share;
-        seg->sop.seg_trans = __seg_sys_trans;
+        seg->sop = &__sop_sys__;
         
         return seg;
 err_free:
@@ -179,9 +184,8 @@ seg_t S_LTG *seg_ext_create(ltgbuf_t *buf, void *data, uint32_t size,
         seg_t *seg;
 
         seg = __seg_alloc_head(buf, size, 0);
-        seg->sop.seg_free = __seg_ext_free;
-        seg->sop.seg_share = __seg_ext_share;
-        seg->sop.seg_trans = __seg_ext_trans;
+
+        seg->sop = &__sop_ext__;
         
         seg->handler.ptr = data;
         seg->handler.phyaddr = 0;
@@ -273,9 +277,7 @@ inline seg_t INLINE *seg_huge_create(ltgbuf_t *buf, uint32_t *size)
         LTG_ASSERT(seg->handler.ptr);
         LTG_ASSERT(seg->huge.head);
 
-        seg->sop.seg_free = __seg_huge_free;
-        seg->sop.seg_share = __seg_huge_share;
-        seg->sop.seg_trans = __seg_huge_trans;
+        seg->sop = &__sop_huge__;
         
         return seg;
 err_free:
@@ -306,7 +308,7 @@ inline void INLINE seg_add_tail(ltgbuf_t *buf, seg_t *seg)
 
 inline void seg_check(seg_t *seg)
 {
-        if (seg->sop.seg_share == __seg_huge_share) {
+        if (seg->sop->seg_share == __seg_huge_share) {
                 mem_handler_t handler;
 
                 handler.pool = seg->huge.pool;
@@ -384,12 +386,46 @@ inline seg_t *seg_solid_create(ltgbuf_t *buf, uint32_t size)
         seg->handler.ptr = seg->solid.base;
         seg->handler.phyaddr = 0;
         
-        seg->sop.seg_free = __seg_solid_free;
-        seg->sop.seg_share = __seg_solid_share;
-        seg->sop.seg_trans = __seg_solid_trans;
-        
+        seg->sop = &__sop_solid__;
+
         return seg;
 err_free:
         UNIMPLEMENTED(__DUMP__);
         return NULL;
+}
+
+static void __seg_huge_init(seg_ops_t *sop)
+{
+        sop->seg_free = __seg_huge_free;
+        sop->seg_share = __seg_huge_share;
+        sop->seg_trans = __seg_huge_trans;
+}
+
+static void __seg_sys_init(seg_ops_t *sop)
+{
+        sop->seg_free = __seg_sys_free;
+        sop->seg_share = __seg_sys_share;
+        sop->seg_trans = __seg_sys_trans;
+}
+
+static void __seg_ext_init(seg_ops_t *sop)
+{
+        sop->seg_free = __seg_ext_free;
+        sop->seg_share = __seg_ext_share;
+        sop->seg_trans = __seg_ext_trans;
+}
+
+static void __seg_solid_init(seg_ops_t *sop)
+{
+        sop->seg_free = __seg_solid_free;
+        sop->seg_share = __seg_solid_share;
+        sop->seg_trans = __seg_solid_trans;
+}
+
+void seg_init()
+{
+        __seg_huge_init(&__sop_huge__);
+        __seg_sys_init(&__sop_sys__);
+        __seg_ext_init(&__sop_ext__);
+        __seg_solid_init(&__sop_solid__);
 }

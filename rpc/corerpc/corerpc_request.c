@@ -387,7 +387,7 @@ err_ret:
         return;
 }
 
-inline static void S_LTG __corerpc_queue_reply(void *_ring)
+static void S_LTG __corerpc_queue_reply(void *_ring)
 {
         corerpc_ring_ctx_t *ring = _ring;
 
