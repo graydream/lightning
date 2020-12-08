@@ -323,10 +323,6 @@ static void __sche_wait_task_resume(sche_t *sche)
 {
         wait_task_t *wait_task;
 
-        if (likely(list_empty(&sche->wait_task.list))) {
-                return;
-        }
-
         if (!__sche_task_hasfree(sche)) {
                 return;
         }
@@ -370,7 +366,9 @@ static void S_LTG __sche_trampoline(taskctx_t *taskctx)
         sche->task_count--;
 #endif
 
-        __sche_wait_task_resume(sche);
+        if (unlikely(!list_empty(&sche->wait_task.list))) {
+                __sche_wait_task_resume(sche);
+        }
 
         DBUG("free task %s, id [%u][%u]\n", taskctx->name, sche->id, taskctx->id);
 
