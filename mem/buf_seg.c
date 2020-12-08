@@ -125,7 +125,7 @@ inline seg_t *seg_sys_create(ltgbuf_t *buf, uint32_t size)
         }
 
         DBT("alloc %p", seg->sys.base);
-        
+
         seg->handler.ptr = seg->sys.base;
         seg->handler.phyaddr = 0;
         

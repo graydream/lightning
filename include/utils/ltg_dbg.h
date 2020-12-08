@@ -100,18 +100,6 @@ void  __attribute__((noinline)) dbg_log_write(const int logtype, const int size,
 #define DINFO_PERF(format,a...)    __D_MSG__(YLOG_TYPE_PERF, 4069 - 128, __D_INFO, "INFO:"format, ## a)
 #define DWARN_PERF(format,a...)    __D_MSG__(YLOG_TYPE_PERF, 4069 - 128, __D_WARNING, "WARNING:"format, ## a)
 
-#define D_MSG_RAW(logtype, mask, format, a...)                                   \
-        do {                                                            \
-                if (__MSG__(mask)) {                                    \
-                        char __d_msg_buf[2 * 1024];                     \
-                        snprintf(__d_msg_buf, 2 * 1024, format, ##a);   \
-                                                                        \
-                        (void) log_write(logtype, __d_msg_buf);        \
-                }                                                       \
-        } while (0);
-
-#define DBUG_RAW(format, a...)         D_MSG_RAW(YLOG_TYPE_STD, __D_BUG, format, ## a)
-
 #ifdef LTG_DEBUG
 #define LTG_ASSERT(exp)                                                \
         do {                                                            \
@@ -191,7 +179,4 @@ void closecoredump();
 
 int dmsg_init();
 int dmsg_init_sub(const char *name, uint32_t flag);
-int dmsg_init_misc(const char *name, const char *value,
-                   int (*callback)(const char *buf, uint32_t flag),
-                   uint32_t flag);
 #endif

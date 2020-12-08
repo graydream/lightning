@@ -275,11 +275,9 @@ void skiplist_print(struct skiplist *slist)
                 DBUG("level %d: ", i);
                 node = slist->head->list[i];
                 while (node != NULL && node->list[0] != NULL) {
-                        DBUG_RAW("%p -> ", node->key);
                         LTG_ASSERT(node->key != NULL);
                         node = node->list[i];
                 }
-                DBUG_RAW("NULL\n");
         }
 }
 

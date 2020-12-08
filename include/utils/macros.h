@@ -10,6 +10,8 @@
 #define IO_WARN (1000 * 1000)
 #define IO_INFO (1000 * 500)
 
+#define NOINLINE __attribute__((noinline)) 
+
 #if 1
 #define IO_FUNC  __attribute__((section(".xiop")))
 #define TGT_FUNC  __attribute__((section(".tgtop")))
