@@ -123,7 +123,6 @@ typedef struct __task {
 
         func_t func;
         void *arg;
-        ltgbuf_t buf;
 
         //uint32_t fingerprint_prev;
         uint32_t fingerprint;
@@ -156,7 +155,6 @@ typedef struct {
 typedef struct {
         task_t task;
         int retval;
-        ltgbuf_t *buf;
 } reply_t;
 
 typedef struct {

@@ -27,7 +27,6 @@ typedef struct {
 #if CORE_CHECK
         int coreid;
 #endif
-        ltgbuf_t *rbuf;
 } corerpc_ring_ctx_t;
 
 typedef struct {
@@ -49,10 +48,18 @@ static void S_LTG __corerpc_post_task(void *arg1, void *arg2, void *arg3, void *
         int retval = *(int *)arg2;
         ltgbuf_t *buf = arg3;
         uint64_t latency = *(uint64_t *)arg4;
-
+        corerpc_op_t *op = &ctx->op;
+        
         ctx->latency = latency;
 
-        sche_task_post(&ctx->task, retval, buf);
+        if (buf && buf->len) {
+                LTG_ASSERT(op->rbuf);
+                LTG_ASSERT(op->rbuf->len >= buf->len);
+                ltgbuf_clone1(op->rbuf, buf, 0);
+                ltgbuf_free(buf);
+        }
+
+        sche_task_post(&ctx->task, retval, NULL);
 }
 
 static void __corerpc_request_reset(const msgid_t *msgid, int retval)
@@ -347,6 +354,7 @@ static void S_LTG __corerpc_post_queue(void *arg1, void *arg2, void *arg3,
         int retval = *(int *)arg2;
         ltgbuf_t *buf = arg3;
         corerpc_ring_ctx_t *ring = ctx->ctx;
+        corerpc_op_t *op = &ctx->op;
 
         (void) arg4;
 
@@ -361,9 +369,9 @@ static void S_LTG __corerpc_post_queue(void *arg1, void *arg2, void *arg3,
         
         ring->retval = retval;
         if (buf && buf->len) {
-                LTG_ASSERT(ring->rbuf);
-                LTG_ASSERT(ring->rbuf->len >= buf->len);
-                ltgbuf_clone1(ring->rbuf, buf, 0);
+                LTG_ASSERT(op->rbuf);
+                LTG_ASSERT(op->rbuf->len >= buf->len);
+                ltgbuf_clone1(op->rbuf, buf, 0);
                 ltgbuf_free(buf);
         }
 
@@ -429,7 +437,6 @@ static int S_LTG __corerpc_ring_wait(int netctl, const char *name,
 
         ring.op = op;
         ring.name = name;
-        ring.rbuf = op->rbuf;
 
 #if CORE_CHECK
         coreid_t coreid;

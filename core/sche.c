@@ -206,16 +206,11 @@ int sche_suspend()
                 return 0;
 }
 
-static void S_LTG __sche_queue__(sche_t *sche, taskctx_t *taskctx, int retval, ltgbuf_t *buf)
+static void S_LTG __sche_queue__(sche_t *sche, taskctx_t *taskctx, int retval)
 {
         LTG_ASSERT(retval <= INT32_MAX);
         taskctx->retval = retval;
         taskctx->state = TASK_STAT_RUNNABLE;
-
-        ltgbuf_init(&taskctx->buf, 0);
-        if (buf && buf->len) {
-                ltgbuf_merge(&taskctx->buf, buf);
-        }
 
         count_list_add_tail(&taskctx->hook, &sche->runable[taskctx->group]);
 }
@@ -331,6 +326,8 @@ int S_LTG sche_yield1(const char *name, ltgbuf_t *buf, void *opaque, func_t func
         ltg_time_t t1;
         uint64_t used;
 
+        (void) buf;
+        
         LTG_ASSERT(_tmo < 1000);
 
 #if ENABLE_SCHEDULE_STACK_ASSERT
@@ -380,12 +377,6 @@ retry:
 
         sche_fingerprint_new(sche, taskctx);
 
-        if (taskctx->buf.len) {
-                LTG_ASSERT(buf);
-                ltgbuf_clone1(buf, &taskctx->buf, 0);
-                ltgbuf_free(&taskctx->buf);
-        }
-
         // 任务等待时间，过大说明调度器堵塞，或在此期间别的被调度任务堵塞
         // 如write等同步过程，不运行出现在调度器循环里
 
@@ -417,8 +408,8 @@ static void  __sche_backtrace_set(taskctx_t *taskctx)
         }
 }
 
-static int S_LTG __sche_queue(sche_t *sche, const task_t  *task, int retval,
-                        ltgbuf_t *buf, int warn)
+static int S_LTG __sche_queue(sche_t *sche, const task_t  *task,
+                              int retval, int warn)
 {
         int ret;
         taskctx_t *taskctx;
@@ -442,7 +433,7 @@ static int S_LTG __sche_queue(sche_t *sche, const task_t  *task, int retval,
         }
 
         LTG_ASSERT(taskctx->state == TASK_STAT_SUSPEND);
-        __sche_queue__(sche, taskctx, retval, buf);
+        __sche_queue__(sche, taskctx, retval);
 
         return 0;
 err_ret:
@@ -786,7 +777,7 @@ static void __sche_reply_remote_run(sche_t *sche)
                 list_del(pos);
                 reply = (void *)pos;
 
-                ret = __sche_queue(sche, &reply->task, reply->retval, &reply->buf, 0);
+                ret = __sche_queue(sche, &reply->task, reply->retval, 0);
                 if (unlikely(ret)) {
                         LTG_ASSERT(ret == ESTALE);
                 }
@@ -809,12 +800,10 @@ static void S_LTG __sche_reply_local_run(sche_t *sche)
         for (i = 0; i < count; ++i) {
                 reply = &_reply[i];
                 DBUG("**** rep %u\n", reply->task.taskid);
-                ret = __sche_queue(sche, &reply->task, reply->retval, reply->buf, 0);
+                ret = __sche_queue(sche, &reply->task, reply->retval, 0);
                 if (unlikely(ret)) {
                         LTG_ASSERT(ret == ESTALE);
                 }
-
-                slab_stream_free(reply->buf);
         }
 }
 

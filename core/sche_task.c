@@ -241,18 +241,15 @@ static void __sche_task_post_remote(sche_t *sche, const task_t *task,
         return;
 }
 
-static void S_LTG __sche_task_post(sche_t *sche, reply_queue_t *reply_queue,
-                              const task_t *task, int retval, ltgbuf_t *buf)
+static void S_LTG __sche_task_post(reply_queue_t *reply_queue,
+                              const task_t *task, int retval)
 {
         int ret;
-        ltgbuf_t *mem = slab_stream_alloc(PAGE_SIZE);
         reply_t *reply;
         
         LTG_ASSERT(task->scheid >= 0 && task->scheid <= SCHEDULE_MAX);
         LTG_ASSERT(task->taskid >= 0 && task->taskid < TASK_MAX);
         LTG_ASSERT(task->fingerprint);
-
-        (void) sche;
 
         if (unlikely(reply_queue->count == reply_queue->max)) {
                 if (unlikely(reply_queue->count + REPLY_QUEUE_STEP > REPLY_QUEUE_MAX)) {
@@ -275,11 +272,6 @@ static void S_LTG __sche_task_post(sche_t *sche, reply_queue_t *reply_queue,
         reply = &reply_queue->replys[reply_queue->count];
         reply->task = *task;
         reply->retval = retval;
-        reply->buf = mem;
-        ltgbuf_init(reply->buf, 0);
-        if (buf && buf->len) {
-                ltgbuf_merge(reply->buf, buf);
-        }
 
         reply_queue->count++;
 
@@ -293,8 +285,11 @@ void S_LTG sche_task_post(const task_t *task, int retval, ltgbuf_t *buf)
 {
         sche_t *sche = __sche_array__[task->scheid];
 
+        (void) buf;
+        LTG_ASSERT(buf == NULL);
+        
         if (likely(sche == sche_self())) {
-                __sche_task_post(sche, &sche->reply_local, task, retval, buf);
+                __sche_task_post(&sche->reply_local, task, retval);
 
                 //sche_post(sche);
         } else {
