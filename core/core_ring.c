@@ -83,16 +83,20 @@ inline static void INLINE __core_ring_commit__(struct ringbuf *ring,
 
 static void S_LTG __core_ring_commit(void *_core, void *var, void *arg)
 {
-        struct list_head *pos, *n;
+        struct list_head *pos, *n, *queue = arg;
         struct list_head list;
         ring_bulk_t *ring_bulk;
 
         (void)var;
         (void)arg;
         (void) _core;
-
+        
+        if (list_empty(queue)) {
+                return;
+        }
+        
         INIT_LIST_HEAD(&list);
-        list_splice_init(&__queue__, &list);
+        list_splice_init(queue, &list);
 
         list_for_each_safe(pos, n, &list) {
                 ring_bulk = (void *)pos;
@@ -144,7 +148,8 @@ int core_ring_init(core_t *core)
         
         INIT_LIST_HEAD(&__queue__);
         
-        ret = core_register_poller("__core_ring_commit", __core_ring_commit, NULL);
+        ret = core_register_poller("__core_ring_commit", __core_ring_commit,
+                                   &__queue__);
         if (ret)
                 GOTO(err_ret, ret);
 #endif

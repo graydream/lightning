@@ -222,12 +222,12 @@ static int S_LTG __corerpc_send_sock(void *core, const char *name,
 
         ret = op->sockid.request(core, op);
         if (unlikely(ret)) { 
+                __corerpc_request_reset(&op->msgid, ret);
                 if (sche_running()) {
                         sche_task_reset();
+                        corenet_maping_close(&op->netctl.nid, &op->sockid);
                 }
 
-                __corerpc_request_reset(&op->msgid, ret);
-                corenet_maping_close(&op->netctl.nid, &op->sockid);
                 //reset rpc table, do not return errno;
 
                 goto out;
