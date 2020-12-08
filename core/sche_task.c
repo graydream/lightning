@@ -210,7 +210,7 @@ err_ret:
 }
 
 static void __sche_task_post_remote(sche_t *sche, const task_t *task,
-                                    int retval, ltgbuf_t *buf)
+                                    int retval)
 {
         int ret;
         reply_remote_t *reply;// = slab_stream_alloc_glob(PAGE_SIZE);
@@ -225,10 +225,6 @@ static void __sche_task_post_remote(sche_t *sche, const task_t *task,
         (void) sche;
         reply->task = *task;
         reply->retval = retval;
-        ltgbuf_init(&reply->buf, 0);
-        if (buf && buf->len) {
-                ltgbuf_merge(&reply->buf, buf);
-        }
 
         ret = ltg_spin_lock(&sche->reply_remote_lock);
         if (unlikely(ret))
@@ -293,7 +289,7 @@ void S_LTG sche_task_post(const task_t *task, int retval, ltgbuf_t *buf)
 
                 //sche_post(sche);
         } else {
-                __sche_task_post_remote(sche, task, retval, buf);
+                __sche_task_post_remote(sche, task, retval);
                 sche_post(sche);
         }
 }

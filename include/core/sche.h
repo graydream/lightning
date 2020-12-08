@@ -54,7 +54,6 @@
 
 typedef struct reply_remote {
         struct list_head hook;
-        ltgbuf_t buf;
         task_t task;
         int retval;
 } reply_remote_t;
