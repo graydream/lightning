@@ -21,6 +21,11 @@ int __d_level__ = __D_FATAL | __D_ERROR | __D_WARNING | __D_INFO;
 uint32_t utils_dbg = 0;
 uint32_t utils_sub = 0;
 
+#define LOG_MAX (8192 + 4096)
+
+static char *__log_buf__ = NULL;
+static ltg_spinlock_t __log_lock__;
+
 void dbg_sub_init()
 {
         utils_dbg = ~0;
@@ -159,17 +164,14 @@ err_ret:
         return ret;
 }       
 
-int dmsg_init_misc(const char *name, const char *value,
-                   int (*callback)(const char *buf, uint32_t flag),
-                   uint32_t flag)
-{
-     return __dmsg_init_sub(name, value, callback, flag);
-}
-
 int dmsg_init()
 {
         int ret;
 
+        ltg_spin_init(&__log_lock__);
+
+        __log_buf__ = malloc(LOG_MAX);
+        
         DINFO("dmsg init %d\n", ltgconf_global.backtrace);
 
         if (ltgconf_global.backtrace) {
@@ -262,28 +264,23 @@ void sche_id(int *sid, int *taskid)
 }
 #endif
 
-void  __attribute__((noinline)) dbg_log_write(const int logtype, const int size, const int mask,
-                const char *filename, const int line, const char *function,
-                const char *format, ...)
+static void NOINLINE __dbg_log_format(char *__d_msg_buf, int size, const char *filename,
+                                      int line, const char *function,
+                                      const char *format, va_list arg)
 {
-        va_list arg;
+
         time_t __t = gettime();
-        char *__d_msg_buf, *__d_msg_info, *__d_msg_time;
+        char *__d_msg_info, *__d_msg_time;
         struct tm __tm;
         int _s_id_, _taskid_;
-
-        (void) mask;
         
         /**
          * | __d_msg_buf(size) | __d_msg_info(size) | __d_msg_time(32) |
          */
-        __d_msg_buf = malloc(size * 2 + 32);
         __d_msg_info = (void *)__d_msg_buf + size;
         __d_msg_time = (void *)__d_msg_buf + size * 2;
 
-        va_start(arg, format);
-        vsnprintf(__d_msg_info, size, format, arg);
-        va_end(arg);
+        vsnprintf(__d_msg_info, LOG_MAX, format, arg);
 
         strftime(__d_msg_time, 32, "%F %T", localtime_safe(&__t, &__tm));
         sche_id(&_s_id_, &_taskid_);
@@ -298,8 +295,42 @@ void  __attribute__((noinline)) dbg_log_write(const int logtype, const int size,
                  //_r_, _w_, _c_,
                  filename, line, function,
                  __d_msg_info);
+}
 
-        (void) log_write(logtype, __d_msg_buf);
+void NOINLINE dbg_log_write(const int logtype, int size, int mask,
+                            const char *filename, int line, const char *function,
+                            const char *format, ...)
+{
+        int ret;
+        va_list arg;
+        char *logbuf;
 
-        free(__d_msg_buf);
+        (void) mask;
+
+        va_start(arg, format);
+
+        size = _min(LOG_MAX / 3, size);
+
+        logbuf = __log_buf__;
+        if (logbuf) {
+                ret = ltg_spin_lock(&__log_lock__);
+                if (ret)
+                        UNIMPLEMENTED(__NULL__);
+        
+                __dbg_log_format(logbuf, size, filename, line, function, format, arg);
+
+                (void) log_write(logtype, logbuf);
+
+                ltg_spin_unlock(&__log_lock__);
+        } else {
+                logbuf = malloc(LOG_MAX);
+                
+                __dbg_log_format(logbuf, size, filename, line, function, format, arg);
+
+                (void) log_write(logtype, logbuf);
+
+                free(logbuf);
+        }
+
+        va_end(arg);
 }

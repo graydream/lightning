@@ -10,6 +10,8 @@
 #define IO_WARN (1000 * 1000)
 #define IO_INFO (1000 * 500)
 
+#define NOINLINE __attribute__((noinline)) 
+
 #if 1
 #define S_LTG  __attribute__((section(".xltg")))
 #else
