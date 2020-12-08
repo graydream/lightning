@@ -119,7 +119,7 @@ inline seg_t *seg_sys_create(ltgbuf_t *buf, uint32_t size)
         if (unlikely(!seg))
                 return NULL;
 
-        ret = posix_memalign((void **)&seg->sys.base, PAGE_SIZE, seg->len);
+        ret = ltg_malloc((void **)&seg->sys.base, seg->len);
         if (unlikely(ret)) {
                 GOTO(err_free, ret);
         }
