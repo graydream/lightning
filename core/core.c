@@ -872,7 +872,7 @@ int core_request(int coreid, int group, const char *name, func_va_t exec, ...)
         return core_request_va1(coreid, group, name, exec, ap);
 }
 
-void * S_LTG core_tls_get(void *_core, int type)
+inline void INLINE *core_tls_get(void *_core, int type)
 {
         core_t *core = core_self();
 
