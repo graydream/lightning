@@ -24,6 +24,7 @@ uint32_t utils_sub = 0;
 #define LOG_MAX (8192 + 4096)
 
 static char *__log_buf__ = NULL;
+static  __thread char *__log_buf_private__ = NULL;
 static ltg_spinlock_t __log_lock__;
 
 void dbg_sub_init()
@@ -311,20 +312,35 @@ void NOINLINE dbg_log_write(const int logtype, int size, int mask,
 
         size = _min(LOG_MAX / 3, size);
 
-        logbuf = __log_buf__;
-        if (logbuf) {
+        if (likely(sche_self())) {
+                if (__log_buf_private__ == NULL) {
+                        __log_buf_private__ = malloc(LOG_MAX);
+                }
+                
+                logbuf = __log_buf_private__;
+
+                __dbg_log_format(logbuf, size, filename, line, function, format, arg);
+
+                (void) log_write(logtype, logbuf);
+        } else if (__log_buf__) {
                 ret = ltg_spin_lock(&__log_lock__);
                 if (ret)
                         UNIMPLEMENTED(__NULL__);
-        
+
+                if (__log_buf__ == NULL) {
+                        __log_buf__ = malloc(LOG_MAX);
+                }
+
+                logbuf = __log_buf__;
+
                 __dbg_log_format(logbuf, size, filename, line, function, format, arg);
 
                 (void) log_write(logtype, logbuf);
 
                 ltg_spin_unlock(&__log_lock__);
-        } else {
+        } else {//not inited
                 logbuf = malloc(LOG_MAX);
-                
+
                 __dbg_log_format(logbuf, size, filename, line, function, format, arg);
 
                 (void) log_write(logtype, logbuf);
