@@ -7,6 +7,9 @@
 #include "lock.h"
 #include "ltg_list.h"
 
+#define LOG_DUP 1
+
+
 typedef enum {
         YLOG_STDERR,
         YLOG_FILE,
@@ -15,9 +18,10 @@ typedef enum {
 
 typedef struct {
         int logfd;
-        time_t time;
-        ltg_rwlock_t lock;
+#if !LOG_DUP
         ltg_spinlock_t spin;
+        time_t time;
+#endif
         logmode_t logmode;
         char file[MAX_PATH_LEN];
         uint64_t file_size;
