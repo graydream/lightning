@@ -70,8 +70,7 @@ int coreid_cmp(const coreid_t *id1, const coreid_t *id2);
 struct tm *localtime_safe(time_t *_time, struct tm *tm_time);
 int _gettimeofday(struct timeval *tv, struct timezone *tz);
 time_t gettime();
-void gettime_refresh(void *ctx);
-int gettime_private_init();
+int gettime_init();
 
 /* crc32.c */
 #define crc32_init(crc) ((crc) = ~0U)

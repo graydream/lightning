@@ -191,7 +191,6 @@ void S_LTG core_worker_run(core_t *core)
                 core_stat(core);
         }
 
-        gettime_refresh(core);
         timer_expire(core);
 
 #if ENABLE_ANALYSIS
@@ -261,10 +260,6 @@ static int __core_worker_init(core_t *core)
 
                 DINFO("%s[%u] timer inited\n", core->name, core->hash);
         }
-
-        ret = gettime_private_init();
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
 
         ret = slab_stream_private_init();
         if (ret)
@@ -470,6 +465,12 @@ int core_init(uint64_t mask, int flag)
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
         }
+
+        if (flag & CORE_FLAG_POLLING) {
+                ret = gettime_init();
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+        }
 #if 1
         ret = core_latency_init();
         if (unlikely(ret))
@@ -659,7 +660,7 @@ int core_islocal(const coreid_t *coreid)
         return 1;
 }
 
-int core_getid(coreid_t *coreid)
+int S_LTG core_getid(coreid_t *coreid)
 {
         int ret;
         core_t *core = core_self();

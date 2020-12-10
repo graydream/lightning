@@ -42,7 +42,7 @@ typedef struct {
 
 static ltimer_t *__timer__ = NULL;
 
-static __time_t __timer_gettime()
+static __time_t S_LTG __timer_gettime()
 {
         int ret;
         struct timeval tv;
@@ -95,7 +95,7 @@ static int __timer_cmp(const void *key, const void *data)
         return ret;
 }
 
-static void __timer_expire__(group_t *group)
+static void S_LTG __timer_expire__(group_t *group)
 {
         int ret;
         __time_t now;
@@ -380,13 +380,6 @@ err_ret:
         return ret;
 }
 
-#if 0
-static void __timer_expire_task(void *arg)
-{
-        return __timer_expire__(arg);
-}
-#endif
-
 void S_LTG timer_expire(void *ctx)
 {
         ltimer_t *timer;
@@ -395,9 +388,5 @@ void S_LTG timer_expire(void *ctx)
         if (unlikely(timer == NULL))
                 return;
 
-#if 0
-        sche_task_new("timer expire", __timer_expire_task, &timer->group, -1);
-#else
         __timer_expire__(&timer->group);
-#endif
 }

@@ -12,7 +12,7 @@
 
 #define MAX_LEVEL 48
 
-int findplace(struct skiplist *slist, const void *key, struct skiplist_node **btlist,
+int S_LTG findplace(struct skiplist *slist, const void *key, struct skiplist_node **btlist,
               int *found)
 {
         int ret, i;
@@ -281,7 +281,7 @@ void skiplist_print(struct skiplist *slist)
         }
 }
 
-int skiplist_get1st(struct skiplist *slist, void **data)
+int S_LTG skiplist_get1st(struct skiplist *slist, void **data)
 {
         int ret;
         struct skiplist_node *node;
@@ -323,7 +323,7 @@ int skiplist_getlast(const struct skiplist *slist, void **data)
         return 0;
 }
 
-int skiplist_del(struct skiplist *slist, const void *key, void **data)
+int S_LTG skiplist_del(struct skiplist *slist, const void *key, void **data)
 {
         int ret, found, level, cur_level;
         struct skiplist_node *btlist[MAX_LEVEL], *node;
