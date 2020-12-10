@@ -13,8 +13,35 @@
 #include "ltg_utils.h"
 
 static log_t *__log__;
-static int __reopen = 0;
 
+#if LOG_DUP
+
+void log_set_reopen(int reopen)
+{
+        int oldfd, fd;
+        log_t *log = __log__;
+
+        (void) reopen;
+        
+        if (log->logmode == YLOG_FILE && log->logfd != -1) {
+                oldfd = log->logfd;
+                
+                fd = open(log->file, O_APPEND | O_CREAT | O_WRONLY, 0644);
+                if (fd == -1) {
+                        goto err_ret;
+                }
+
+                log->logfd = fd;
+                (void) close(oldfd);
+        }
+
+        return;
+err_ret:
+        return;
+}
+#else
+
+static int __reopen = 0;
 void log_set_reopen(int reopen)
 {
         __reopen = reopen;
@@ -43,6 +70,7 @@ static int __log_reopen(log_t *log)
 err_ret:
         return ret;
 }
+#endif
 
 int log_init2(logmode_t logmode, const char *file, int log_max_mbytes)
 {
@@ -58,12 +86,8 @@ int log_init2(logmode_t logmode, const char *file, int log_max_mbytes)
                         GOTO(err_ret, ret);
                 
                 if (logmode == YLOG_FILE && file) {
-                        ret = ltg_rwlock_init(&log->lock, NULL);
-                        if (ret) {
-                                fprintf(stderr, "log init %u", ret);
-                                goto err_ret;
-                        }
-
+#if !LOG_DUP
+                        
                         ret = ltg_spin_init(&log->spin);
                         if (unlikely(ret)) {
                                 fprintf(stderr, "log init %u", ret);
@@ -71,6 +95,8 @@ int log_init2(logmode_t logmode, const char *file, int log_max_mbytes)
                         }
 
                         log->time = 0;
+#endif
+
                         log->file_size = 0;
 
                         ret = path_validate(file, LLIB_NOTDIR, LLIB_DIRCREATE);
@@ -125,7 +151,9 @@ int log_destroy(void)
                 if (__log__->logmode == YLOG_FILE && __log__->logfd != -1)
                         (void) close(__log__->logfd);
 
+#if !LOG_DUP
                 ltg_spin_destroy(&__log__->spin);
+#endif
 
                 ltg_free((void **)&__log__);
         }
@@ -172,6 +200,35 @@ err_ret:
 }
 #endif
 
+#if LOG_DUP
+
+static int __log_write_msg(log_t *log, const char *msg, int msglen)
+{
+        int ret, fd;
+
+        fd = dup(log->logfd);
+        if (fd < 0) {
+                ret = errno;
+                goto err_ret;
+        }
+        
+        ret = write(fd, msg, msglen);
+        if (ret < 0) {
+                ret = errno;
+                goto err_fd;
+        }
+
+        close(fd);
+        
+        return 0;
+err_fd:
+        close(fd);
+err_ret:
+        return ret;
+}
+
+#else
+
 static int __log_write_msg(log_t *log, const char *msg, int msglen)
 {
         int ret;
@@ -204,6 +261,7 @@ err_lock:
 err_ret:
         return ret;
 }
+#endif
 
 int log_write(logtype_t type, const char *_msg)
 {
