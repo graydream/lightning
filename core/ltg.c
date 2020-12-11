@@ -94,13 +94,12 @@ static int __ltg_init_stage1(const nid_t *nid, const char *name)
 
         (void) name;
 
-        dmsg_init(ltgconf_global.system_name);
-        
         ret = __get_nofilemax(ltgconf_global.daemon, &ltg_nofile_max);
         if (ret)
                 GOTO(err_ret, ret);
         
         fnotify_init();
+        dmsg_init(ltgconf_global.system_name);
 
         seg_init();
         
