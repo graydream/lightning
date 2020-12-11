@@ -23,10 +23,8 @@
 #include "ltg_utils.h"
 #include "sche_thread.h"
 
-#define ENABLE_SCHEDULE_SELF_DEBUG 1
-#define ENABLE_SCHEDULE_STACK_ASSERT 1
-
-#define SCHEDULE_CHECK_IOPS 0
+#define ENABLE_SCHEDULE_SELF_DEBUG 0
+#define ENABLE_SCHEDULE_STACK_ASSERT 0
 
 #define TASK_MAX (16384)
 
@@ -187,10 +185,6 @@ typedef struct sche_t {
         char name[32];
         int id;
 
-#if SCHEDULE_CHECK_IOPS
-        struct timeval t1, t2;
-        uint64_t nr_run1, nr_run2;
-#endif
         // uint64_t hz;
         // scher status
         int eventfd;

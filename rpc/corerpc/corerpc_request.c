@@ -485,10 +485,10 @@ STATIC int S_LTG __corerpc_postwait_task(va_list ap)
 
 #endif
 
-int S_LTG corerpc_postwait(const char *name, const coreid_t *coreid,
-                           const void *request, int reqlen, int replen,
-                           const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
-                           int msg_type, int msg_size, int group, int timeout)
+inline int INLINE corerpc_postwait(const char *name, const coreid_t *coreid,
+                                   const void *request, int reqlen, int replen,
+                                   const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
+                                   int msg_type, int msg_size, int group, int timeout)
 {
         coreid_t netctl;
         corerpc_op_t op;

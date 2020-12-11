@@ -750,7 +750,7 @@ STATIC int __corenet_rdma_handle_wc_error(struct ibv_wc *wc, __corenet_t *corene
 
 #define MAX_POLLING 32
 
-int S_LTG corenet_rdma_poll(__corenet_t *corenet)
+inline int INLINE corenet_rdma_poll(__corenet_t *corenet)
 {
         int ret, i, polling_count = 0;
         struct ibv_wc wc[MAX_POLLING];
@@ -903,7 +903,7 @@ static inline int S_LTG __corenet_rdma_commit(corenet_node_t *node)
         return 0;
 }
 
-void S_LTG corenet_rdma_commit(void *rdma_net)
+inline void INLINE corenet_rdma_commit(void *rdma_net)
 {
         struct list_head *pos, *n;
         corenet_rdma_t *__corenet_rdma__ = rdma_net;

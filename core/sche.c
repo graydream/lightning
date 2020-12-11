@@ -709,23 +709,6 @@ inline static int INLINE __sche_group_run(sche_t *sche, int group)
                         break;
                 }
 
-#if SCHEDULE_CHECK_IOPS
-                int64_t used;
-
-                sche->nr_run2++;
-                if (sche->nr_run2 % 10000 == 0) {
-                        used = _time_used(&sche->t1, &sche->t2);
-                        if (used >= 1000000) {
-                                DDUG("sche %p name %s run1 %ju run2 %ju iops %ju\n",
-                                     sche, taskctx->name,
-                                     sche->nr_run1, sche->nr_run2,
-                                     (sche->nr_run2 - sche->nr_run1) / used);
-                                sche->t1 = sche->t2;
-                                sche->nr_run1 = sche->nr_run2;
-                        }
-                }
-#endif
-
                 count++;
                 LTG_ASSERT(taskctx->state == TASK_STAT_RUNNABLE);
                 __sche_exec__(sche, taskctx);
