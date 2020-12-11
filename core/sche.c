@@ -698,7 +698,7 @@ static taskctx_t * S_LTG __sche_task_pop(sche_t *sche, int group)
 }
 
 
-static int S_LTG __sche_group_run(sche_t *sche, int group)
+inline static int INLINE __sche_group_run(sche_t *sche, int group)
 {
         int count = 0;
         taskctx_t *taskctx;

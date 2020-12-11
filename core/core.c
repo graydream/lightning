@@ -148,7 +148,7 @@ static void S_LTG core_stat(core_t *core)
         }
 }
 
-void S_LTG core_worker_run(core_t *core)
+inline void INLINE core_worker_run(core_t *core)
 {
         struct list_head *pos;
         routine_t *routine;

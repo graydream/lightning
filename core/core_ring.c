@@ -182,7 +182,7 @@ static void S_LTG __core_ring_poller_run(void **array, int count)
         }
 }
 
-static void S_LTG __core_ring_poller__(struct ringbuf *ringbuf)
+inline static void INLINE __core_ring_poller__(struct ringbuf *ringbuf)
 {
         void *array[RING_ARRAY_SIZE];
         int count;
