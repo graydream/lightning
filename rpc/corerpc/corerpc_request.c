@@ -379,7 +379,7 @@ static void S_LTG __corerpc_post_queue(void *arg1, void *arg2, void *arg3,
         slab_stream_free(ctx);
 }
 
-static void S_LTG __corerpc_queue_exec(void *_ring)
+inline static void INLINE __corerpc_queue_exec(void *_ring)
 {
         int ret;
         corerpc_ring_ctx_t *ring = _ring;

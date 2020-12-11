@@ -837,10 +837,9 @@ static void S_LTG __corenet_rdma_queue(corenet_rdma_t *corenet, corenet_node_t *
         return ;
 }
 
-int S_LTG corenet_rdma_send(const sockid_t *sockid, ltgbuf_t *buf, void **addr,
-                            uint32_t rkey, uint32_t size,
-                            rdma_req_t *(*build_req)(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
-                                                       void **addr, uint32_t rkey, uint32_t size))
+inline int INLINE corenet_rdma_send(const sockid_t *sockid, ltgbuf_t *buf,
+                                    void **addr, uint32_t rkey, uint32_t size,
+                                    req_build_func build_req)
 {
         int ret;
         corenet_node_t *node;
