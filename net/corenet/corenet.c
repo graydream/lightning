@@ -17,7 +17,7 @@
 
 extern int ltg_nofile_max;
 
-static void S_LTG  __corenet_routine(void *_core, void *var, void *_corenet)
+inline static void INLINE __corenet_routine(void *_core, void *var, void *_corenet)
 {
         (void) _core;
         (void) _corenet;

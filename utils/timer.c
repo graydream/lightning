@@ -232,7 +232,7 @@ static void *__timer_expire(void *_args)
 }
 
 
-int timer_init(int private)
+static int __timer_init(int private)
 {
         int ret, len;
         void *ptr;
@@ -380,13 +380,57 @@ err_ret:
         return ret;
 }
 
-void S_LTG timer_expire(void *ctx)
+inline static void INLINE __timer_routine(void *_core, void *var, void *_timer)
 {
-        ltimer_t *timer;
-        timer = core_tls_get(ctx, VARIABLE_TIMER);
+        (void) var;
+        (void) _core;
 
-        if (unlikely(timer == NULL))
-                return;
+        ltimer_t *timer = _timer;
 
         __timer_expire__(&timer->group);
+        
+        return;
+}
+
+static int __timer_init_core(va_list ap)
+{
+        int ret;
+        
+        (void) ap;
+
+        ret = __timer_init(1);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
+        ltimer_t *timer = core_tls_get(NULL, VARIABLE_TIMER);
+
+        ret = core_register_routine("timer", __timer_routine, timer);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
+        core_t *core = core_self();
+        DINFO("%s[%u] timer inited\n", core->name, core->hash);
+        
+        return 0;
+err_ret:
+        return ret;
+}
+
+int timer_init(int private)
+{
+        int ret;
+
+        ret = __timer_init(0);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
+        if (private) {
+                ret = core_init_modules("timer", __timer_init_core, NULL);
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+        }
+
+        return 0;
+err_ret:
+        return ret;
 }

@@ -191,8 +191,6 @@ void S_LTG core_worker_run(core_t *core)
                 core_stat(core);
         }
 
-        timer_expire(core);
-
 #if ENABLE_ANALYSIS
         analysis_merge(core);
 #else
@@ -253,14 +251,6 @@ static int __core_worker_init(core_t *core)
 
         DINFO("%s[%u] sche[%d] inited\n", core->name, core->hash, core->sche_idx);
 
-        if (!interrupt) {
-                ret = timer_init(1);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
-
-                DINFO("%s[%u] timer inited\n", core->name, core->hash);
-        }
-
         ret = slab_stream_private_init();
         if (ret)
                 GOTO(err_ret, ret);
@@ -278,21 +268,6 @@ static int __core_worker_init(core_t *core)
         ret = core_ring_init(core);
         if (ret)
                 GOTO(err_ret, ret);
-
-        DINFO("%s[%u] mem inited\n", core->name, core->hash);
-
-        if (ltgconf_global.performance_analysis) {
-                snprintf(name, sizeof(name), "%s[%u]", core->name, core->hash);
-
-                ret = analysis_private_create(name);
-                if (unlikely(ret)) {
-                        GOTO(err_ret, ret);
-                }
-
-                DINFO("%s[%u] analysis inited\n", core->name, core->hash);
-        }
-
-        //core_register_tls(VARIABLE_CORE, private_mem);
 
         DINFO("%s[%d] inited\n", core->name, core->hash);
         

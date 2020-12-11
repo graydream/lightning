@@ -98,8 +98,13 @@ static int __ltg_init_stage1(const nid_t *nid, const char *name)
         if (ret)
                 GOTO(err_ret, ret);
         
-        fnotify_init();
-        dmsg_init(ltgconf_global.system_name);
+        ret = fnotify_init();
+        if (ret)
+                GOTO(err_ret, ret);
+
+        ret = dmsg_init(ltgconf_global.system_name);
+        if (ret)
+                GOTO(err_ret, ret);
 
         seg_init();
         
@@ -107,26 +112,22 @@ static int __ltg_init_stage1(const nid_t *nid, const char *name)
                 net_setnid(nid);
         }
 
-        ret = timer_init(0);
-        if (ret)
-                GOTO(err_ret, ret);
-
         ret = sche_init();
         if (unlikely(ret))
                 GOTO(err_ret, ret);
-
-        analysis_init();
-
-        if (ltgconf_global.performance_analysis) {
-                ret = analysis_create(&default_analysis, "default", 0);
-                if (unlikely(ret))             
-                        GOTO(err_ret, ret);            
-        }
 
         ret = core_init(ltgconf_global.coremask, ltgconf_global.coreflag);
         if (ret)
                 GOTO(err_ret, ret);
 
+        ret = analysis_init();
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+        
+        ret = timer_init(ltgconf_global.coreflag & CORE_FLAG_POLLING);
+        if (ret)
+                GOTO(err_ret, ret);
+        
         ret = etcd_init();
         if (ret)
                 GOTO(err_ret, ret);
@@ -155,9 +156,7 @@ static int __ltg_init_stage2(const char *name)
                 ret = rpc_passive(-1);
                 if (ret)
                         GOTO(err_ret, ret);
-        }
 
-        if (ltgconf_global.daemon) {
                 ret = conn_init();
                 if (ret)
                         GOTO(err_ret, ret);

@@ -288,7 +288,7 @@ err_ret:
         return NULL;
 }
 
-int analysis_init()
+static int __analysis_init()
 {
         int ret;
         pthread_t th;
@@ -524,4 +524,65 @@ void S_LTG analysis_merge(void *ctx)
         if (likely(ana)) {
                 __analysis__(ana, NULL);
         }
+}
+
+inline static void INLINE __analysis_routine(void *_core, void *var, void *_ana)
+{
+        (void) var;
+        (void) _core;
+
+        analysis_t *ana = _ana;
+
+        __analysis__(ana, NULL);
+        
+        return;
+}
+
+static int __analysis_init_core(va_list ap)
+{
+        int ret;
+        core_t *core = core_self();
+        
+        (void) ap;
+
+        ret = analysis_private_create(core->name);
+        if (unlikely(ret))             
+                GOTO(err_ret, ret);            
+
+        analysis_t *ana = core_tls_get(NULL, VARIABLE_ANALYSIS);
+
+        ret = core_register_routine("timer", __analysis_routine, ana);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
+        DINFO("%s[%u] analysis inited\n", core->name, core->hash);
+        
+        return 0;
+err_ret:
+        return ret;
+}
+
+int analysis_init()
+{
+        int ret;
+
+        ret = __analysis_init();
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
+        if (ltgconf_global.performance_analysis == 0) {
+                return 0;
+        }
+        
+        ret = analysis_create(&default_analysis, "default", 0);
+        if (unlikely(ret))             
+                GOTO(err_ret, ret);            
+
+        ret = core_init_modules("timer", __analysis_init_core, NULL);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
+        return 0;
+err_ret:
+        return ret;
 }

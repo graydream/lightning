@@ -81,7 +81,7 @@ inline static void INLINE __core_ring_commit__(struct ringbuf *ring,
         LTG_ASSERT(ret == 0);
 }
 
-static void S_LTG __core_ring_commit(void *_core, void *var, void *arg)
+inline static void INLINE __core_ring_commit(void *_core, void *var, void *arg)
 {
         struct list_head *pos, *n, *queue = arg;
         struct list_head list;
@@ -202,7 +202,7 @@ typedef struct {
 } ringlist_t;
 #endif
 
-void S_LTG core_ring_poller(void *_core, void *var, void *arg)
+inline void INLINE core_ring_poller(void *_core, void *var, void *arg)
 {
         core_t *core = _core;
         core_ring_t *ring = core->ring;

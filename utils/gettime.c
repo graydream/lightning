@@ -50,7 +50,7 @@ inline int INLINE _gettimeofday(struct timeval *tv, struct timezone *tz)
         return 0;
 }
 
-static void S_LTG __gettime(void *_core, void *var, void *_gettime)
+inline static void S_LTG INLINE __gettime(void *_core, void *var, void *_gettime)
 {
         gettime_t *gettime = _gettime;
 

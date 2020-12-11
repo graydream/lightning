@@ -31,11 +31,9 @@ typedef struct {
 
 extern analysis_t *default_analysis;
 
-int analysis_create(analysis_t **_ana, const char *_name, int private);
 int analysis_dumpall(void);
 int analysis_queue(analysis_t *ana, const char *name, const char *type, uint64_t _time);
-int analysis_private_create(const char *_name);
-int analysis_init(void);
+int analysis_init();
 int analysis_dump(const char *tab, const char *name,  char *buf);
 int analysis_private_queue(const char *_name, const char *type, uint64_t _time);
 void analysis_merge(void *ctx);
