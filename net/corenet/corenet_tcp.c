@@ -32,9 +32,6 @@ static int __corenet_tcp_remote(int fd, ltgbuf_t *buf, int op);
 
 #endif
 
-static int __corenet_add(corenet_tcp_t *corenet, const sockid_t *sockid, void *ctx,
-                         core_exec exec, func_t reset, func_t check, func_t recv, const char *name);
-
 static void S_LTG *__corenet_get()
 {
         return core_tls_get(NULL, VARIABLE_CORENET_TCP);
@@ -368,6 +365,8 @@ void corenet_tcp_close(const sockid_t *_sockid)
                 return;
         }
 
+        DBUG("close %d\n", _sockid->sd);
+        
         if (sche_running()) {
                 __corenet_close__(_sockid);
         } else {
@@ -1405,6 +1404,7 @@ int corenet_tcp_connected(const sockid_t *sockid)
         node = &__corenet__->array[sockid->sd];
         if (node->sockid.seq != sockid->seq || node->sockid.sd == -1) {
                 ret = ECONNRESET;
+                DBUG("%d %d %d\n", node->sockid.seq, sockid->seq, node->sockid.sd);
                 GOTO(err_ret, ret);
         }
 

@@ -25,11 +25,19 @@ static int __rpc_request_send(const sockid_t *sockid, int coreid,
         ltgbuf_t buf;
         net_handle_t nh;
 
-        ret = rpc_request_prep(&buf, msgid, request, reqlen, replen, data,
-                               msg_type, 1, priority, coreid);
+        ret = rpc_request_prep(&buf, msgid, request, reqlen, replen,
+                               data ? data->len : 0,
+                               msg_type, priority, coreid);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
+        if (data && data->len) {
+                ltgbuf_t tmp;
+                ltgbuf_init(&tmp, 0);
+                ltgbuf_reference(&tmp, data);
+                ltgbuf_merge(&buf, &tmp);
+        }
+        
         DBUG("send msg to %s, id (%u, %x), len %u\n",
              _inet_ntoa(sockid->addr), msgid->idx,
              msgid->figerprint, buf.len);

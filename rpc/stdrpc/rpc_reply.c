@@ -17,8 +17,15 @@ void stdrpc_reply1(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf)
         DBUG("reply msgid (%d, %x) %s, len %u\n", msgid->idx, msgid->figerprint,
               _inet_ntoa(sockid->addr), _buf->len);
 
-        stdrpc_reply_init_prep(msgid, &buf, _buf, 0, 1);
+        stdrpc_reply_init_prep(msgid, &buf, _buf ? _buf->len : 0);
 
+        if (_buf ? _buf->len : 0) {
+                ltgbuf_t tmp;
+                ltgbuf_init(&tmp, 0);
+                ltgbuf_reference(&tmp, _buf);
+                ltgbuf_merge(&buf, &tmp);
+        }
+        
         sock2nh(&nh, sockid);
         ret = sdevent_queue(&nh, &buf);
         if (unlikely(ret)) {

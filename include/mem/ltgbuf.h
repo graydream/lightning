@@ -101,6 +101,7 @@ int ltgbuf_appendzero(ltgbuf_t *buf, int size);
 
 int ltgbuf_copy(ltgbuf_t *buf, const char *srcmem, int size);
 int ltgbuf_copy1(ltgbuf_t *pack, const void *buf, uint32_t offset, uint32_t len);
+void ltgbuf_copy2(ltgbuf_t *buf, const char *srcmem, int size);
 void ltgbuf_copy3(ltgbuf_t *buf, const char *srcmem, int size);
 int ltgbuf_droptail(ltgbuf_t *buf, uint32_t len);
 int ltgbuf_segcount(const ltgbuf_t *buf);

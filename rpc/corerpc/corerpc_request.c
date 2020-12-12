@@ -17,12 +17,15 @@ typedef struct corerpc_op {
         coreid_t netctl;
         coreid_t coreid;
         const void *request;
-        int reqlen;
-        int replen;
-        const ltgbuf_t *wbuf;
-        ltgbuf_t *rbuf;
+        int msglen;
+
+        int wbuflen;
+        int rbuflen;
+
+        void *wbuf;
+        void *rbuf;
+
         int msg_type;
-        int msg_size;
         int timeout;
         uint32_t group;
         sockid_t sockid;
@@ -65,8 +68,8 @@ static void S_LTG __corerpc_post_task(void *arg1, void *arg2, void *arg3, void *
 
         if (buf && buf->len) {
                 LTG_ASSERT(op->rbuf);
-                LTG_ASSERT(op->rbuf->len >= buf->len);
-                ltgbuf_clone1(op->rbuf, buf, 0);
+                LTG_ASSERT(op->rbuflen == (int)buf->len);
+                ltgbuf_get(buf, op->rbuf, buf->len);
                 ltgbuf_free(buf);
         }
 
@@ -120,13 +123,12 @@ err_ret:
         return ret;
 }
 
-STATIC int S_LTG __corerpc_wait__(const char *name, ltgbuf_t *rbuf,
-                                  rpc_ctx_t *ctx)
+STATIC int S_LTG __corerpc_wait__(const char *name, rpc_ctx_t *ctx)
 {
         int ret;
 
         DBUG("%s yield wait\n", name);
-        ret = sche_yield(name, rbuf, ctx);
+        ret = sche_yield(name, NULL, ctx);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
         }
@@ -140,22 +142,26 @@ err_ret:
 
 #if ENABLE_RDMA
 
-static void __corerpc_msgid_prep(msgid_t *msgid, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
+static void __corerpc_msgid_prep(msgid_t *msgid, const void *wbuf, void *rbuf,
                                  int msg_size, const rdma_conn_t *handler)
 {
 
         if (msg_size <= 0)
                 return;
+
         memset(&msgid->data_prop, 0x00, sizeof(data_prop_t));
 	if (wbuf != NULL) {
 		msgid->data_prop.rkey = handler->mr->rkey;
-		ltgbuf_trans_addr((void **)msgid->data_prop.remote_addr, wbuf);
+		//ltgbuf_trans_addr((void **)msgid->data_prop.remote_addr, wbuf);
+                msgid->data_prop.remote_addr[0] = (uintptr_t)wbuf;
+                
 		msgid->data_prop.size = msg_size;
 	} else if (rbuf != NULL){
-                LTG_ASSERT((int)rbuf->len == msg_size);
+                //LTG_ASSERT((int)rbuf->len == msg_size);
 
 		msgid->data_prop.rkey = handler->mr->rkey;
-		ltgbuf_trans_addr((void **)msgid->data_prop.remote_addr, rbuf);
+		///ltgbuf_trans_addr((void **)msgid->data_prop.remote_addr, rbuf);
+                msgid->data_prop.remote_addr[0] = (uintptr_t)rbuf;
 		msgid->data_prop.size = msg_size;
 	}
 
@@ -173,10 +179,12 @@ int S_LTG corerpc_rdma_request(void *ctx, void *_op)
 
         (void) ctx;
         
-        __corerpc_msgid_prep(&op->msgid, op->wbuf, op->rbuf, op->msg_size, handler);
+        __corerpc_msgid_prep(&op->msgid, op->wbuf, op->rbuf,
+                             _max(op->rbuflen, op->wbuflen),
+                             handler);
 
-        ret = rpc_request_prep(&buf, &op->msgid, op->request, op->reqlen,
-                               op->replen, op->wbuf, op->msg_type, 0, op->group,
+        ret = rpc_request_prep(&buf, &op->msgid, op->request, op->msglen,
+                               op->rbuflen, op->rbuflen, op->msg_type, op->group,
                                op->coreid.idx);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
@@ -193,17 +201,31 @@ err_ret:
         return ret;
 }
 
+static int __corenet_tcp_free(void *ptr)
+{
+        (void) ptr;
+
+        return 0;
+}
+
 int corerpc_tcp_request(void *ctx, void *_op)
 {
         int ret;
         ltgbuf_t buf;
         corerpc_op_t *op = _op;
 
-        ret = rpc_request_prep(&buf, &op->msgid, op->request, op->reqlen,
-                               op->replen, op->wbuf, op->msg_type, 1, op->group,
+        ret = rpc_request_prep(&buf, &op->msgid, op->request, op->msglen,
+                               op->rbuflen, op->wbuflen, op->msg_type, op->group,
                                op->coreid.idx);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
+
+        if (op->wbuflen) {
+                ltgbuf_t tmp;
+                LTG_ASSERT(op->wbuf);
+                ltgbuf_initwith(&tmp, op->wbuf, op->wbuflen, NULL, __corenet_tcp_free);
+                ltgbuf_merge(&buf, &tmp);
+        }
 
         ret = corenet_tcp_send(ctx, &op->sockid, &buf);
         if (unlikely(ret)) {
@@ -239,15 +261,13 @@ static int S_LTG __corerpc_send_sock(void *core, const char *name,
                         corenet_maping_close(&op->netctl.nid, &op->sockid);
                 }
 
-                //reset rpc table, do not return errno;
-
-                goto out;
-#if 0
-                sche_task_reset();
-		ret = _errno_net(ret);
-		LTG_ASSERT(ret == ENONET || ret == ESHUTDOWN);
-                GOTO(err_ret, ret);
-#endif
+                if (type == SEND_QUEUE) {
+                        goto out;
+                } else {
+                        ret = _errno_net(ret);
+                        LTG_ASSERT(ret == ENONET || ret == ESHUTDOWN);
+                        GOTO(err_ret, ret);
+                }
 	}
 
         DBUG("%s msgid (%u, %x) to %s\n", name, &op->msgid.idx,
@@ -308,7 +328,7 @@ static int S_LTG __corerpc_postwait(const char *name, const corerpc_op_t *op)
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        ret = __corerpc_wait__(name, op->rbuf, &ctx);
+        ret = __corerpc_wait__(name, &ctx);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
         }
@@ -320,8 +340,7 @@ err_ret:
 
 int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
                           const sockid_t *sockid, const void *request,
-                          int reqlen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
-                          int msg_type, int msg_size, int group, int timeout)
+                          int reqlen, int msg_type, int group, int timeout)
 {
         int ret;
         rpc_ctx_t ctx;
@@ -330,14 +349,16 @@ int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
         op->coreid = *coreid;
         op->netctl = *coreid;
         op->request = request;
-        op->reqlen = reqlen;
-        op->wbuf = wbuf;
-        op->rbuf = rbuf;
+        op->msglen = reqlen;
         op->group = group;
         op->msg_type = msg_type;
-        op->msg_size = msg_size;
         op->timeout = timeout;
         op->sockid = *sockid;
+        
+        op->wbuf = NULL;
+        op->rbuf = NULL;
+        op->wbuflen = 0;
+        op->rbuflen = 0;
 
         LTG_ASSERT(ltgconf_global.daemon);
         core_t *core = core_self();
@@ -346,7 +367,7 @@ int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
                 GOTO(err_ret, ret);
         }
 
-        ret = __corerpc_wait__(name, op->rbuf, &ctx);
+        ret = __corerpc_wait__(name, &ctx);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
         }
@@ -379,8 +400,8 @@ static void S_LTG __corerpc_post_queue(void *arg1, void *arg2, void *arg3,
         ring->retval = retval;
         if (buf && buf->len) {
                 LTG_ASSERT(op->rbuf);
-                LTG_ASSERT(op->rbuf->len >= buf->len);
-                ltgbuf_clone1(op->rbuf, buf, 0);
+                LTG_ASSERT(op->rbuflen >= (int)buf->len);
+                ltgbuf_get(buf, op->rbuf, op->rbuflen);
                 ltgbuf_free(buf);
         }
 
@@ -468,7 +489,7 @@ static int S_LTG __corerpc_ring_wait(int netctl, const char *name,
                         __corerpc_queue_exec, &ring,
                         __corerpc_queue_reply, &ring);
 
-        ret = sche_yield(name, op->rbuf, NULL);
+        ret = sche_yield(name, NULL, NULL);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
         }
@@ -478,40 +499,130 @@ err_ret:
         return ret;
 }
 
+#define MEM_MALLOC 0
+
+inline static void INLINE __corerpc_trans_addr(const ltgbuf_t *buf,
+                                               mem_handler_t *handler, void **addr)
+{
+        int ret;
+        
+        if (buf == NULL) {
+                *addr = NULL;
+                return;
+        }
+
+        if (likely(ltgbuf_segcount(buf) == 1)) {
+                *addr = ltgbuf_head(buf);
+        } else {
+#if MEM_MALLOC
+                (void) handler;
+                void *tmp;
+                ret = ltg_malloc((void **)&tmp, buf->len);
+                if (unlikely(ret))
+                        UNIMPLEMENTED(__DUMP__);
+
+                *addr = tmp;
+#else
+                uint32_t len = buf->len;
+                ret = mem_ring_new(&len, handler);
+                if (unlikely(ret)) {
+                        UNIMPLEMENTED(__DUMP__);
+                }
+
+                *addr = handler->ptr;
+#endif
+        }
+}
+
+inline static void INLINE __corerpc_trans_free(const ltgbuf_t *buf,
+                                               mem_handler_t *handler, void *addr)
+{
+        if (buf == NULL) {
+                return;
+        }
+
+        if (likely(addr == ltgbuf_head(buf))) {
+                return;
+        }
+
+#if MEM_MALLOC
+        (void) handler;
+        ltg_free((void **)&addr);
+#else
+        LTG_ASSERT(addr == handler->ptr);
+        mem_ring_deref(handler);
+#endif
+}
+
 inline int INLINE corerpc_postwait(const char *name, const coreid_t *coreid,
                                    const void *request, int reqlen, int replen,
                                    const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
                                    int msg_type, int msg_size, int group, int timeout)
 {
+        int ret;
         coreid_t netctl;
         corerpc_op_t op;
+        mem_handler_t whandler, rhandler;
+
+        LTG_ASSERT(rbuf == NULL || wbuf == NULL);
+        
+        if (unlikely(!ltgconf_global.daemon || !corerpc_inited)) {
+                return stdrpc_request_wait3(name, coreid, request, reqlen, replen,
+                                            wbuf, rbuf, msg_type, -1, timeout);
+        }
+
+        (void) msg_size;
 
         op.coreid = *coreid;
         op.request = request;
-        op.reqlen = reqlen;
-        op.replen = replen;
-        op.wbuf = wbuf;
-        op.rbuf = rbuf;
-        op.group = group;
+        op.msglen = reqlen;
         op.msg_type = msg_type;
-        op.msg_size = msg_size;
         op.timeout = timeout;
+        op.group = group;
+
+        op.wbuflen = wbuf ? wbuf->len : 0;
+        op.rbuflen = rbuf ? rbuf->len : 0;
+
+        LTG_ASSERT(replen == op.rbuflen);
+        
+        __corerpc_trans_addr(wbuf, &whandler, &op.wbuf);
+        __corerpc_trans_addr(rbuf, &rhandler, &op.rbuf);
+
+        if (unlikely(op.wbuf && ltgbuf_head(wbuf) != op.wbuf)) {
+                ltgbuf_get(wbuf, op.wbuf, wbuf->len);
+        }
+
+        DINFO("%p %p\n", op.wbuf, op.rbuf);
         
         if (likely(netctl_get(coreid, &netctl))) {
                 op.netctl = netctl;
-
-                DBUG("%s redirect to netctl\n", name);
-                return __corerpc_ring_wait(netctl.idx, name, &op);
+                ret =  __corerpc_ring_wait(netctl.idx, name, &op);
+                if (unlikely(ret)) {
+                        GOTO(err_ret, ret);
+                }
         } else {
                 op.netctl = *coreid;
-
-                if (ltgconf_global.daemon && corerpc_inited) {
-                        return __corerpc_postwait(name, &op);
-                } else {
-                        return stdrpc_request_wait3(name, coreid, request, reqlen, replen,
-                                                    wbuf, rbuf, msg_type, -1, timeout);
+                ret = __corerpc_postwait(name, &op);
+                if (unlikely(ret)) {
+                        GOTO(err_ret, ret);
                 }
         }
+
+        if (unlikely(op.rbuf && ltgbuf_head(rbuf) != op.rbuf)) {
+                ltgbuf_copy3(rbuf, op.rbuf, rbuf->len);
+        }
+
+        DINFO("%p %p\n", op.wbuf, op.rbuf);
+        
+        __corerpc_trans_free(wbuf, &whandler, op.wbuf);
+        __corerpc_trans_free(rbuf, &rhandler, op.rbuf);
+
+        return 0;
+err_ret:
+        DINFO("%p %p\n", op.wbuf, op.rbuf);
+        __corerpc_trans_free(wbuf, &whandler, op.wbuf);
+        __corerpc_trans_free(rbuf, &rhandler, op.rbuf);
+        return ret;
 }
 
 int S_LTG corerpc_postwait1(const char *name, const coreid_t *coreid,

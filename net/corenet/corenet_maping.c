@@ -121,7 +121,7 @@ STATIC int __corenet_maping_connect_core(const coreid_t *coreid,
         }
         
         DBUG("connect to %s/%d sd %u, addr %d:%d\n", netable_rname(&coreid->nid),
-              coreid->idx, sockid.sd, sock->addr, sock->port);
+             coreid->idx, sockid.sd, sock->addr, sock->port);
 
         *_sockid = sockid;
 
@@ -332,8 +332,8 @@ err_ret:
 }
 
 static int S_LTG __corenet_maping_get(const coreid_t *coreid,
-                                        corenet_maping_t *entry,
-                                        sockid_t *_sockid)
+                                      corenet_maping_t *entry,
+                                      sockid_t *_sockid)
 {
         int ret;
         sockid_t *sockid;
@@ -517,16 +517,16 @@ static void __corenet_maping_close_entry(corenet_maping_t *entry,
                 if (_sockid->sd == sockid->sd
                     && _sockid->seq == sockid->seq) {
                         DBUG("close one sock %s nid[%u], sockid %u\n",
-                              netable_rname(&entry->nid), entry->nid.id,
-                              sockid->sd);
+                             netable_rname(&entry->nid), entry->nid.id,
+                             sockid->sd);
 
                         __corenet_maping_close_finally__(&entry->nid, sockid);
                         sockid->sd = -1;
                         break;
                 } else {
                         DBUG("skip close %s nid[%u], sockid %u\n",
-                              netable_rname(&entry->nid), entry->nid.id,
-                              sockid->sd);
+                             netable_rname(&entry->nid), entry->nid.id,
+                             sockid->sd);
                 }
         }
 }

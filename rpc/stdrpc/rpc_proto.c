@@ -55,14 +55,8 @@ int rpc_pack_len(void *buf, uint32_t len, int *msg_len, int *io_len)
 
         head = buf;
 
-        if (head->blocks) {
-                *msg_len =  head->len - head->blocks;
-                *io_len = head->blocks;
-                LTG_ASSERT(*io_len > 0);
-        } else {
-                *msg_len =  head->len;
-                *io_len = 0;
-        }
+        *msg_len = head->len;
+        *io_len = head->blocks;
 
         DBUG("magic %x, msg_len %u io_len %u\n", head->magic, *msg_len, *io_len);
         

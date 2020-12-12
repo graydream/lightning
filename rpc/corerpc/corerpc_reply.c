@@ -18,8 +18,8 @@ void S_LTG corerpc_reply_rdma(void *ctx, void *arg)
         (void) ctx;
 
         if (likely(reply->err == 0)) {
-                stdrpc_reply_init_prep(msgid, &reply_buf, reply->buf,
-                                       reply->latency, 0);
+                stdrpc_reply_init_prep(msgid, &reply_buf,
+                                       reply->buf ? reply->buf->len : 0);
 
                 ret = corenet_rdma_send(reply->sockid, &reply_buf,
                                         (void **)msgid->data_prop.remote_addr,
@@ -49,8 +49,15 @@ void corerpc_reply_tcp(void *ctx, void *arg)
         (void) ctx;
 
         if (likely(reply->err == 0)) {
-                stdrpc_reply_init_prep(msgid, &reply_buf, reply->buf,
-                                       reply->latency, 1);
+                stdrpc_reply_init_prep(msgid, &reply_buf,
+                                       reply->buf ? reply->buf->len : 0);
+
+                if (reply->buf ? reply->buf->len : 0) {
+                        ltgbuf_t tmp;
+                        ltgbuf_init(&tmp, 0);
+                        ltgbuf_reference(&tmp, reply->buf);
+                        ltgbuf_merge(&reply_buf, &tmp);
+                }
                 
                 ret = corenet_tcp_send(NULL, reply->sockid, &reply_buf);
                 if (unlikely(ret))

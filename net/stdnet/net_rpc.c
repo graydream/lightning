@@ -150,8 +150,7 @@ int net_rpc_hello2(const coreid_t *coreid, const sockid_t *sockid, uint64_t seq)
         _opaque_encode(req->buf, &count, &seq, sizeof(seq), NULL);
 
         ret = corerpc_postwait_sock("hello2", coreid, sockid,
-                                    req, sizeof(*req) + count, NULL,
-                                    NULL, MSG_NET, -1, -1,
+                                    req, sizeof(*req) + count, MSG_NET, -1,
                                     ltgconf_global.hb_timeout);
         if (unlikely(ret))
                 GOTO(err_ret, ret);

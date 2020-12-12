@@ -54,16 +54,17 @@ int corerpc_postwait1(const char *name,
 
 int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
                           const sockid_t *sockid, const void *request,
-                          int reqlen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
-                          int msg_type, int msg_size, int group, int timeout);
+                          int reqlen, int msg_type,
+                          int group, int timeout);
 
+void corerpc_reply(const sockid_t *sockid, const msgid_t *msgid, const void *_buf, int len);
 void corerpc_reply_buffer(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf);
 void corerpc_reply_error(const sockid_t *sockid, const msgid_t *msgid, int _error);
 
 void corerpc_reply_rdma(void *ctx, void *arg);
 void corerpc_reply_tcp(void *ctx, void *arg);
 
-int corerpc_recv(void *ctx, void *buf, int *count);
+int corerpc_tcp_recv(void *ctx, void *buf, int *count);
 
 void corerpc_scan(void *ctx);
 

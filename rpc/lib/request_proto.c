@@ -9,8 +9,8 @@
 #include "ltg_core.h"
 
 int S_LTG rpc_request_prep(ltgbuf_t *buf, const msgid_t *msgid, const void *request,
-                     int reqlen, int replen, const ltgbuf_t *data, int prog,
-                     int merge, int priority, int coreid)
+                           int reqlen, int replen, int datalen, int prog,
+                           int priority, int coreid)
 {
         int ret;
         ltg_net_head_t *net_req;
@@ -46,17 +46,20 @@ int S_LTG rpc_request_prep(ltgbuf_t *buf, const msgid_t *msgid, const void *requ
         net_req->latency = core_latency_get();
         memcpy(net_req->buf, request, reqlen);
 
+        net_req->blocks = datalen;
+        
+#if 0
         if (data) {
                 net_req->blocks = data->len;
                 
                 if (unlikely(merge)) {
-                        net_req->len += data->len;
                         ltgbuf_t tmp;
                         ltgbuf_init(&tmp, 0);
                         ltgbuf_reference(&tmp, data);
                         ltgbuf_merge(buf, &tmp);
                 }
         }
+#endif
 
         return 0;
 err_ret:

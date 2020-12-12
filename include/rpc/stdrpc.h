@@ -23,8 +23,7 @@ void stdrpc_reply_error_prep(const msgid_t *msgid, ltgbuf_t *buf, int _error);
 void stdrpc_reply(const sockid_t *sockid, const msgid_t *msgid,
                const void *_buf, int len);
 void stdrpc_reply1(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf);
-void stdrpc_reply_init_prep(const msgid_t *msgid, ltgbuf_t *buf, ltgbuf_t *data,
-                            uint64_t latency, int flag);
+void stdrpc_reply_init_prep(const msgid_t *msgid, ltgbuf_t *buf, int datalen);
 
 /* rpc_xnect.c */
 int rpc_getinfo(char *infobuf, uint32_t *infobuflen);
@@ -48,7 +47,7 @@ int stdrpc_request_wait_sock(const char *name, const net_handle_t *nh, const voi
                           int reqlen, void *reply, int *replen, int msg_type,
                           int priority, int timeout);
 int rpc_request_prep(ltgbuf_t *buf, const msgid_t *msgid, const void *request,
-                     int reqlen, int replen, const ltgbuf_t *data, int prog,
-                     int merge, int priority, int coreid);
+                     int reqlen, int replen, int datalen, int prog,
+                     int priority, int coreid);
 
 #endif

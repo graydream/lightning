@@ -322,7 +322,6 @@ static int __corerpc_handler(corerpc_ctx_t *ctx, ltgbuf_t *buf)
 
 static int __corerpc_len(void *buf, uint32_t len)
 {
-        int msg_len, io_len;
         ltg_net_head_t *head;
 
         LTG_ASSERT(len >= sizeof(ltg_net_head_t));
@@ -332,16 +331,7 @@ static int __corerpc_len(void *buf, uint32_t len)
 
         DBUG("len %u %u\n", head->len, head->blocks);
 
-        if (head->blocks) {
-                msg_len =  head->len - head->blocks;
-                io_len = head->blocks;
-                LTG_ASSERT(io_len > 0);
-        } else {
-                msg_len =  head->len;
-                io_len = 0;
-        }
-
-        return msg_len + io_len;
+        return head->len + head->blocks;
 }
 
 #if ENABLE_RDMA
@@ -424,7 +414,7 @@ int S_LTG corerpc_rdma_recv_msg(void *_ctx, void *iov, int *_count)
 /**
  * for TCP
  */
-int corerpc_recv(void *_ctx, void *buf, int *_count)
+int corerpc_tcp_recv(void *_ctx, void *buf, int *_count)
 {
         int len, count = 0;
         char tmp[MAX_BUF_LEN];
