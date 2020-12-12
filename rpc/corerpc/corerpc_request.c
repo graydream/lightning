@@ -13,10 +13,21 @@
 
 #define CORE_CHECK 0
 
-#if 0
-#undef ENABLE_NETCTL_QUEUE
-#define ENABLE_NETCTL_QUEUE 0
-#endif
+typedef struct corerpc_op {
+        coreid_t netctl;
+        coreid_t coreid;
+        const void *request;
+        int reqlen;
+        int replen;
+        const ltgbuf_t *wbuf;
+        ltgbuf_t *rbuf;
+        int msg_type;
+        int msg_size;
+        int timeout;
+        uint32_t group;
+        sockid_t sockid;
+        msgid_t msgid;
+} corerpc_op_t;
 
 typedef struct {
         corerpc_op_t *op;
@@ -345,8 +356,6 @@ err_ret:
         return ret;
 }
 
-#if ENABLE_NETCTL_QUEUE
-
 static void S_LTG __corerpc_post_queue(void *arg1, void *arg2, void *arg3,
                                        void *arg4)
 {
@@ -469,22 +478,6 @@ err_ret:
         return ret;
 }
 
-#else
-
-STATIC int S_LTG __corerpc_postwait_task(va_list ap)
-{
-        const char *name = va_arg(ap, const char *);
-        corerpc_op_t *op = va_arg(ap, corerpc_op_t *);
-
-        va_end(ap);
-
-        DBUG("%s redirect to netctl\n", name);
-        
-        return __corerpc_postwait(name, op);
-}
-
-#endif
-
 inline int INLINE corerpc_postwait(const char *name, const coreid_t *coreid,
                                    const void *request, int reqlen, int replen,
                                    const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
@@ -508,12 +501,7 @@ inline int INLINE corerpc_postwait(const char *name, const coreid_t *coreid,
                 op.netctl = netctl;
 
                 DBUG("%s redirect to netctl\n", name);
-#if ENABLE_NETCTL_QUEUE
                 return __corerpc_ring_wait(netctl.idx, name, &op);
-#else
-                return core_ring_wait(netctl.idx, RING_TASK, name,
-                                      __corerpc_postwait_task, name, &op);
-#endif
         } else {
                 op.netctl = *coreid;
 

@@ -78,48 +78,6 @@ void S_LTG corerpc_reply_buffer(const sockid_t *sockid, const msgid_t *msgid, lt
         sockid->reply(NULL, &reply);
 }
 
-#if 0
-void corerpc_reply(const sockid_t *sockid, const msgid_t *msgid,
-                                    const void *_buf, int len)
-{
-        ltgbuf_t buf;
-
-        ltgbuf_init(&buf, 0);
-        if (unlikely(len))
-                ltgbuf_copy(&buf, _buf, len);
-
-        corerpc_reply_buffer(sockid, msgid, &buf);
-}
-
-void corerpc_reply_buffer1(const sockid_t *sockid, const msgid_t *msgid,
-                                 ltgbuf_t *buf, uint64_t latency)
-{
-
-        sockop_reply_t reply;
-
-        reply.err = 0;
-        reply.latency = latency;
-        reply.msgid = msgid;
-        reply.buf = buf;
-        reply.sockid = sockid;
-
-        sockid->reply(NULL, &reply);
-}
-
-void corerpc_reply1(const sockid_t *sockid, const msgid_t *msgid,
-                          const void *_buf, int len, uint64_t latency)
-{
-        ltgbuf_t buf;
-
-        ltgbuf_init(&buf, 0);
-        if (unlikely(len))
-                ltgbuf_copy(&buf, _buf, len);
-
-        corerpc_reply_buffer1(sockid, msgid, &buf, latency);
-}
-#endif
-
-
 void corerpc_reply_error(const sockid_t *sockid, const msgid_t *msgid, int _error)
 {
         sockop_reply_t reply;

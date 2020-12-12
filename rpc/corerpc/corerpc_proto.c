@@ -49,20 +49,6 @@ static void __request_stale(void *arg)
 
 static rpc_prog_t __corerpc_prog__[LTG_MSG_MAX_KEEP];
 
-#if !ENABLE_NETCTL_QUEUE
-static int S_LTG __request_handler_redirect(va_list ap)
-{
-        request_handler_func handler = va_arg(ap, request_handler_func);
-        ltgbuf_t *in = va_arg(ap, ltgbuf_t *);
-        ltgbuf_t *out = va_arg(ap, ltgbuf_t *);
-        int *outlen = va_arg(ap, int *);
-
-        va_end(ap);
-
-        return handler(in, out, outlen);
-}
-#endif
-
 static void S_LTG __corerpc_request_task(void *arg)
 {
         int ret, replen;
@@ -98,23 +84,9 @@ static void S_LTG __corerpc_request_task(void *arg)
 
         ltgbuf_init(&out, replen);
 
-#if ENABLE_NETCTL_QUEUE
         ret = handler(&buf, &out, &outlen);
         if (unlikely(ret))
                 GOTO(err_free, ret);
-#else
-        if (likely(netctl())) {
-                ret = core_ring_wait(coreid.idx, RING_TASK, "netctl",
-                                     __request_handler_redirect,
-                                     handler, &buf, &out, &outlen);
-                if (unlikely(ret))
-                        GOTO(err_free, ret);
-        } else {
-                ret = handler(&buf, &out, &outlen);
-                if (unlikely(ret))
-                        GOTO(err_free, ret);
-        }
-#endif
 
         LTG_ASSERT(outlen <= replen);
         if (unlikely(outlen < (int)out.len)) {
@@ -143,8 +115,6 @@ err_ret:
 #endif
         return;
 }
-
-#if ENABLE_NETCTL_QUEUE
 
 typedef struct {
         ring_ctx_t ctx;
@@ -234,7 +204,6 @@ err_ret:
         slab_stream_free(ctx);
         return;
 }
-#endif
 
 static int S_LTG __corerpc_request_handler(corerpc_ctx_t *ctx,
                                              const ltg_net_head_t *head,
@@ -285,15 +254,11 @@ static int S_LTG __corerpc_request_handler(corerpc_ctx_t *ctx,
 
                 sche_task_new("corenet", __request_nosys, rpc_request, 0);
         } else {
-#if ENABLE_NETCTL_QUEUE
                 if (likely(netctl())) {
                         __corerpc_request_queue(rpc_request);
                 } else {
                         sche_task_new("corenet", __corerpc_request_task, rpc_request, 0);
                 }
-#else
-                sche_task_new("corenet", __corerpc_request_task, rpc_request, 0);
-#endif
         }
 
         return 0;
