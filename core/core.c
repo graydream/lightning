@@ -128,13 +128,13 @@ static void S_LTG core_stat(core_t *core)
                 }
 
                 DINFO("%s[%d] "
-                      "cps:%jd "
+                      "kcps:%jd "
                       "task:%lu/%lu/%lu "
                       "ring:%u "
-                      "tps %ju "
-                      "cpu %ju\n",
+                      "tps:%ju "
+                      "cpu:%ju\n",
                       core->name, core->hash,
-                      (core->stat_nr2 - core->stat_nr1) * 1000000 / used, //cycle per second
+                      ((core->stat_nr2 - core->stat_nr1) / second) / 1000, //kilo cycle per second
                       avg_task_count, avg_task_runtime, avg_lat,
                       //avg task queue len, avg task cpu time, avg task latency
                       ring_count, //ringbuffer len
