@@ -142,27 +142,39 @@ err_ret:
 
 #if ENABLE_RDMA
 
-static void __corerpc_msgid_prep(msgid_t *msgid, const void *wbuf, void *rbuf,
-                                 int msg_size, const rdma_conn_t *handler)
+#if 0
+inline void INLINE __ltgbuf_trans_addr(void **addr, void *buf)
+{
+        int i = 0;
+
+        addr[i++] = buf;
+
+        LTG_ASSERT(i < MAX_SGE);
+}
+#endif
+
+
+static void __corerpc_msgid_prep(msgid_t *msgid, const void *wbuf, int wlen,
+                                 void *rbuf, int rlen, const rdma_conn_t *handler)
 {
 
-        if (msg_size <= 0)
+        if (rlen == 0 && wlen == 0)
                 return;
 
         memset(&msgid->data_prop, 0x00, sizeof(data_prop_t));
 	if (wbuf != NULL) {
 		msgid->data_prop.rkey = handler->mr->rkey;
-		//ltgbuf_trans_addr((void **)msgid->data_prop.remote_addr, wbuf);
+		//ltgbuf_trans_addr((void **)msgid->data_prop.remote_addr, (void *)wbuf);
                 msgid->data_prop.remote_addr[0] = (uintptr_t)wbuf;
                 
-		msgid->data_prop.size = msg_size;
+		msgid->data_prop.size = wlen;
 	} else if (rbuf != NULL){
                 //LTG_ASSERT((int)rbuf->len == msg_size);
 
 		msgid->data_prop.rkey = handler->mr->rkey;
-		///ltgbuf_trans_addr((void **)msgid->data_prop.remote_addr, rbuf);
+		//__ltgbuf_trans_addr((void **)msgid->data_prop.remote_addr, rbuf);
                 msgid->data_prop.remote_addr[0] = (uintptr_t)rbuf;
-		msgid->data_prop.size = msg_size;
+		msgid->data_prop.size = rlen;
 	}
 
         MSGID_DUMP(msgid);
@@ -179,9 +191,8 @@ int S_LTG corerpc_rdma_request(void *ctx, void *_op)
 
         (void) ctx;
         
-        __corerpc_msgid_prep(&op->msgid, op->wbuf, op->rbuf,
-                             _max(op->rbuflen, op->wbuflen),
-                             handler);
+        __corerpc_msgid_prep(&op->msgid, op->wbuf, op->wbuflen, op->rbuf,
+                             op->rbuflen, handler);
 
         ret = rpc_request_prep(&buf, &op->msgid, op->request, op->msglen,
                                op->rbuflen, op->rbuflen, op->msg_type, op->group,
@@ -258,7 +269,9 @@ static int S_LTG __corerpc_send_sock(void *core, const char *name,
                 __corerpc_request_reset(&op->msgid, ret);
                 if (sche_running()) {
                         sche_task_reset();
+#if 0
                         corenet_maping_close(&op->netctl.nid, &op->sockid);
+#endif
                 }
 
                 if (type == SEND_QUEUE) {
@@ -433,7 +446,7 @@ inline static void INLINE __corerpc_queue_exec(void *_ring)
 
         return;
 err_ret:
-        DWARN("send fail %p\n", ctx);
+        DWARN("send to %s fail %p\n", netable_rname(&ctx->op.coreid.nid), ctx);
 #if 1
         ring->retval = ret;
         core_ring_reply(&ring->ring_ctx);
@@ -459,8 +472,8 @@ static void S_LTG __corerpc_queue_reply(void *_ring)
         sche_task_post(&ring->task, ring->retval, NULL);
 }
 
-static int S_LTG __corerpc_ring_wait(int netctl, const char *name,
-                                     corerpc_op_t *op)
+static int S_LTG __corerpc_ring_queue_wait(int netctl, const char *name,
+                                           corerpc_op_t *op)
 {
         int ret;
         corerpc_ring_ctx_t ring;
@@ -490,6 +503,34 @@ static int S_LTG __corerpc_ring_wait(int netctl, const char *name,
                         __corerpc_queue_reply, &ring);
 
         ret = sche_yield(name, NULL, NULL);
+        if (unlikely(ret)) {
+                GOTO(err_ret, ret);
+        }
+
+        return 0;
+err_ret:
+        return ret;
+}
+
+STATIC int S_LTG __corerpc_postwait_task(va_list ap)
+{
+        const char *name = va_arg(ap, const char *);
+        corerpc_op_t *op = va_arg(ap, corerpc_op_t *);
+
+        va_end(ap);
+
+        DBUG("%s redirect to netctl\n", name);
+
+        return __corerpc_postwait(name, op);
+}
+
+static int S_LTG __corerpc_ring_task_wait(int netctl, const char *name,
+                                          corerpc_op_t *op)
+{
+        int ret;
+
+        ret = core_ring_wait(netctl, RING_TASK, name,
+                             __corerpc_postwait_task, name, op);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
         }
@@ -592,13 +633,19 @@ inline int INLINE corerpc_postwait(const char *name, const coreid_t *coreid,
                 ltgbuf_get(wbuf, op.wbuf, wbuf->len);
         }
 
-        DINFO("%p %p\n", op.wbuf, op.rbuf);
-        
         if (likely(netctl_get(coreid, &netctl))) {
                 op.netctl = netctl;
-                ret =  __corerpc_ring_wait(netctl.idx, name, &op);
+                ret =  __corerpc_ring_queue_wait(netctl.idx, name, &op);
                 if (unlikely(ret)) {
-                        GOTO(err_ret, ret);
+                        if (ret == ENOSYS) {
+                                DINFO("retry connect\n");
+                                ret =  __corerpc_ring_task_wait(netctl.idx,
+                                                                name, &op);
+                                if (unlikely(ret))
+                                        GOTO(err_ret, ret);
+                        } else {
+                                GOTO(err_ret, ret);
+                        }
                 }
         } else {
                 op.netctl = *coreid;
@@ -611,8 +658,6 @@ inline int INLINE corerpc_postwait(const char *name, const coreid_t *coreid,
         if (unlikely(op.rbuf && ltgbuf_head(rbuf) != op.rbuf)) {
                 ltgbuf_copy3(rbuf, op.rbuf, rbuf->len);
         }
-
-        DINFO("%p %p\n", op.wbuf, op.rbuf);
         
         __corerpc_trans_free(wbuf, &whandler, op.wbuf);
         __corerpc_trans_free(rbuf, &rhandler, op.rbuf);

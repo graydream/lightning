@@ -107,6 +107,11 @@ int corenet_hb_add(const coreid_t *coreid, const sockid_t *sockid)
         char name[MAX_NAME_LEN];
         hb_ctx_t *ctx;
 
+#if 0
+        DERROR("hb disabled\n");
+        return 0;
+#endif
+        
         LTG_ASSERT(sockid->sd != -1);
         
         tmo = (1000 * 1000 * ltgconf_global.hb_timeout) / ltgconf_global.hb_retry;
