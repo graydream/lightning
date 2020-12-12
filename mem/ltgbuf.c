@@ -1388,3 +1388,23 @@ retry:
 
         return 0;
 }
+
+inline int INLINE ltgbuf_segcount(const ltgbuf_t *buf)
+{
+        return list_size((struct list_head *)&buf->list);
+}
+
+inline int INLINE ltgbuf_aligned(const ltgbuf_t *buf, int align)
+{
+        struct list_head *pos, *n;
+        seg_t *seg;
+
+        list_for_each_safe(pos, n, &buf->list) {
+                seg = (seg_t *)pos;
+
+                if (unlikely(seg->len % align || (uint64_t)seg->handler.ptr % align))
+                        return 0;
+        }
+
+        return 1;
+}

@@ -40,22 +40,6 @@ typedef struct {
         void *corenet;
 } corerpc_ctx_t;
 
-typedef struct corerpc_op {
-        coreid_t netctl;
-        coreid_t coreid;
-        const void *request;
-        int reqlen;
-        int replen;
-        const ltgbuf_t *wbuf;
-        ltgbuf_t *rbuf;
-        int msg_type;
-        int msg_size;
-        int timeout;
-        uint32_t group;
-        sockid_t sockid;
-        msgid_t msgid;
-} corerpc_op_t;
-
 void corerpc_register(int type, request_get_handler handler, void *context);
 
 int corerpc_postwait(const char *name,
@@ -73,17 +57,11 @@ int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
                           int reqlen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
                           int msg_type, int msg_size, int group, int timeout);
 
-void corerpc_reply(const sockid_t *sockid, const msgid_t *msgid, const void *_buf, int len);
 void corerpc_reply_buffer(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf);
 void corerpc_reply_error(const sockid_t *sockid, const msgid_t *msgid, int _error);
 
 void corerpc_reply_rdma(void *ctx, void *arg);
 void corerpc_reply_tcp(void *ctx, void *arg);
-
-void corerpc_reply1(const sockid_t *sockid, const msgid_t *msgid,
-                    const void *_buf, int len, uint64_t latency);
-void corerpc_reply_buffer1(const sockid_t *sockid, const msgid_t *msgid,
-                           ltgbuf_t *buf, uint64_t latency);
 
 int corerpc_recv(void *ctx, void *buf, int *count);
 
