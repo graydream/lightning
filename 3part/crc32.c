@@ -91,7 +91,7 @@ static const uint32_t crc32_tab[] = {
         0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
 };
 
-int crc32_stream(uint32_t *_crc, const char *buf, uint32_t len)
+inline int INLINE crc32_stream(uint32_t *_crc, const char *buf, uint32_t len)
 {
         const char *p;
         uint32_t crc;
@@ -107,7 +107,7 @@ int crc32_stream(uint32_t *_crc, const char *buf, uint32_t len)
         return 0;
 }
 
-uint32_t crc32_stream_finish(uint32_t crc)
+inline uint32_t INLINE crc32_stream_finish(uint32_t crc)
 {
         return crc ^ ~0U;
 }
@@ -155,7 +155,7 @@ int crc32_md_verify(const void *ptr, uint32_t len)
                 return 0;
 }
 
-uint32_t crc32_sum(const void *ptr, uint32_t len)
+inline uint32_t INLINE crc32_sum(const void *ptr, uint32_t len)
 {
         uint32_t crcode;
 

@@ -350,7 +350,7 @@ int ltgbuf_appendmem(ltgbuf_t *buf, const void *src, uint32_t len) {
         return __ltgbuf_appendmem(buf, src, len, 0);
 }
 
-STATIC void S_LTG __ltgbuf_free1(ltgbuf_t *buf)
+inline static void INLINE __ltgbuf_free1(ltgbuf_t *buf)
 {
         seg_t *seg;
         struct list_head *pos, *n;
@@ -462,7 +462,7 @@ int S_LTG ltgbuf_initwith(ltgbuf_t *buf, void *data, int size,
         return 0;
 }
 
-inline int S_LTG ltgbuf_init(ltgbuf_t *buf, int size)
+inline int INLINE ltgbuf_init(ltgbuf_t *buf, int size)
 {
         seg_t *seg;
         uint32_t newsize = size;
