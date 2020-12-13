@@ -451,9 +451,13 @@ static int __corenet_maping_connect_wait(corenet_maping_t *entry)
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
         } else {
+#if 0
                 ret = ENOSYS;
                 GOTO(err_ret, ret);
+#endif
                 
+                ctx.retval = 0;
+                list_add(&ctx.hook, &entry->wait_list);
                 ctx.type = TYPE_QUEUE;
                 ret =  __corenet_maping_connect_wait_queue(entry, &ctx);
                 if (unlikely(ret))
