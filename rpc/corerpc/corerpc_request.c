@@ -68,7 +68,7 @@ static void S_LTG __corerpc_post_task(void *arg1, void *arg2, void *arg3, void *
 
         if (buf && buf->len) {
                 LTG_ASSERT(op->rbuf);
-                LTG_ASSERT(op->rbuflen == (int)buf->len);
+                LTG_ASSERT(op->rbuflen >= (int)buf->len);
                 ltgbuf_get(buf, op->rbuf, buf->len);
                 ltgbuf_free(buf);
         }
@@ -414,7 +414,7 @@ static void S_LTG __corerpc_post_queue(void *arg1, void *arg2, void *arg3,
         if (buf && buf->len) {
                 LTG_ASSERT(op->rbuf);
                 LTG_ASSERT(op->rbuflen >= (int)buf->len);
-                ltgbuf_get(buf, op->rbuf, op->rbuflen);
+                ltgbuf_get(buf, op->rbuf, buf->len);
                 ltgbuf_free(buf);
         }
 
@@ -570,6 +570,7 @@ inline static void INLINE __corerpc_trans_addr(const ltgbuf_t *buf,
                         UNIMPLEMENTED(__DUMP__);
                 }
 
+                LTG_ASSERT(len == buf->len);
                 *addr = handler->ptr;
 #endif
         }
