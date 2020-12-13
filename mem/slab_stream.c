@@ -67,7 +67,7 @@ err_ret:
         return ret;
 }
 
-void S_LTG *slab_stream_alloc(size_t size)
+inline void INLINE *slab_stream_alloc(size_t size)
 {
         slab_t *slab = core_tls_get(NULL, VARIABLE_SLAB_STREAM);
 
@@ -78,7 +78,7 @@ void S_LTG *slab_stream_alloc(size_t size)
         return slab_alloc(slab, size);
 }
 
-void S_LTG slab_stream_free(void *ptr)
+inline void INLINE slab_stream_free(void *ptr)
 {
         slab_t *slab = core_tls_get(NULL, VARIABLE_SLAB_STREAM);
 

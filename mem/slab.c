@@ -303,7 +303,7 @@ err_ret:
         return NULL;
 }
 
-void S_LTG __slab_free_local(void *ptr)
+inline static void INLINE __slab_free_local(void *ptr)
 {
         slab_md_t *md = ptr - SLAB_MD;
         slab_bucket_t *slab_bucket = md->slab_bucket;
@@ -346,7 +346,7 @@ static int __slab_cross_free_va(va_list ap)
         return 0;
 }
 
-void S_LTG slab_free(slab_t *slab, void *ptr)
+inline void INLINE slab_free(slab_t *slab, void *ptr)
 {
         slab_md_t *md = ptr - SLAB_MD;
 

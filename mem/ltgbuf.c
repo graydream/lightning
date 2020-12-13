@@ -530,7 +530,7 @@ inline int ltgbuf_init1(ltgbuf_t *buf, int size)
 }
 #endif
 
-void S_LTG ltgbuf_free(ltgbuf_t *buf)
+inline void INLINE ltgbuf_free(ltgbuf_t *buf)
 {
         BUFFER_CHECK(buf);
 
@@ -1410,4 +1410,3 @@ inline int INLINE ltgbuf_aligned(const ltgbuf_t *buf, int align)
 
         return 1;
 }
-
