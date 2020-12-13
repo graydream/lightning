@@ -209,6 +209,7 @@ int ltgbuf_copy1(ltgbuf_t *buf, const void *src, uint32_t offset, uint32_t len)
         return 0;
 }
 
+#if 0
 int ltgbuf_copy2(void *dst, const ltgbuf_t *buf, uint32_t offset, uint32_t len)
 {
         uint32_t buf_off = 0, seg_off, dst_off = 0;
@@ -261,6 +262,7 @@ int ltgbuf_copy2(void *dst, const ltgbuf_t *buf, uint32_t offset, uint32_t len)
 
         return 0;
 }
+#endif
 
 int ltgbuf_popmsg(ltgbuf_t *buf, void *dist, uint32_t len)
 {
@@ -1346,7 +1348,7 @@ void ltgbuf_copy3(ltgbuf_t *buf, const char *srcmem, int size)
 
         list_for_each(pos, &buf->list) {
                 seg_t *seg = (seg_t *)pos;
-                min = _min(left, BUFFER_SEG_SIZE);
+                min = _min(left, (int)seg->len);
                 memcpy(seg->handler.ptr, srcmem + offset, min);
                 left -= min;
                 offset += min;
@@ -1396,10 +1398,10 @@ inline int INLINE ltgbuf_segcount(const ltgbuf_t *buf)
 
 inline int INLINE ltgbuf_aligned(const ltgbuf_t *buf, int align)
 {
-        struct list_head *pos, *n;
+        struct list_head *pos;
         seg_t *seg;
 
-        list_for_each_safe(pos, n, &buf->list) {
+        list_for_each(pos, &buf->list) {
                 seg = (seg_t *)pos;
 
                 if (unlikely(seg->len % align || (uint64_t)seg->handler.ptr % align))

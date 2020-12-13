@@ -121,7 +121,7 @@ STATIC int __corenet_maping_connect_core(const coreid_t *coreid,
         }
         
         DBUG("connect to %s/%d sd %u, addr %d:%d\n", netable_rname(&coreid->nid),
-              coreid->idx, sockid.sd, sock->addr, sock->port);
+             coreid->idx, sockid.sd, sock->addr, sock->port);
 
         *_sockid = sockid;
 
@@ -332,8 +332,8 @@ err_ret:
 }
 
 static int S_LTG __corenet_maping_get(const coreid_t *coreid,
-                                        corenet_maping_t *entry,
-                                        sockid_t *_sockid)
+                                      corenet_maping_t *entry,
+                                      sockid_t *_sockid)
 {
         int ret;
         sockid_t *sockid;
@@ -364,7 +364,9 @@ static void __corenet_maping_connect_task(void *arg)
         corenet_maping_t *entry = arg;
         const nid_t *nid = &entry->nid;
 
+#if 1
         __corenet_maping_close_entry(entry, NULL);
+#endif
 
         coreid_check(entry->coreid);
         
@@ -374,6 +376,8 @@ static void __corenet_maping_connect_task(void *arg)
                 __corenet_maping_resume(&entry->wait_list, nid, ret);
                 DWARN("connect to %s fail\n", netable_rname(nid));
         }
+
+        entry->connecting = 0;
 }
 
 static int __corenet_maping_connect_wait_task(corenet_maping_t *entry,
@@ -430,22 +434,30 @@ static int __corenet_maping_connect_wait(corenet_maping_t *entry)
 
         coreid_check(entry->coreid);
         
-        if (list_empty(&entry->wait_list)) {
+        //if (list_empty(&entry->wait_list)) {
+        if (entry->connecting == 0) {
+                entry->connecting = 1;
                 DBUG("connect to %s\n", netable_rname(nid));
 
                 sche_task_new("corenet_maping", __corenet_maping_connect_task,
                               entry, -1);
         }
 
-        ctx.retval = 0;
-        list_add(&ctx.hook, &entry->wait_list);
-        
         if (sche_status() == SCHEDULE_STATUS_RUNNING) {
+                ctx.retval = 0;
+                list_add(&ctx.hook, &entry->wait_list);
                 ctx.type = TYPE_TASK;
                 ret = __corenet_maping_connect_wait_task(entry, &ctx);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
         } else {
+#if 0
+                ret = ENOSYS;
+                GOTO(err_ret, ret);
+#endif
+                
+                ctx.retval = 0;
+                list_add(&ctx.hook, &entry->wait_list);
                 ctx.type = TYPE_QUEUE;
                 ret =  __corenet_maping_connect_wait_queue(entry, &ctx);
                 if (unlikely(ret))
@@ -517,16 +529,16 @@ static void __corenet_maping_close_entry(corenet_maping_t *entry,
                 if (_sockid->sd == sockid->sd
                     && _sockid->seq == sockid->seq) {
                         DBUG("close one sock %s nid[%u], sockid %u\n",
-                              netable_rname(&entry->nid), entry->nid.id,
-                              sockid->sd);
+                             netable_rname(&entry->nid), entry->nid.id,
+                             sockid->sd);
 
                         __corenet_maping_close_finally__(&entry->nid, sockid);
                         sockid->sd = -1;
                         break;
                 } else {
                         DBUG("skip close %s nid[%u], sockid %u\n",
-                              netable_rname(&entry->nid), entry->nid.id,
-                              sockid->sd);
+                             netable_rname(&entry->nid), entry->nid.id,
+                             sockid->sd);
                 }
         }
 }
@@ -551,6 +563,7 @@ static int __corenet_maping_init__(corenet_maping_t **_maping)
                 entry = &maping[i];
                 INIT_LIST_HEAD(&entry->wait_list);
                 entry->coremask = 0;
+                entry->connecting = 0;
                 entry->nid = nid;
                 entry->coreid = coreid.idx;
         }
@@ -571,9 +584,15 @@ static int __corenet_maping_close(va_list ap)
 
         va_end(ap);
 
-        corenet_maping_t *entry;
+        corenet_maping_t *entry, *maping;
+        maping = __corenet_maping_get__();
 
-        entry = &__corenet_maping_get__()[nid->id];
+        if (maping == NULL) {
+                return 0;
+        }
+
+        entry = &maping[nid->id];
+
         __corenet_maping_close_entry(entry, sockid);
 
         return 0;
@@ -583,6 +602,7 @@ void corenet_maping_close(const nid_t *nid, const sockid_t *sockid)
 {
         LTG_ASSERT(sockid);
         LTG_ASSERT(ltgconf_global.daemon);
+        //LTG_ASSERT(nid->id <= UINT16_MAX);
 
         core_init_modules("corenet maping close", __corenet_maping_close, nid, sockid);
 }

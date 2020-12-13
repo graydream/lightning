@@ -15,6 +15,7 @@ typedef struct {
         uint64_t coremask;
         sockid_t sockid[CORE_MAX];
 
+        int connecting;
         struct list_head wait_list;
         corerpc_request request;
         int (*connected)(const sockid_t *);
