@@ -528,7 +528,7 @@ inline int ltgbuf_init1(ltgbuf_t *buf, int size)
 }
 #endif
 
-void S_LTG ltgbuf_free(ltgbuf_t *buf)
+inline void INLINE ltgbuf_free(ltgbuf_t *buf)
 {
         BUFFER_CHECK(buf);
 
