@@ -530,10 +530,12 @@ rdma_req_t S_LTG *build_rdma_read_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
         ltgbuf_merge(&req->msg_buf, buf);
 
         ltgbuf_init(&_buf, size);
+        LTG_ASSERT(ltgbuf_segcount(&_buf) == 1);
+        
         req->ref = ltgbuf_trans_sge(req->sge, NULL, &_buf, rdma_handler->mr->lkey);
         ltgbuf_merge(&req->msg_buf, &_buf);
 
-        LTG_ASSERT(req->ref <= MAX_SGE);
+        LTG_ASSERT(req->ref == 1);
 
         tail = &head;
         tail->next = NULL;
