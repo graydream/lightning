@@ -195,7 +195,7 @@ int S_LTG corerpc_rdma_request(void *ctx, void *_op)
                              op->rbuflen, handler);
 
         ret = rpc_request_prep(&buf, &op->msgid, op->request, op->msglen,
-                               op->rbuflen, op->rbuflen, op->msg_type, op->group,
+                               op->rbuflen, op->wbuflen, op->msg_type, op->group,
                                op->coreid.idx);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
