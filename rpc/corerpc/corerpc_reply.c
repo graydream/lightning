@@ -18,9 +18,12 @@ void S_LTG corerpc_reply_rdma(void *ctx, void *arg)
         (void) ctx;
 
         if (likely(reply->err == 0)) {
-                stdrpc_reply_init_prep(msgid, &reply_buf,
-                                       reply->buf ? reply->buf->len : 0);
+                stdrpc_reply_init_prep(msgid, &reply_buf, 0);
 
+                if (reply->buf) {
+                        ltgbuf_merge(&reply_buf, reply->buf);
+                }
+                
                 ret = corenet_rdma_send(reply->sockid, &reply_buf,
                                         (void **)msgid->data_prop.remote_addr,
                                         msgid->data_prop.rkey, 0,

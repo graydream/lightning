@@ -153,7 +153,7 @@ static void S_LTG __corerpc_request_queue_reply(void *_ctx)
         if (unlikely(ctx->outlen < (int)ctx->out.len)) {
                 ltgbuf_droptail(&ctx->out, ctx->replen - ctx->outlen);
         }
-        
+
         corerpc_reply_buffer(&ctx->sockid, &ctx->msgid, &ctx->out);
 
         ltgbuf_free(&ctx->in);
