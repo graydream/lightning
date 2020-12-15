@@ -185,10 +185,10 @@ typedef struct {
 #define RDMA_CONN_DUMP(conn) RDMA_CONN_DUMP_L(DBUG, conn);
 
 typedef struct {
-        uint32_t mode:4;
-        uint32_t err:2;
-        uint32_t ref:8;
-        uint32_t n:16;
+        uint32_t ref;
+        uint32_t mode;
+        uint32_t err;
+        uint32_t n;
         rdma_conn_t    *rdma_handler;
         ltgbuf_t msg_buf;
         union {

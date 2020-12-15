@@ -484,13 +484,12 @@ inline int INLINE ltgbuf_initwith2(ltgbuf_t *buf, struct iovec *iov, int count,
         return 0;
 }
 
-
-inline int INLINE ltgbuf_init(ltgbuf_t *buf, int size)
+inline int INLINE ltgbuf_init(ltgbuf_t *buf, uint32_t size)
 {
         seg_t *seg;
         uint32_t newsize = size;
 
-        LTG_ASSERT(size >= 0 && size < (1024 * 1024 * 100));
+        LTG_ASSERT(size < (1024 * 1024 * 100));
 
         buf->len = 0;
         buf->used = 0;
@@ -500,8 +499,7 @@ inline int INLINE ltgbuf_init(ltgbuf_t *buf, int size)
 
         ANALYSIS_BEGIN(0);
 
-        int left;
-        //int coreid = __coreid();
+        uint32_t left;
         left = size;
         do {
                 seg = seg_huge_create(buf, &newsize);

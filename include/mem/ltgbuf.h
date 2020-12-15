@@ -66,9 +66,9 @@ struct seg_t {
 #define SEG_KEEP 5
 
 struct ltgbuf_t {
-        uint64_t len;
+        uint32_t len;
+        uint32_t used;
         struct list_head list;
-        int used;
         seg_t array[SEG_KEEP];
 };
 
@@ -91,8 +91,7 @@ typedef struct {
 
 typedef int (*buf_itor_func)(void *, void *addr, uint64_t phyaddr, size_t len);
 
-int ltgbuf_init(ltgbuf_t *pack, int size);
-int ltgbuf_init1(ltgbuf_t *buf, int size);
+int ltgbuf_init(ltgbuf_t *pack, uint32_t size);
 void ltgbuf_free(ltgbuf_t *pack);
 
 int ltgbuf_appendmem(ltgbuf_t *buf, const void *src, uint32_t len);

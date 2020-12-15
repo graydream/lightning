@@ -54,7 +54,7 @@ typedef struct {
 typedef corenet_rdma_node_t corenet_node_t;
 static uint16_t __seq__ = 1;
 
-static void *__corenet_get()
+inline static void INLINE *__corenet_get()
 {
         return core_tls_get(NULL, VARIABLE_CORENET_RDMA);
 }
@@ -466,8 +466,8 @@ err_ret:
         return ret;
 }
 
-rdma_req_t *build_post_send_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
-                                void **addr, uint32_t rkey, uint32_t size)
+inline rdma_req_t INLINE *build_post_send_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
+                                              void **addr, uint32_t rkey, uint32_t size)
 {
         struct ibv_send_wr *sr = NULL;
         rdma_req_t *req = NULL;
@@ -504,13 +504,13 @@ rdma_req_t *build_post_send_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
         return req;
 }
 
-rdma_req_t S_LTG *build_rdma_read_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
-                                      void **addr, uint32_t rkey, uint32_t size)
+inline rdma_req_t INLINE *build_rdma_read_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
+                                              void **addr, uint32_t rkey, uint32_t size)
 {
         struct ibv_send_wr *sr, *tail, head;
         rdma_req_t *req ;
         void *ptr = ltgbuf_head1(buf, sizeof(ltg_net_head_t));
-        int index;
+        uint32_t index;
         ltgbuf_t _buf;
 
         ltg_net_head_t *net_head = ptr;
@@ -559,13 +559,13 @@ rdma_req_t S_LTG *build_rdma_read_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
         return req;
 }
 
-rdma_req_t *build_rdma_write_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
-                                 void **addr, uint32_t rkey, uint32_t size)
+inline rdma_req_t INLINE *build_rdma_write_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
+                                               void **addr, uint32_t rkey, uint32_t size)
 {
         struct ibv_send_wr *sr, head, *tail, *msg_sr;
         rdma_req_t *req = NULL;
         void *ptr = ltgbuf_head1(buf, sizeof(ltg_net_head_t));
-        int index;
+        uint32_t index;
         (void)size;
         ltg_net_head_t *net_head = ptr;
         LTG_ASSERT(net_head->magic == LTG_MSG_MAGIC);
@@ -762,33 +762,6 @@ inline int INLINE corenet_rdma_poll(__corenet_t *corenet)
                 return 0;
         }
 
-#if 0
-        for (i = 0; i < corenet->dev_count; i++) {
-                // memset(wc, 0x0, sizeof(struct ibv_wc) * MAX_POLLING);
-
-                polling_count = 0;
-
-                rinfo = &corenet->dev_list[i];
-
-                ret = ibv_poll_cq(rinfo->cq, MAX_POLLING, &wc[polling_count]);
-                if (unlikely(ret < 0)) {
-                        LTG_ASSERT(0);
-                }
-
-                polling_count = ret;
-
-                for (int j = 0; j < polling_count; j++) {
-                        DBUG("status %d opcode %d len %d\n",
-                             wc[j].status, wc[j].opcode, wc[j].byte_len);
-
-                        if (likely(wc[j].status == IBV_WC_SUCCESS)) {
-                                __corenet_rdma_handle_wc(&wc[j], corenet);
-                        } else {
-                                __corenet_rdma_handle_wc_error(&wc[j], corenet);
-                        }
-                }
-        }
-#else
 	for (i = 0; i < corenet->dev_count; i++) {
                 rinfo = &corenet->dev_list[i];
 
@@ -811,30 +784,15 @@ inline int INLINE corenet_rdma_poll(__corenet_t *corenet)
                         __corenet_rdma_handle_wc_error(&wc[i], corenet);
                 }
         }
-#endif
 
         return 0;
 }
 
-static void S_LTG __corenet_rdma_queue(corenet_rdma_t *corenet, corenet_node_t *node)
+inline static void INLINE __corenet_rdma_queue(corenet_rdma_t *corenet, corenet_node_t *node)
 {
-	/*struct list_head *pos;
-	corenet_node_t *_node;
-        int found = 0;*/
-
         if (list_empty(&node->send_list)) {
-              list_add_tail(&node->send_list, &corenet->corenet.forward_list);
+                list_add_tail(&node->send_list, &corenet->corenet.forward_list);
         }
-
-	/*list_for_each(pos, &corenet->corenet.forward_list) {
-		_node = container_of(pos, corenet_node_t, send_list);
-		if (node == _node){
-                        found = 1;
-			break;
-                }
-	}
-
-        if (found == 0) */
 
         return ;
 }
