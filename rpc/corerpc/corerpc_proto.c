@@ -15,13 +15,16 @@ typedef struct {
 } rpc_ctx_t;
 
 #define IN_IOV_MAX 2
+#define CROSS_PTR 1
 
 typedef struct {
         ring_ctx_t ctx;
+#if CROSS_PTR
         int in_cnt;
         int out_cnt;
         struct iovec in_iov[IN_IOV_MAX];
         struct iovec out_iov[IN_IOV_MAX];
+#endif
         ltgbuf_t out;
         ltgbuf_t in;
         int outlen;
@@ -134,7 +137,8 @@ err_ret:
         return;
 }
 
-static void S_LTG __corerpc_request_queue_task1(void *_ctx)
+#if CROSS_PTR
+inline static void INLINE __corerpc_request_queue_task1(void *_ctx)
 {
         corerpc_ring_t *ctx = _ctx;
 
@@ -149,8 +153,9 @@ static void S_LTG __corerpc_request_queue_task1(void *_ctx)
         ltgbuf_free(&in);
         ltgbuf_free(&out);
 }
+#endif
 
-static void S_LTG __corerpc_request_queue_task2(void *_ctx)
+static void S_LTG __corerpc_request_queue_task(void *_ctx)
 {
         corerpc_ring_t *ctx = _ctx;
 
@@ -214,22 +219,36 @@ static void S_LTG __corerpc_request_queue(rpc_request_t *rpc_request)
 
         ltgbuf_init(&ctx->out, ctx->replen);
 
-        if (likely(ltgbuf_segcount(&ctx->in) <= IN_IOV_MAX)) {
-                LTG_ASSERT(ltgbuf_segcount(&ctx->out) == 1);
+#if CROSS_PTR
+        if (likely(ltgbuf_segcount(&ctx->in) <= IN_IOV_MAX)
+            && likely(ltgbuf_segcount(&ctx->out) <= IN_IOV_MAX)) {
+                //LTG_ASSERT(ltgbuf_segcount(&ctx->out) == 1);
 
+                ctx->in_cnt = IN_IOV_MAX;
+                ctx->out_cnt = IN_IOV_MAX;
                 ltgbuf_trans(ctx->in_iov, &ctx->in_cnt, &ctx->in);
                 ltgbuf_trans(ctx->out_iov, &ctx->out_cnt, &ctx->out);
-        
+
+                LTG_ASSERT(ctx->in_cnt);
+                
                 core_ring_queue(coreid.idx, RING_TASK, &ctx->ctx,
                                 __corerpc_request_queue_task1, ctx,
                                 __corerpc_request_queue_reply, ctx);
         } else {
-                DWARN("iov count %u\n", ltgbuf_segcount(&ctx->in));
+                DWARN("iov count %d %d %d %d\n",
+                      ltgbuf_segcount(&ctx->in),
+                      ltgbuf_segcount(&ctx->out),
+                      ctx->in.len, ctx->out.len);
                 
                 core_ring_queue(coreid.idx, RING_TASK, &ctx->ctx,
-                                __corerpc_request_queue_task2, ctx,
+                                __corerpc_request_queue_task, ctx,
                                 __corerpc_request_queue_reply, ctx);
         }
+#else
+        core_ring_queue(coreid.idx, RING_TASK, &ctx->ctx,
+                        __corerpc_request_queue_task, ctx,
+                        __corerpc_request_queue_reply, ctx);
+#endif        
 
         return;
 err_ret:
