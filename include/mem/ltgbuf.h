@@ -152,6 +152,7 @@ int ltgbuf_solid_init(ltgbuf_t *buf, int size);
 int ltgbuf_trans_sge(struct ibv_sge *sge, ltgbuf_t *src_buf, ltgbuf_t *dst_buf, uint32_t lkey);
 void ltgbuf_trans_addr(void **addr, const ltgbuf_t *buf);
 int ltgbuf_initwith(ltgbuf_t *buf, void *data, int size, void *arg, int (*cb)(void *arg));
+int ltgbuf_initwith2(ltgbuf_t *buf, struct iovec *iov, int count, void *arg, int (*cb)(void *arg));
 int ltgbuf_rdma_popmsg(ltgbuf_t *buf, void *dist, uint32_t len);
 int ltgbuf_nvme_init2(nvmeio_t *io, uint32_t size, uint64_t offset, ltgbuf_t *buf);
 

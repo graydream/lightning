@@ -14,16 +14,14 @@ typedef struct {
         uint64_t latency;
 } rpc_ctx_t;
 
-#define CROSS_PTR 0
+#define IN_IOV_MAX 2
 
 typedef struct {
         ring_ctx_t ctx;
-#if CROSS_PTR
-        void *inbuf;
-        void *outbuf;
-        int inbuflen;
-        int outbuflen;
-#endif
+        int in_cnt;
+        int out_cnt;
+        struct iovec in_iov[IN_IOV_MAX];
+        struct iovec out_iov[IN_IOV_MAX];
         ltgbuf_t out;
         ltgbuf_t in;
         int outlen;
@@ -136,42 +134,23 @@ err_ret:
         return;
 }
 
-#if CROSS_PTR
-static void S_LTG __corerpc_request_queue_task(void *_ctx)
+static void S_LTG __corerpc_request_queue_task1(void *_ctx)
 {
         corerpc_ring_t *ctx = _ctx;
 
         DBUG("corerpc request queue task\n");
 
-        ltgbuf_t *in, *out, _in, _out;
-        if (likely(ctx->inbuf)) {
-                ltgbuf_initwith(&_in, ctx->inbuf, ctx->inbuflen, NULL, NULL);
-                in = &_in;
-        } else {
-                in = &ctx->in;
-        }
-
-        if (likely(ctx->outbuf)) {
-                ltgbuf_initwith(&_out, ctx->outbuf, ctx->outbuflen, NULL, NULL);
-                out = &_out;
-        } else {
-                out = &ctx->out;
-        }
+        ltgbuf_t in, out;
+        ltgbuf_initwith2(&in, ctx->in_iov, ctx->in_cnt, NULL, NULL);
+        ltgbuf_initwith2(&out, ctx->out_iov, ctx->out_cnt, NULL, NULL);
         
-        ctx->retval = ctx->handler(in, out, &ctx->outlen);
+        ctx->retval = ctx->handler(&in, &out, &ctx->outlen);
 
-        if (likely(ctx->inbuf)) {
-                ltgbuf_free(&_in);
-        }
-
-        if (likely(ctx->outbuf)) {
-                ltgbuf_free(&_out);
-        }
+        ltgbuf_free(&in);
+        ltgbuf_free(&out);
 }
 
-#else
-
-static void S_LTG __corerpc_request_queue_task(void *_ctx)
+static void S_LTG __corerpc_request_queue_task2(void *_ctx)
 {
         corerpc_ring_t *ctx = _ctx;
 
@@ -179,8 +158,6 @@ static void S_LTG __corerpc_request_queue_task(void *_ctx)
 
         ctx->retval = ctx->handler(&ctx->in, &ctx->out, &ctx->outlen);
 }
-
-#endif
 
 static void S_LTG __corerpc_request_queue_reply(void *_ctx)
 {
@@ -237,25 +214,22 @@ static void S_LTG __corerpc_request_queue(rpc_request_t *rpc_request)
 
         ltgbuf_init(&ctx->out, ctx->replen);
 
-#if CROSS_PTR
-        if (ltgbuf_segcount(&ctx->out) == 1) {
-                ctx->outbuf = ltgbuf_head(&ctx->out);
-                ctx->outbuflen = ctx->out.len;
-        } else {
-                ctx->outbuf = NULL;
-        }
+        if (likely(ltgbuf_segcount(&ctx->in) <= IN_IOV_MAX)) {
+                LTG_ASSERT(ltgbuf_segcount(&ctx->out) == 1);
 
-        if (ltgbuf_segcount(&ctx->in) == 1) {
-                ctx->inbuf = ltgbuf_head(&ctx->in);
-                ctx->inbuflen = ctx->in.len;
-        } else {
-                ctx->inbuf = NULL;
-        }
-#endif
+                ltgbuf_trans(ctx->in_iov, &ctx->in_cnt, &ctx->in);
+                ltgbuf_trans(ctx->out_iov, &ctx->out_cnt, &ctx->out);
         
-        core_ring_queue(coreid.idx, RING_TASK, &ctx->ctx,
-                        __corerpc_request_queue_task, ctx,
-                        __corerpc_request_queue_reply, ctx);
+                core_ring_queue(coreid.idx, RING_TASK, &ctx->ctx,
+                                __corerpc_request_queue_task1, ctx,
+                                __corerpc_request_queue_reply, ctx);
+        } else {
+                DWARN("iov count %u\n", ltgbuf_segcount(&ctx->in));
+                
+                core_ring_queue(coreid.idx, RING_TASK, &ctx->ctx,
+                                __corerpc_request_queue_task2, ctx,
+                                __corerpc_request_queue_reply, ctx);
+        }
 
         return;
 err_ret:

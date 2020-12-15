@@ -447,7 +447,7 @@ void S_LTG ltgbuf_reference(ltgbuf_t *dist, const ltgbuf_t *src)
         BUFFER_CHECK(dist);
 }
 
-int S_LTG ltgbuf_initwith(ltgbuf_t *buf, void *data, int size,
+inline int INLINE ltgbuf_initwith(ltgbuf_t *buf, void *data, int size,
                           void *arg, int (*cb)(void *arg))
 {
         seg_t *seg;
@@ -463,6 +463,27 @@ int S_LTG ltgbuf_initwith(ltgbuf_t *buf, void *data, int size,
 
         return 0;
 }
+
+inline int INLINE ltgbuf_initwith2(ltgbuf_t *buf, struct iovec *iov, int count,
+                                   void *arg, int (*cb)(void *arg))
+{
+        seg_t *seg;
+
+        buf->len = 0;
+        buf->used = 0;
+        INIT_LIST_HEAD(&buf->list);
+
+        for (int i = 0; i < count; i++) {
+                seg = seg_ext_create(buf, iov[i].iov_base, iov[i].iov_len,
+                                     arg, cb);
+                seg_add_tail(buf, seg);
+        }
+        
+        BUFFER_CHECK(buf);
+
+        return 0;
+}
+
 
 inline int INLINE ltgbuf_init(ltgbuf_t *buf, int size)
 {
