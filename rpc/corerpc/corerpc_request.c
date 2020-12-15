@@ -212,13 +212,6 @@ err_ret:
         return ret;
 }
 
-static int __corenet_tcp_free(void *ptr)
-{
-        (void) ptr;
-
-        return 0;
-}
-
 int corerpc_tcp_request(void *ctx, void *_op)
 {
         int ret;
@@ -234,7 +227,7 @@ int corerpc_tcp_request(void *ctx, void *_op)
         if (op->wbuflen) {
                 ltgbuf_t tmp;
                 LTG_ASSERT(op->wbuf);
-                ltgbuf_initwith(&tmp, op->wbuf, op->wbuflen, NULL, __corenet_tcp_free);
+                ltgbuf_initwith(&tmp, op->wbuf, op->wbuflen, NULL, NULL);
                 ltgbuf_merge(&buf, &tmp);
         }
 

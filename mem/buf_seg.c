@@ -148,7 +148,9 @@ err_free:
 
 static void S_LTG __seg_ext_free(seg_t *seg)
 {
-        seg->ext.cb(seg->ext.arg);
+        if (seg->ext.cb) {
+                seg->ext.cb(seg->ext.arg);
+        }
 
         __seg_free_head(seg, 0);
 }
