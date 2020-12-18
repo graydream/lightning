@@ -910,3 +910,36 @@ int S_LTG coremask_hash(const coremask_t *coremask, uint64_t id)
 
         return coremask->coreid[hash];
 }
+
+void core_neighbors(int idx, uint64_t mask, int *array, int *_count)
+{
+        int count, numa;
+        core_t *core = __core_array__[idx];
+        coremask_t coremask;
+
+        coremask_trans(&coremask, mask);
+        
+        if (core->main_core == NULL && ltgconf_global.numa) {
+                memcpy(array, coremask.coreid, sizeof(*array) * coremask.count);
+                *_count = coremask.count;
+                return;
+        }
+
+        numa = core->main_core->node_id;
+        count = 0;
+        for (int i = 0; i < coremask.count; i++) {
+                if (numa == __core_array__[coremask.coreid[i]]->main_core->node_id) {
+                        array[count] = coremask.coreid[i];
+                        count++;
+                }
+        }
+
+        if (count == 0) {
+                DINFO("cross access\n");
+                memcpy(array, coremask.coreid, sizeof(*array) * coremask.count);
+                *_count = coremask.count;
+        }
+
+        return;
+}
+

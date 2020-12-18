@@ -181,6 +181,7 @@ void core_ring_queue(int coreid, int type, ring_ctx_t *ctx,
                      func_t reply, void *replyctx);
 void  core_ring_poller(void *_core, void *var, void *arg);
 void core_worker_run(core_t *core);
+void core_neighbors(int idx, uint64_t mask, int *array, int *_count);
 
 #define CORE_ANALYSIS_BEGIN(mark)               \
         ltg_time_t t1##mark;                    \
