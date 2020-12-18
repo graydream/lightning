@@ -937,8 +937,10 @@ void core_neighbors(int idx, uint64_t mask, int *array, int *_count)
         if (count == 0) {
                 DINFO("cross access\n");
                 memcpy(array, coremask.coreid, sizeof(*array) * coremask.count);
-                *_count = coremask.count;
+                count = coremask.count;
         }
+
+        *_count = count;
 
         return;
 }
