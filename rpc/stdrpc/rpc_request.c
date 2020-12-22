@@ -221,6 +221,10 @@ STATIC int __stdrpc_request_wait(const char *name, const net_handle_t *nh,
         
         ret = __stdrpc_request_wait__(name, rbuf, &ctx);
         if (unlikely(ret)) {
+                if (ret == ECONNABORTED) {
+                        ret = ETIMEDOUT;
+                }
+
                 goto err_ret;
         }
 

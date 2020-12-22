@@ -86,7 +86,7 @@ static int __rpc_table_unlock(rpc_table_t *rpc_table, slot_t *slot)
 
 static int __rpc_table_check(rpc_table_t *rpc_table, slot_t *slot, uint32_t now)
 {
-        int ret, retval = ETIMEDOUT;
+        int ret, retval = ECONNABORTED;
         sockid_t *closed = NULL, sockid;
         const char *conn;
 

@@ -188,6 +188,11 @@ static int __corerpc_send_and_wait(void *core, const char *name, corerpc_op_t *o
         MSGID_DUMP(&op->msgid);
         ret = __corerpc_wait__(name, op->rbuf, &rpc_ctx);
         if (unlikely(ret)) {
+                if (ret == ECONNABORTED) {
+                        corenet_maping_close(&op->coreid.nid, &op->sockid);
+                        ret = ETIMEDOUT;
+                }
+
                 GOTO(err_ret, ret);
         }
 
