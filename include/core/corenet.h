@@ -402,9 +402,11 @@ void corenet_rdma_disconnected(struct rdma_cm_event *ev, void *core);
 void corenet_rdma_timewait_exit(struct rdma_cm_event *ev, void *core);
 
 int corenet_rdma_post_recv(void *ptr);
-int corenet_rdma_send(const sockid_t *sockid, ltgbuf_t *buf, void **addr, uint32_t rkey, uint32_t size,
-                      rdma_req_t *(*build_req)(rdma_conn_t *rdma_handler, ltgbuf_t *buf, void **addr,
-                                               uint32_t rkey, uint32_t size));
+typedef rdma_req_t *(*req_build_func)(rdma_conn_t *rdma_handler, ltgbuf_t *buf,
+                                 void **addr, uint32_t rkey, uint32_t size);
+int corenet_rdma_send(const sockid_t *sockid, ltgbuf_t *buf, void **addr,
+                      uint32_t rkey, uint32_t size,
+                      req_build_func);
 void corenet_rdma_commit(void *rdma_net);
 
 rdma_req_t *build_post_send_req(rdma_conn_t *rdma_handler, ltgbuf_t *buf, void **addr, uint32_t rkey, uint32_t size);

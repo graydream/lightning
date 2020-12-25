@@ -10,6 +10,7 @@
 #define IO_WARN (1000 * 1000)
 #define IO_INFO (1000 * 500)
 
+#define INLINE  __attribute__((always_inline))
 #define NOINLINE __attribute__((noinline)) 
 
 #if 1
