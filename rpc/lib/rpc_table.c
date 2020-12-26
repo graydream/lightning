@@ -13,9 +13,9 @@
 #include "ltg_rpc.h"
 #include "core/corenet.h"
 
-rpc_table_t *__rpc_table__;
-
 inline static void INLINE __rpc_table_post(slot_t *slot, ltgbuf_t *buf, int *retval);
+
+rpc_table_t *__rpc_table__;
 
 static int __rpc_table_used(rpc_table_t *rpc_table, slot_t *slot)
 {
