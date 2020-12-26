@@ -47,6 +47,12 @@ static int S_LTG __rpc_table_use(rpc_table_t *rpc_table, slot_t *slot)
 
 static void __rpc_table_free(rpc_table_t *rpc_table, slot_t *slot)
 {
+        if (slot->free && slot->free_arg) {
+                slot->free(slot->free_arg);
+        }
+        
+        slot->free = NULL;
+        slot->free_arg = NULL;
         slot->post = NULL;
         slot->post_arg = NULL;
         slot->timeout = 0;
@@ -604,3 +610,24 @@ inline static void INLINE __rpc_table_post(slot_t *slot, ltgbuf_t *buf, int *ret
         }
 }
 
+int rpc_table_setfree(rpc_table_t *rpc_table, const msgid_t *msgid,
+                      func_t func, void *arg)
+{
+        int ret;
+        slot_t *slot;
+
+        slot = __rpc_table_lock_slot(rpc_table, msgid);
+        if (unlikely(slot == NULL)) {
+                ret = ESTALE;
+                GOTO(err_ret, ret);
+        }
+
+        slot->free = func;
+        slot->free_arg = arg;
+
+        __rpc_table_unlock(rpc_table, slot);
+
+        return 0;
+err_ret:
+        return ret;
+}

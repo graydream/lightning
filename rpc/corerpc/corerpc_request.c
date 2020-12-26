@@ -52,6 +52,10 @@ typedef struct {
         corerpc_ring_ctx_t *ctx;
 } rpc_ctx_t;
 
+inline static void INLINE __corerpc_request_reg(void *ctx, const msgid_t *msgid,
+                                                const ltgbuf_t *wbuf,
+                                                const ltgbuf_t *rbuf);
+
 extern rpc_table_t *corerpc_self_byctx(void *);
 extern rpc_table_t *corerpc_self();
 extern int corerpc_inited;
@@ -205,6 +209,8 @@ int S_LTG corerpc_rdma_request(void *ctx, void *_op)
                 GOTO(err_free, ret);
         }
 
+        __corerpc_request_reg(ctx, &op->msgid, op->wbuf, op->rbuf);
+        
         return 0;
 err_free:
         ltgbuf_free(&buf);
@@ -702,4 +708,38 @@ err_ret:
         }
         ANALYSIS_END(0, IO_INFO, name);
         return ret;
+}
+
+inline static void INLINE __corerpc_request_free(void *ctx)
+{
+        ltgbuf_t *buf = ctx;
+
+        DBUG("free %p\n", ctx);
+        
+        ltgbuf_free(buf);
+        slab_stream_free(buf);
+}
+
+inline static void INLINE __corerpc_request_reg(void *ctx, const msgid_t *msgid,
+                                                const ltgbuf_t *wbuf,
+                                                const ltgbuf_t *rbuf)
+{
+        int ret;
+        const ltgbuf_t *iobuf = wbuf ? wbuf : rbuf;
+
+        if (unlikely(iobuf == NULL)) {
+                return;
+        }
+
+        LTG_ASSERT(wbuf == NULL || rbuf == NULL);
+        ltgbuf_t *tmp = slab_stream_alloc(sizeof(*tmp));
+        ltgbuf_init(tmp, 0);
+        ltgbuf_reference(tmp, iobuf);
+
+        rpc_table_t *rpc_table = corerpc_self_byctx(ctx);
+        ret = rpc_table_setfree(rpc_table, msgid, __corerpc_request_free, tmp);
+        if (unlikely(ret)) {
+                ltgbuf_free(tmp);
+                slab_stream_free(tmp);
+        }
 }
