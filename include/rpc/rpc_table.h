@@ -17,7 +17,7 @@ typedef struct {
         uint32_t figerprint_prev;
         char name[MAX_NAME_LEN];
         func3_t post;
-        func3_t free;
+        func_t free;
         void *post_arg;
         void *free_arg;
 } slot_t;
@@ -52,5 +52,7 @@ int rpc_table_setslot(rpc_table_t *rpc_table, const msgid_t *msgid, func3_t func
 int rpc_table_post(rpc_table_t *rpc_table, const msgid_t *msgid, int retval, ltgbuf_t *buf, uint64_t latency);
 int rpc_table_free(rpc_table_t *rpc_table, const msgid_t *msgid);
 void rpc_table_reset(rpc_table_t *rpc_table, const sockid_t *sockid, const nid_t *nid);
+int rpc_table_setfree(rpc_table_t *rpc_table, const msgid_t *msgid,
+                      func_t func, void *arg);
 
 #endif
