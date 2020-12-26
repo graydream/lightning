@@ -117,6 +117,10 @@ static void IO_FUNC __corerpc_reply_handler(const ltg_net_head_t *head, ltgbuf_t
         if (unlikely(ret)) {
                 ltgbuf_free(buf);
         }
+
+#if RPC_TABLE_POST_FREE
+        rpc_table_free(__rpc_table_private__, &head->msgid);
+#endif
 }
 
 static int __corerpc_handler(corerpc_ctx_t *ctx, ltgbuf_t *buf)

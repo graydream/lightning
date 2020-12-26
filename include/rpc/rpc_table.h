@@ -16,8 +16,10 @@ typedef struct {
         uint32_t begin;
         uint32_t figerprint_prev;
         char name[MAX_NAME_LEN];
-        void *arg;
-        func3_t func;
+        func3_t post;
+        func3_t free;
+        void *post_arg;
+        void *free_arg;
 } slot_t;
 
 typedef struct {
@@ -35,6 +37,8 @@ typedef struct {
 #define RPC_TABLE_MAX 8192
 
 extern rpc_table_t *__rpc_table__;
+
+#define RPC_TABLE_POST_FREE 1
 
 int rpc_table_init(const char *name, rpc_table_t **rpc_table, int private);
 void rpc_table_destroy(rpc_table_t **_rpc_table);
