@@ -613,7 +613,7 @@ inline static void INLINE __rpc_table_post(slot_t *slot, ltgbuf_t *buf, int *ret
         }
 }
 
-int rpc_table_setfree(rpc_table_t *rpc_table, const msgid_t *msgid,
+inline int INLINE rpc_table_setfree(rpc_table_t *rpc_table, const msgid_t *msgid,
                       func_t func, void *arg)
 {
         int ret;
