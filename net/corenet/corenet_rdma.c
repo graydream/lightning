@@ -53,6 +53,7 @@ typedef struct {
 
 typedef corenet_rdma_node_t corenet_node_t;
 static uint16_t __seq__ = 1;
+struct ibv_mr* get_mr(uint64_t *mr_map, const void *addr);
 
 inline static void INLINE *__corenet_get()
 {
@@ -485,7 +486,7 @@ inline rdma_req_t INLINE *build_post_send_req(rdma_conn_t *rdma_handler, ltgbuf_
         req = (rdma_req_t *)(ptr + RDMA_MESSAGE_SIZE);
         ltgbuf_init(&req->msg_buf, 0);
 
-        req->ref = ltgbuf_trans_sge(req->sge, buf, &req->msg_buf, rdma_handler->mr->lkey);
+        req->ref = ltgbuf_trans_sge(req->sge, buf, &req->msg_buf, get_mr, rdma_handler->mr_map);
         LTG_ASSERT(req->ref == 1);
 
         req->mode = RDMA_SEND_MSG;
@@ -531,8 +532,8 @@ inline rdma_req_t INLINE *build_rdma_read_req(rdma_conn_t *rdma_handler, ltgbuf_
 
         ltgbuf_init(&_buf, size);
         LTG_ASSERT(ltgbuf_segcount(&_buf) == 1);
-        
-        req->ref = ltgbuf_trans_sge(req->sge, NULL, &_buf, rdma_handler->mr->lkey);
+
+        req->ref = ltgbuf_trans_sge(req->sge, NULL, &_buf, get_mr, rdma_handler->mr_map);
         ltgbuf_merge(&req->msg_buf, &_buf);
 
         LTG_ASSERT(req->ref == 1);
@@ -577,7 +578,7 @@ inline rdma_req_t INLINE *build_rdma_write_req(rdma_conn_t *rdma_handler, ltgbuf
 
         ltgbuf_init(&req->msg_buf, 0);
 
-        req->ref = ltgbuf_trans_sge(req->sge, buf, &req->msg_buf, rdma_handler->mr->lkey);
+        req->ref = ltgbuf_trans_sge(req->sge, buf, &req->msg_buf, get_mr, rdma_handler->mr_map);
         LTG_ASSERT(req->ref <= MAX_SGE);
 
         msg_sr = &req->wr.sr[req->ref - 1];
@@ -713,7 +714,6 @@ STATIC int __corenet_rdma_handle_wc_error(struct ibv_wc *wc, __corenet_t *corene
                 CMID_DUMP_L(DERROR, cm_id);
                 IBV_QP_DUMP_L(DERROR, cm_id->qp);
 
-                IBV_MR_DUMP_L(DERROR, rdma_handler->mr);
                 IBV_MR_DUMP_L(DERROR, rdma_handler->iov_mr);
 
                 LTG_ASSERT(0);
@@ -1022,6 +1022,64 @@ err_ret:
         return ret;
 }
 
+#define SHIFT_256TB     48
+#define SHIFT_REGSIZE       30
+#define MASK_256TB      ((1ULL << SHIFT_256TB) - 1)
+#define MASK_REGSIZE        ((1ULL << SHIFT_REGSIZE) - 1)
+
+void *rdma_register_mr(void *pd, void *buf, size_t size)
+{
+        int mr_flags = 0;
+        struct ibv_mr *mr = NULL;
+
+        mr_flags = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_WRITE;
+        mr = ibv_reg_mr((struct ibv_pd *)pd, buf, size, mr_flags);
+        if (!mr) {
+                DERROR("ibv_reg_mr failed with mr_flags=0x%x, errno:%d, errmsg:%s %p\n",
+                       mr_flags, errno, strerror(errno), buf);
+                goto err_ret;
+        }
+
+        return mr;
+err_ret:
+        return NULL;
+}
+
+int reg_rdma_mr(void *addr, void *arg,  size_t size)
+{
+        rdma_info_t *dev = arg;
+        struct ibv_mr *mr;
+        void *tmp;
+        int    i, reg_count, map_index;
+
+         if ((uintptr_t)addr & ~MASK_256TB) 
+                 LTG_ASSERT(0);
+
+         reg_count = size >> SHIFT_REGSIZE;
+         map_index = (uint64_t)addr >> SHIFT_REGSIZE;
+
+         DINFO("reg rdma addr %p, reg_count %d mr_map %p dev %p\n", addr, reg_count, dev->mr_map, dev);
+
+         for (i = 0; i < reg_count; i++) {
+                 tmp = addr + i * ((uint64_t)1 << SHIFT_REGSIZE);
+                 mr = (struct ibv_mr *)rdma_register_mr(dev->pd, tmp, (size_t)1 << SHIFT_REGSIZE);
+                 if (mr == NULL)
+                         LTG_ASSERT(0);
+
+                 dev->mr_map[map_index++] = (uint64_t)mr;
+         }
+
+         return 0;
+}
+
+struct ibv_mr* get_mr(uint64_t *mr_map, const void *addr)
+{
+         if ((uintptr_t)addr & ~MASK_256TB) 
+                 LTG_ASSERT(0);
+
+         return (struct ibv_mr *)mr_map[(uint64_t)addr >> SHIFT_REGSIZE];
+}
+
 int __rdma_create_cq(rdma_info_t **_dev, struct rdma_cm_id *cm_id, int ib_port, __corenet_t *corenet)
 {
         int cq_size = 0;
@@ -1029,8 +1087,6 @@ int __rdma_create_cq(rdma_info_t **_dev, struct rdma_cm_id *cm_id, int ib_port, 
         struct ibv_port_attr port_attr;
         struct ibv_device_attr device_attr;
         rdma_info_t *dev;
-        void *private_mem;
-        uint64_t private_mem_size = 0;
 
         CMID_DUMP_L(DINFO, cm_id);
 
@@ -1084,21 +1140,20 @@ int __rdma_create_cq(rdma_info_t **_dev, struct rdma_cm_id *cm_id, int ib_port, 
 
 #if 1
         // TODO by core?
-        get_global_private_mem(&private_mem, &private_mem_size);
 
-        DINFO("private_mem %p size %jd dev_count %d\n",
-              private_mem, private_mem_size, corenet->dev_count);
+        dev->mr_map = malloc(((uint32_t)1 << 18) * sizeof(uint64_t)); /*1 << 18  1G*/
+        memset(dev->mr_map, 0x00, ((uint32_t)1 << 18) * sizeof(uint64_t));
 
-        dev->mr = (struct ibv_mr *)rdma_register_mr(dev->pd, private_mem, private_mem_size);
-        if (dev->mr == NULL)
-                LTG_ASSERT(0);
+        DINFO("create cq dev %p, mr_map %p\n", dev, dev->mr_map);
+        memseg_walk(reg_rdma_mr, (void *)dev);
+
 #endif
 
         corenet->dev_count++;
 
         //gmr = dev->mr;
         DINFO("CQ was created cq %p pd %p mr %p dev_count %d\n",
-              dev->cq, dev->pd, dev->mr, corenet->dev_count);
+              dev->cq, dev->pd, corenet->dev_count);
 
         RDMA_INFO_DUMP_L(DINFO, dev);
 
@@ -1111,26 +1166,6 @@ err_ret:
         return ret;
 }
 
-void *rdma_register_mr(void *pd, void *buf, size_t size)
-{
-        int mr_flags = 0;
-        struct ibv_mr *mr = NULL;
-
-        /* register the memory buffer */
-        mr_flags = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_WRITE;
-        // huge_mem_init here?
-        mr = ibv_reg_mr((struct ibv_pd *)pd, buf, size, mr_flags);
-        if (!mr) {
-                DERROR("ibv_reg_mr failed with mr_flags=0x%x, errno:%d, errmsg:%s %p\n",
-                       mr_flags, errno, strerror(errno), buf);
-                goto err_ret;
-        }
-
-        IBV_MR_DUMP_L(DINFO, mr);
-        return mr;
-err_ret:
-        return NULL;
-}
 
 static int __rdma_dev_find(rdma_info_t **_dev, core_t *core, struct rdma_cm_id *cm_id)
 {
@@ -1167,7 +1202,7 @@ static int __corenet_rdma_create_qp__(struct rdma_cm_id *cm_id, core_t *core, rd
                 RDMA_INFO_DUMP_L(DINFO, dev);
         }
 
-        LTG_ASSERT(dev->cq != NULL && dev->pd != NULL && dev->mr != NULL);
+        LTG_ASSERT(dev->cq != NULL && dev->pd != NULL);
 
         /* create qp */
         memset(&qp_init_attr, 0, sizeof(qp_init_attr));
@@ -1202,7 +1237,7 @@ static int __corenet_rdma_create_qp__(struct rdma_cm_id *cm_id, core_t *core, rd
         handler->cm_id = cm_id;
         handler->cq = dev->cq;
         handler->pd = dev->pd;
-        handler->mr = dev->mr;
+        handler->mr_map = dev->mr_map;
         handler->qp = cm_id->qp;
         handler->dev = dev;
         handler->core = core;

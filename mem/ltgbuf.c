@@ -331,7 +331,7 @@ STATIC int __ltgbuf_appendmem(ltgbuf_t *buf, const void *src, uint32_t len, int 
         //LTG_ASSERT(len <= BUFFER_SEG_SIZE);
 
         BUFFER_CHECK(buf);
-        if (unlikely(glob)) {
+        if (unlikely(glob || ltgconf_global.nr_hugepage == 0)) {
                 seg = seg_sys_create(buf, len);
         } else {
                 seg = seg_huge_create(buf, &size);
@@ -389,11 +389,12 @@ void ltgbuf_clone_glob(ltgbuf_t *newbuf, const ltgbuf_t *buf)
         BUFFER_CHECK(buf);
 }
 
-int S_LTG ltgbuf_trans_sge(struct ibv_sge *sge, ltgbuf_t *src_buf,
-                           ltgbuf_t *dst_buf, uint32_t lkey)
+int S_LTG ltgbuf_trans_sge(struct ibv_sge *sge, ltgbuf_t *src_buf, ltgbuf_t *dst_buf,
+                     struct ibv_mr* (*get_mr)(uint64_t *mr_map, const void *addr), void *mr_map)
 {
         struct list_head *pos;
         int num = 0;
+        struct ibv_mr *mr;
         seg_t *seg;
 
         if (src_buf)
@@ -404,7 +405,8 @@ int S_LTG ltgbuf_trans_sge(struct ibv_sge *sge, ltgbuf_t *src_buf,
 
                 sge[num].addr = (uintptr_t)seg->handler.ptr;
                 sge[num].length = seg->len;
-                sge[num].lkey = lkey;
+                mr = get_mr(mr_map, seg->handler.ptr);
+                sge[num].lkey = mr->lkey;
                 num++;
         }
 
@@ -484,6 +486,8 @@ inline int INLINE ltgbuf_initwith2(ltgbuf_t *buf, struct iovec *iov, int count,
         return 0;
 }
 
+inline int ltgbuf_init1(ltgbuf_t *buf, int size);
+
 inline int INLINE ltgbuf_init(ltgbuf_t *buf, uint32_t size)
 {
         seg_t *seg;
@@ -494,8 +498,11 @@ inline int INLINE ltgbuf_init(ltgbuf_t *buf, uint32_t size)
         buf->len = 0;
         buf->used = 0;
         INIT_LIST_HEAD(&buf->list);
-        if (size == 0)
+        if (unlikely(size == 0))
                 return 0;
+
+        if (unlikely(ltgconf_global.nr_hugepage == 0))
+                return ltgbuf_init1(buf, size);
 
         ANALYSIS_BEGIN(0);
 
@@ -516,7 +523,7 @@ inline int INLINE ltgbuf_init(ltgbuf_t *buf, uint32_t size)
         return 0;
 }
 
-#if 0
+#if 1
 inline int ltgbuf_init1(ltgbuf_t *buf, int size)
 {
         seg_t *seg;
@@ -855,9 +862,15 @@ int ltgbuf_appendzero(ltgbuf_t *buf, int size)
         LTG_ASSERT(size >= 0);
         BUFFER_CHECK(buf);
 
+        if (unlikely(ltgconf_global.nr_hugepage == 0)) {
+                seg = seg_sys_create(buf, size);
+                memset(seg->handler.ptr, 0x0, newsize);
+                seg_add_tail(buf, seg);
+                return 0;
+        }
+
         left = size;
         while (left > 0) {
-
                 seg = seg_huge_create(buf, &newsize);
                 LTG_ASSERT(seg);
                 memset(seg->handler.ptr, 0x0, newsize);
@@ -1122,7 +1135,11 @@ int ltgbuf_compress2(ltgbuf_t *buf, uint32_t max_seg_len)
                 while (seg_left) {
                         if (idx2 == 0) {
                                 size = _min(left, max_seg_len);
-                                seg2 = seg_huge_create(buf, &size);
+                                if (unlikely(ltgconf_global.nr_hugepage == 0))
+                                      seg2 = seg_sys_create(buf, size);
+                                else 
+                                      seg2 = seg_huge_create(buf, &size);
+
                                 if (seg2 == NULL) {
                                         ret = ENOMEM;
                                         GOTO(err_ret, ret);

@@ -200,6 +200,9 @@ int cpuset_init(uint64_t mask)
                 snprintf(path, MAX_PATH_LEN, "%s/cpu%u/topology/physical_package_id", __CPU_PATH__, i);
                 ret = _get_text(path, buf, MAX_BUF_LEN);
                 if (ret < 0) {
+                        if (ret == -ENOENT) 
+                                break;
+
                         ret = -ret;
                         GOTO(err_ret, ret);
                 }

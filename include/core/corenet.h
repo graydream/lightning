@@ -87,12 +87,18 @@
 
 #define IBV_CQ_DUMP(cq) IBV_CQ_DUMP_L(DBUG, cq)
 
+#define SHIFT_256TB     48
+#define SHIFT_REGSIZE       30
+#define MASK_256TB      ((1ULL << SHIFT_256TB) - 1)
+#define MASK_REGSIZE    ((1ULL << SHIFT_REGSIZE) - 1)
+
 typedef struct {
         struct ibv_context *ibv_verbs;
         struct ibv_cq *cq;
         struct ibv_pd *pd;
         struct ibv_mr *mr;
         // int ref;
+        uint64_t *mr_map;
 
         uint32_t nr_conn;
 
@@ -131,7 +137,6 @@ typedef struct {
         struct rdma_cm_id *cm_id;
         struct ibv_cq *cq;
         struct ibv_pd *pd;
-        struct ibv_mr *mr;
         struct ibv_mr *iov_mr;
         struct ibv_qp *qp;
 
@@ -143,9 +148,10 @@ typedef struct {
         struct rdma_event_channel *channel;
         rdma_info_t *dev;
 
+        uint64_t *mr_map;
         uint64_t nr_get;
         uint64_t nr_ack;
-
+      
         uint64_t nr_success;
         uint64_t nr_flush;
         uint64_t nr_other;
@@ -153,7 +159,7 @@ typedef struct {
 
 #define RDMA_CONN_DUMP_L3(LEVEL, env, conn) do { \
         struct ibv_cq *cq = (conn)->dev ? (conn)->dev->cq : NULL; \
-        LEVEL("%s: rdma_conn[%d] %p conn %d/%d ref %d/%d ack %ju/%ju nr %ju/%ju/%ju rinfo %p cq %p pd %p cmid %p type %d chan %p qp %p mr %p/%p addr %p core %p\n", \
+        LEVEL("%s: rdma_conn[%d] %p conn %d/%d ref %d/%d ack %ju/%ju nr %ju/%ju/%ju rinfo %p cq %p pd %p cmid %p type %d chan %p qp %p mr %p addr %p core %p\n", \
                (env), \
                (conn)->node_loc, \
                (conn), \
@@ -173,7 +179,6 @@ typedef struct {
                (conn)->type, \
                (conn)->channel, \
                (conn)->qp, \
-               (conn)->mr, \
                (conn)->iov_mr, \
                (conn)->iov_addr, \
                (conn)->core \
@@ -316,7 +321,7 @@ typedef struct {
         uint32_t figerprint;
 } corenet_t;
 
-#define MAX_RDMA_DEV 4
+#define MAX_RDMA_DEV 2
 
 typedef struct {
         void *ring_net;
@@ -330,7 +335,7 @@ typedef struct {
         time_t last_check;
         coreid_t coreid;
         int sd;
-} __corenet_t __attribute__((__aligned__(CACHE_LINE_SIZE)));;
+} __corenet_t __attribute__((__aligned__(CACHE_LINE_SIZE)));
 
 typedef struct {
         struct list_head poll_list;
@@ -379,7 +384,7 @@ int rdma_alloc_pd(rdma_info_t * res);
 int rdma_create_cq(rdma_info_t *res, int ib_port);
 
 //struct ibv_mr *rdma_get_mr();
-void *rdma_get_mr_addr();
+struct ibv_mr* get_mr(uint64_t *mr_map, const void *addr);
 void *rdma_register_mr(void* pd, void* buf, size_t size);
 
 int corenet_rdma_add(core_t *core, sockid_t *sockid, void *ctx,
