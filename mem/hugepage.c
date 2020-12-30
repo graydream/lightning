@@ -456,6 +456,9 @@ int memseg_walk(int (*func)(void *addr, void *arg, size_t size), void *arg)
         memseg_t *memseg;
         int i, ret;
 
+        if (use_huge == 0)
+                return 0;
+
         for (i = 0; i < numa_count; i++) {
                 memseg_list = &memseg_head[i];
 
