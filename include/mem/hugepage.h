@@ -2,41 +2,63 @@
 #define __MEM_HUGEPAGE_H_
 
 //#include "ltgbuf.h"
-struct mem_alloc {
-	uint8_t type;
-	uint32_t  max_alloc_size;
-
-	int (*init)(void *addr, uint32_t);
-	int (*alloc)(void *handle, void **addr, uint32_t *);
-	int (*free)(void * handle, void *addr, uint32_t);
-};
-
+#include "utils/lock.h"
 #define MAX_CPU_CORE 32
-#if 0
-#define PRIVATE_HP_COUNT 512
-#define PUBLIC_HP_COUNT  (512)
-#endif
 
 #define HUGEPAGE_SIZE (2UL * 1024 * 1024)
-#define MAX_ALLOC_SIZE (2 * HUGEPAGE_SIZE)
+#define MAX_SIZE 2
+#define MAX_NUMA 8
+#define MIN_MEMSEG_SIZE (1024 * 1024 * 1024)
+#define IS_POWER_OF_2(x) (!((x)&((x)-1)))
+#define RDMA_MEMREG_SIZE MIN_MEMSEG_SIZE
+#define MEMSLICE_SIZE (128 * 1024 * 1024)
+#define MAX_ALLOC_SIZE (MAX_SIZE * HUGEPAGE_SIZE)
 
-int hugepage_init(int daemon, uint64_t coremask, int nr_huge);
-void *hugepage_private_init(int hash, int sockid);
+typedef struct {
+        struct  list_head memseg_list;
+        struct  list_head  slice_list;
 
+        void             *malloc_addr;
+        void             *start_addr;
+
+        int              numa;
+        size_t           size;
+        ltg_spinlock_t    lock;
+} memseg_t;
+
+typedef struct {
+        struct list_head list;
+        void *slice;
+        void *vaddr;
+        void *head;
+        uint32_t size;
+        int ref;
+        int type;
+        int offset;
+}hpage_t;
+
+/*memslice size 128MB, thread cache object*/
+typedef struct {
+        struct list_head list;
+        int  map;
+        void *addr;
+        memseg_t *memseg;
+        uint32_t hp_size;
+        int hp_count;
+        hpage_t hpage[MEMSLICE_SIZE / HUGEPAGE_SIZE];
+}memslice_t;
+
+typedef struct {
+        struct list_head list[MAX_SIZE];
+        int numa;
+        ltg_spinlock_t  hp_lock;
+}hpage_head_t;
+
+int memseg_init(int daemon, int nr_hugepage);
+int private_hugepage_init(int numa, void **ptr);
 int hugepage_getfree(void **addr, uint32_t *size, const char *caller);
-int hugepage_get();
-void hugepage_show(const char *caller);
-
-void get_global_private_mem(void **private_mem, uint64_t *private_mem_size);
-int suzaku_mem_alloc_register(struct mem_alloc *alloc_ops);
-
-void buddy_memalloc_reg();
-void posix_memalloc_reg();
-
-#define SUZAKU_MEM_ALLOC_REGISTER(name, mem_alloc_ops) \
-	static void  __attribute__((constructor)) suzaku_mem_alloc_register_##name(void) \
-{ \
-	suzaku_mem_alloc_register(mem_alloc_ops); \
-}\
-
+hpage_t* hpage_get(void *hp_list, int offset);
+int hugepage_init(void **ptr);
+void hpage_free(void *hp_list, int offset, hpage_t *hpage);
+int memseg_walk(int (*func)(void *addr, void *arg, size_t size), void *arg);
 #endif

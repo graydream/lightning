@@ -1,69 +1,19 @@
 #include <numaif.h>
 #include <sys/mman.h>
+#include <numa.h>
+#include <hugetlbfs.h>
 
 #define DBG_SUBSYS S_LTG_MEM
 
+#include "mem/hugepage.h"
 #include "ltg_utils.h"
 #include "core/core.h"
 
-#define IS_POWER_OF_2(x) (!((x)&((x)-1)))
-
-typedef struct {
-        ltg_spinlock_t    lock;
-
-        void             *malloc_addr;
-        void             *start_addr;
-        void             *private_hp_head[CORE_MAX]; /*polling core hugepage head*/
-
-        int              hash;
-        int              hugepage_count;
-        int              nr_alloc;
-} hugepage_head_t;
-
-#define HUGEPAGE_HEAD_DUMP_L(LEVEL, head, format, a...) do { \
-    LEVEL("hugepage head %p addr %p %p hash %d count %d/%d  "format, \
-          (head),  \
-          (head)->malloc_addr,  \
-          (head)->start_addr,  \
-          (head)->hash,  \
-          (head)->hugepage_count,  \
-          (head)->nr_alloc,  \
-          ##a \
-          ); \
-} while(0)
-
-#define HUGEPAGE_HEAD_DUMP(head, format, a...) HUGEPAGE_HEAD_DUMP_L(DBUG, head, format, ##a)
-
-
-static hugepage_head_t *__hugepage__ = NULL;
-static __thread hugepage_head_t *__private_huge__ = NULL;
-struct mem_alloc *hugepage_alloc_ops = NULL;
-static int __use_huge__ = 0;
-static int PRIVATE_HP_COUNT = 0;
-static int PUBLIC_HP_COUNT = 0;
-
-static void __hugepage_head_init(hugepage_head_t *head, void *mem, void *addr,
-                                 int hp_count, int sockid)
-{
-        long unsigned int sock;
-
-        if (sockid >= 0){
-                sock = 1 << sockid;
-                mbind(addr, HUGEPAGE_SIZE, MPOL_PREFERRED, &sock, 3, 0);
-        }
-
-        memset(addr, 0x00, HUGEPAGE_SIZE);
-
-        head->start_addr = addr + HUGEPAGE_SIZE;
-        head->hugepage_count = hp_count;
-        head->nr_alloc = 0;
-
-        head->malloc_addr = mem;
-        head->hash = -1;
-        
-        int ret = ltg_spin_init(&head->lock);
-        LTG_ASSERT(ret == 0);
-}
+struct list_head memseg_head[MAX_NUMA];
+static hpage_head_t    __hp__;
+static __thread  hpage_head_t  __private_hp__;
+int use_huge = 1, next_numa = 1, numa_count;
+uint32_t hugepage_size;
 
 static int __map_hugepages(void *addr, int hp_count)
 {
@@ -75,7 +25,7 @@ static int __map_hugepages(void *addr, int hp_count)
         DINFO("hp_count %d\n", hp_count);
 
         for (i = 0; i < hp_count; i++) {
-                map_ret = mmap(map_addr, HUGEPAGE_SIZE, PROT_READ | PROT_WRITE,
+                map_ret = mmap(map_addr, hugepage_size, PROT_READ | PROT_WRITE,
                                 MAP_HUGETLB|MAP_PRIVATE |MAP_FIXED|MAP_ANONYMOUS|0x40000 , -1, 0);
                 if (map_ret == MAP_FAILED) {
                         DINFO("mmap erro  %p %d %s\n", map_addr, hp_count, strerror(errno))
@@ -83,263 +33,443 @@ static int __map_hugepages(void *addr, int hp_count)
                         GOTO(err_ret, ret);
                 }
 
-                map_addr += HUGEPAGE_SIZE;
+                map_addr += hugepage_size;
         }
 
         return 0;
 
 err_ret:
         for (j = 0; j < i; j++) {
-                munmap(unmap_addr, HUGEPAGE_SIZE);
-                unmap_addr += HUGEPAGE_SIZE;
+                munmap(unmap_addr, hugepage_size);
+                unmap_addr += hugepage_size;
         }
         return ret;
 }
 
-static void __hugepage_init(void *addr, int sockid)
+static void __slice_bind(memslice_t *slice, int numa)
 {
         unsigned long int  sock;
+        uint32_t bind_size;
 
+        sock = 1 << numa;
+        if (hugepage_size > MEMSLICE_SIZE) 
+                bind_size = hugepage_size;
+        else
+                bind_size = MEMSLICE_SIZE;
         
-        if (sockid >= 0){
-                sock = 1 << sockid;
-                mbind(addr, HUGEPAGE_SIZE, MPOL_PREFERRED, &sock, 3, 0);
+        if (((uint64_t)slice->addr) % hugepage_size == 0) {
+                mbind(slice->addr, bind_size, MPOL_PREFERRED, &sock, 3, 0);
+                memset(slice->addr, 0x00, bind_size);
         }
 
-        memset(addr, 0x00, HUGEPAGE_SIZE);
-
-        return ;
+        slice->map = 1;
 }
 
-void *hugepage_private_init(int hash, int sockid)
+inline static void* __memalign(void *ptr)
 {
-        hugepage_head_t *head;
-        int i ;
-
-        if (__hugepage__ == NULL)
-                return NULL;
-
-        void *addr = __hugepage__->private_hp_head[hash];
-        
-        LTG_ASSERT(addr);
-
-        DINFO("hash %d head addr %p\n", hash, addr);
-        head = (hugepage_head_t *)addr;
-
-        __hugepage_head_init(head, NULL, addr, PRIVATE_HP_COUNT, sockid);
-
-        for (i = 0; i < PRIVATE_HP_COUNT; i++) {
-                addr += HUGEPAGE_SIZE;
-                __hugepage_init(addr, sockid);
-        }
-
-        head->hash = hash;
-
-        __private_huge__ = head;
-        hugepage_alloc_ops->init((void *)head + sizeof(*head), PRIVATE_HP_COUNT);
-
-        HUGEPAGE_HEAD_DUMP_L(DINFO, head, "\n");
-        return head;
-}
-
-static void __hugepage_init_public(hugepage_head_t *head, void *public)
-{
-        void *pos = public;
-
-        DINFO("hp_count %d\n", PUBLIC_HP_COUNT);
-
-        for (int i = 0; i < PUBLIC_HP_COUNT; i++) {
-                __hugepage_init(pos,  -1);
-                pos += HUGEPAGE_SIZE;
-        }
-
-        __hugepage__ = head;
-
-        HUGEPAGE_HEAD_DUMP_L(DINFO, head, "\n");
-}
-
-static void __hugepage_init_private(hugepage_head_t *head, void *private)
-{
-        void *pos = private;
-        
-        for (int i = 0; i < CORE_MAX; i++) {
-                if (!core_used(i)) {
-                        head->private_hp_head[i] = NULL;
-                        continue;
-                }
-                
-                head->private_hp_head[i] = pos;
-                pos += (PRIVATE_HP_COUNT  + 1) * HUGEPAGE_SIZE;
-
-                DINFO("core[%d] count %d head 0x%p\n", i, PRIVATE_HP_COUNT + 1, pos);
-        }
-}
-
-int hugepage_init(int daemon, uint64_t coremask, int nr_hugepage)
-{ 
-        int ret, hp_count, poll_num = 0;
-        size_t mem_size;
-        void *mem, *addr, *private, *public;
         size_t align;
-        hugepage_head_t *head;
+        void *addr;
 
-        if (nr_hugepage == 0 || daemon == 0) {
-                posix_memalloc_reg();
-                hugepage_alloc_ops->init(NULL, 0);
-                return 0;
-        } else {
-                buddy_memalloc_reg();
-        }
+        align = (size_t)ptr & (HUGEPAGE_SIZE * 512 - 1);
+        if (align){
+                addr = ptr + HUGEPAGE_SIZE * 512 - align;
+        }  else 
+                addr = ptr;
+
+        return addr;
+}
+
+inline static void __init_memseg_slice(memseg_t *memseg)
+{
+        memslice_t *slice;
+        int i;
+
+        LTG_ASSERT(memseg->size % MEMSLICE_SIZE == 0);
         
-        __use_huge__ = nr_hugepage;
-        PRIVATE_HP_COUNT = nr_hugepage;
-        PUBLIC_HP_COUNT = nr_hugepage / 2;
+        for (i = 0; i < (int)(memseg->size / MEMSLICE_SIZE); i++) {
+                slice = malloc(sizeof(memslice_t));
+                memset(slice, 0x00, sizeof(memslice_t));
+                slice->addr = memseg->start_addr + ((size_t)i) * MEMSLICE_SIZE;
+                slice->memseg = memseg;
+                list_add_tail(&slice->list, &memseg->slice_list);
+        }
+}
 
-        if (!IS_POWER_OF_2(PRIVATE_HP_COUNT)) {
-                DERROR("private hp count error %d\n", nr_hugepage);
-                ret = EINVAL;
-                GOTO(err_ret, ret);
+inline static size_t __max_malloc_size(size_t memseg_size)
+{
+        size_t size = memseg_size;
+        void *ptr = malloc(size);
+        int ret;
+
+        while (ptr == NULL) {
+                if (errno != ENOMEM) {
+                        ret = errno;
+                        GOTO(err_ret, ret);
+                }
+
+                size /= 2;
+                if (size < MIN_MEMSEG_SIZE) {
+                        ret = ENOMEM;
+                        GOTO(err_ret, ret);
+                }
+
+                free(ptr);
+                ptr = malloc(size);
         }
 
-        if (!IS_POWER_OF_2(PUBLIC_HP_COUNT)) {
-                DERROR("private hp count error %d\n", nr_hugepage);
-                ret = EINVAL;
-                GOTO(err_ret, ret);
-        }
+        free(ptr);
 
-        static_assert(sizeof(*head) <= HUGEPAGE_SIZE, "hugepage");
-        
-        
-        for (int i = 0; i < CORE_MAX; i++) {
-                if (core_usedby(coremask, i))
-                        poll_num++;
-        }
+        return size;
 
-        mem_size = ((LLU)PRIVATE_HP_COUNT + 1) * HUGEPAGE_SIZE * poll_num
-                       + (PUBLIC_HP_COUNT + 2) * HUGEPAGE_SIZE;
-        
-        hp_count = (PRIVATE_HP_COUNT + 1) * poll_num
-                + PUBLIC_HP_COUNT + 1;
+err_ret:
+        return 0;
+}
 
-        DINFO("private_hp_count %d poll_num %d hp_count %d\n",
-              PRIVATE_HP_COUNT, poll_num, hp_count);
+static int __memseg_alloc(memseg_t **_memseg, size_t size)
+{
+        void *addr, *ptr;
+        memseg_t *memseg;
+        int ret;
 
-        mem = malloc(mem_size);
-        if (mem == NULL) {
-                DINFO("malloc %d error\n", mem_size);
+        memseg = malloc(sizeof(memseg_t));
+        if (memseg == NULL) {
                 ret = ENOMEM;
                 GOTO(err_ret, ret);
         }
 
-        align = (size_t)mem & (HUGEPAGE_SIZE - 1);
-        if (align){
-                addr = mem + HUGEPAGE_SIZE - align;
-        } else
-                addr = mem;
-        
-        ret = __map_hugepages(addr, hp_count);
-        if (ret)
+        addr = malloc(size + HUGEPAGE_SIZE * 512); /*多分配1个G,用于1gb对齐*/
+        if (addr == NULL) {
+                ret = ENOMEM;
                 GOTO(err_ret, ret);
+        }
 
-        head = addr;
-        public = addr + HUGEPAGE_SIZE;
-        private = public + (PUBLIC_HP_COUNT) * HUGEPAGE_SIZE;
+        ptr = __memalign(addr);
 
-        __hugepage_head_init(head, mem, addr, hp_count - 1, -1);
+        memseg->malloc_addr =addr;
+        memseg->start_addr = ptr;
 
-        __hugepage_init_public(head, public);
-        hugepage_alloc_ops->init((void *)head + sizeof(*head), PUBLIC_HP_COUNT);
+        *_memseg = memseg;
 
-        __hugepage_init_private(head, private);
+        return 0;
+
+err_ret:
+        return ret;
+}
+
+static int __memseg_init(size_t *memseg_size, int numa)
+{
+        int i, ret, memseg_count;
+        size_t size;
+        memseg_t *memseg;
+ 
+        size = __max_malloc_size(*memseg_size);
+        if (size == 0) {
+                ret = ENOMEM;
+                GOTO(err_ret, ret);
+        }
+
+        LTG_ASSERT(size % hugepage_size == 0);
+
+        memseg_count = *memseg_size / size;
+       
+        for(i = 0; i < memseg_count; i++) {
+
+                ret = __memseg_alloc(&memseg, size);
+                if(ret)
+                        GOTO(err_ret, ret);
+
+                memseg->size = size;
+                memseg->numa = numa;
+                LTG_ASSERT((memseg->size % RDMA_MEMREG_SIZE) == 0);
+
+                ltg_spin_init(&memseg->lock);
+                INIT_LIST_HEAD(&memseg->slice_list);
+                __init_memseg_slice(memseg);
+                list_add_tail(&memseg->memseg_list, &memseg_head[numa]);
+
+                ret = __map_hugepages(memseg->start_addr, size / hugepage_size);
+                if (ret)
+                        GOTO(err_ret, ret);
+        }
+
+        *memseg_size =  size;
 
         return 0;
 err_ret:
         return ret;
 }
 
-void private_hugepage_free(void *addr)
-{   
-        (void)addr;
+int memseg_init(int daemon, int nr_2mb_hugepage)
+{ 
+        size_t memseg_size, total_size;
+        int i, ret;
 
-        return ;
-}
-
-int hugepage_getfree(void **_addr, uint32_t *size, const char *caller)
-{
-        int ret;
-        hugepage_head_t *head = __private_huge__ ? __private_huge__ : __hugepage__;
-
-        if (*size % HUGEPAGE_SIZE)
-                return EINVAL;
-
-        if (head == NULL) {
-                ret = hugepage_alloc_ops->alloc(NULL, _addr, size);
-                if (ret)
-                        GOTO(err_ret, ret);
-        } else {
-                if (unlikely(head == __hugepage__))
-                        ltg_spin_lock(&head->lock);
-
-                ret = hugepage_alloc_ops->alloc((void *)head + sizeof(*head), _addr, size);
-                if (ret)
-                        GOTO(err_ret, ret);
-
-                head->nr_alloc += *size / HUGEPAGE_SIZE;
-
-                HUGEPAGE_HEAD_DUMP_L(DINFO, head, "caller %s size %u\n", caller, *size);
-
-                if (unlikely(head == __hugepage__))
-                        ltg_spin_unlock(&head->lock);
-        }
-
-        return 0;
-err_ret:
-        return ret;
-}
-
-int hugepage_get()
-{
-        hugepage_head_t *head = __private_huge__ ? __private_huge__ : __hugepage__;
-        if (head != NULL) {
-                if (head == __hugepage__)
-                        return PUBLIC_HP_COUNT;
-                else
-                        return head->hugepage_count;
-        }
-
-        return 0;
-}
-
-void hugepage_show(const char *caller)
-{
-        hugepage_head_t *head = __private_huge__ ? __private_huge__ : __hugepage__;
-        if (head != NULL) {
-                if (unlikely(head == __hugepage__))
-                        ltg_spin_lock(&head->lock);
-
-                HUGEPAGE_HEAD_DUMP_L(DINFO, head, "caller %s\n", caller);
-
-                if (unlikely(head == __hugepage__))
-                        ltg_spin_unlock(&head->lock);
-        }
-}
-
-int suzaku_mem_alloc_register(struct mem_alloc *alloc_ops)
-{
-        DINFO("register ops %p %p\n", alloc_ops, hugepage_alloc_ops);
-        if (hugepage_alloc_ops != NULL)
+        ret = numa_available();
+        if (ret < 0) 
                 LTG_ASSERT(0);
 
-        hugepage_alloc_ops = alloc_ops;
+        numa_count = numa_num_configured_nodes();
+        
+        if (daemon == 0 || nr_2mb_hugepage / numa_count < (1024 * 4)) {
+                ltgconf_global.nr_hugepage = 0;
+                use_huge = 0;
+                return 0;
+        }
+ 
+        hugepage_size = gethugepagesize();
+
+        LTG_ASSERT(numa_count < MAX_NUMA);
+        LTG_ASSERT(nr_2mb_hugepage > 0);
+        
+        total_size = (size_t)nr_2mb_hugepage * HUGEPAGE_SIZE;
+
+        total_size /=  (8 * numa_count);
+
+        if ((total_size << 33) & (((uint64_t)1 << 31) - 1) << 33) {
+                DWARN("inval mem size %lu %d\n", total_size, numa_count);
+                ret =  EINVAL;
+                GOTO(err_ret, ret);
+        }
+
+        memseg_size = ((size_t)nr_2mb_hugepage * HUGEPAGE_SIZE) / numa_count;
+        
+        for (i = 0 ; i < numa_count; i++) {
+                INIT_LIST_HEAD(&memseg_head[i]);
+                ret = __memseg_init(&memseg_size, i); 
+                if (ret)
+                        GOTO(err_ret, ret);
+        }
+
+        return 0;
+err_ret:
+        return ret;
+}
+
+
+inline static void __slice_alloc_hpage(memslice_t *slice, uint32_t size)
+{
+        int i;
+        hpage_t *hpage;
+        
+        slice->hp_count = MEMSLICE_SIZE / size;
+        slice->hp_size = size;
+        for (i = 0; i < slice->hp_count; i++) {
+                hpage = &slice->hpage[i];
+                hpage->vaddr = slice->addr + i * size;
+                hpage->size = size;
+                hpage->slice = slice;
+        }
+
+}
+
+inline static memslice_t* __get_free_slice(int _numa, uint32_t size)
+{
+        struct list_head *pos, *n;
+        memseg_t  *memseg;
+        memslice_t *slice = NULL;
+        int ret, numa;
+
+        if (unlikely(_numa < 0)) {
+                next_numa %= numa_count;
+                numa = next_numa;
+                next_numa += 1;
+        } else {
+                next_numa %= numa_count;
+                numa = _numa;
+        }
+        list_for_each_safe(pos, n, &memseg_head[numa]) {
+                memseg = (memseg_t *)pos;
+                ret = ltg_spin_lock(&memseg->lock);
+                if (ret)
+                        continue;
+
+                if (list_empty(&memseg->slice_list)) {
+                        ltg_spin_unlock(&memseg->lock);
+                        continue;
+                }
+
+                slice = (memslice_t *)memseg->slice_list.next;
+                list_del(&slice->list);
+                ltg_spin_unlock(&memseg->lock);
+                
+                if (slice->map == 0) {
+                        __slice_bind(slice, numa);
+                }
+
+
+                __slice_alloc_hpage(slice, size);
+                break;
+        }
+
+        return slice;
+}
+
+static void  __get_free_hpage(int numa, struct list_head *head, uint32_t size)
+{
+        int i;
+        memslice_t *slice;
+        hpage_t *hpage;
+
+        slice = __get_free_slice(numa, size);
+        if (slice == NULL) {
+                LTG_ASSERT(0);
+        }
+
+        for (i = 0; i < slice->hp_count; i++) {
+                hpage = &slice->hpage[i];
+                hpage->size = size;
+                hpage->vaddr = slice->addr + i * size;
+                list_add_tail(&hpage->list, head);
+        }
+}
+
+int private_hugepage_init(int numa, void **ptr)
+{
+        int i;
+        uint32_t size;
+
+        if (use_huge == 0) {
+                *ptr = NULL;
+                return 0;
+        }
+
+        for(i = 0; i < MAX_SIZE; i++) {
+                INIT_LIST_HEAD(&__private_hp__.list[i]);
+                if (i == 0) {
+                        size = (i + 1) * HUGEPAGE_SIZE;
+                        __get_free_hpage(numa, &__private_hp__.list[i], size);
+                }
+        }
+
+        __private_hp__.numa = numa;
+
+        *ptr = (void *)&__private_hp__;
 
         return 0;
 }
 
-void get_global_private_mem(void **private_mem, uint64_t *private_mem_size)
+int hugepage_init(void **ptr)
 {
-        if (__hugepage__ == NULL)
-                return ;
+        int i;
+        uint32_t size;
 
-        *private_mem = __hugepage__->start_addr;
-        *private_mem_size = ((uint64_t)__hugepage__->hugepage_count) * HUGEPAGE_SIZE;
+        if (use_huge == 0) {
+                *ptr = NULL;
+                return 0;
+        }
+
+        for(i = 0; i < MAX_SIZE; i++) {
+                INIT_LIST_HEAD(&__hp__.list[i]);
+                if (i == 0) {
+                        size = (i + 1) * HUGEPAGE_SIZE;
+                        __get_free_hpage(0, &__hp__.list[i], size);
+                }
+        }
+
+        ltg_spin_init(&__hp__.hp_lock);
+        __hp__.numa = -1;
+
+        *ptr = (void *)&__hp__;
+
+        return 0;
+}
+
+hpage_t* hpage_get(void *hp_list, int offset)
+{
+        hpage_head_t *head = hp_list;
+        hpage_t *hpage;
+        uint32_t size;
+
+        if (unlikely(head->numa < 0)) {
+                LTG_ASSERT(head == &__hp__);
+                ltg_spin_lock(&head->hp_lock);
+        } else {
+                LTG_ASSERT(head == &__private_hp__);
+        }
+         
+        if (unlikely(list_empty(&head->list[offset]))) {
+                size = (offset + 1) * HUGEPAGE_SIZE;
+                __get_free_hpage(head->numa, &head->list[offset], size);
+        }
+
+        hpage = (hpage_t *)head->list[offset].next;
+        list_del(&hpage->list);
+        hpage->type = offset;
+        if (unlikely(head->numa < 0))
+                ltg_spin_unlock(&head->hp_lock);
+
+/*        slice = hpage->slice;
+        slice->hp_count--;*/
+
+        return hpage;
+}
+
+void hpage_free(void *hp_list, int offset, hpage_t *hpage)
+{
+        hpage_head_t *head = hp_list;
+        
+        if (unlikely(head->numa < 0)) {
+                LTG_ASSERT(head == &__hp__);
+                ltg_spin_lock(&head->hp_lock);
+        } else {
+                LTG_ASSERT(head == &__private_hp__);
+        }
+
+        list_add_tail(&hpage->list, &head->list[offset]);
+        
+        if (unlikely(head->numa < 0))
+                ltg_spin_unlock(&head->hp_lock);
+
+}
+
+int hugepage_getfree(void **addr, uint32_t *size, const char *caller)
+{
+        (void)caller;
+        void *head;
+        hpage_t *hpage;
+
+        if (unlikely(use_huge == 0)) {
+                *addr = malloc(*size);
+                //ret = posix_memalign(addr, 4096, *size);
+                if (*addr == NULL) 
+                        LTG_ASSERT(0);
+
+                return 0;
+        }
+
+        core_t *core = core_self();
+
+        if (core == NULL)  {
+                head = &__hp__;
+        } else
+                head = &__private_hp__;
+
+        hpage = hpage_get(head,  (*size - 1)/ HUGEPAGE_SIZE);
+
+        *addr = hpage->vaddr;
+        return 0;
+}
+
+int memseg_walk(int (*func)(void *addr, void *arg, size_t size), void *arg)
+{
+        struct list_head *pos, *memseg_list;
+        memseg_t *memseg;
+        int i, ret;
+
+        if (use_huge == 0)
+                return 0;
+
+        for (i = 0; i < numa_count; i++) {
+                memseg_list = &memseg_head[i];
+
+                list_for_each(pos, memseg_list) {
+                        memseg = (memseg_t *)pos;
+                        ret = func(memseg->start_addr, arg, memseg->size);
+                        if (ret)
+                                LTG_ASSERT(0);
+
+                }
+        }
+
+        return 0;
 }

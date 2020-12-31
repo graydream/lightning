@@ -219,7 +219,6 @@ static int __core_worker_init(core_t *core)
         __core__ = core;
         core_tls_set(VARIABLE_CORE, core);
 
-        int nodeid = -1;
         if (core->main_core) {
                 ret = cpuset_set(name, core->main_core->cpu_id);
                 if (unlikely(ret)) {
@@ -229,13 +228,6 @@ static int __core_worker_init(core_t *core)
 
                 DINFO("%s[%u] cpu set cpu id %d\n", core->name, core->hash,
                       core->main_core->cpu_id);
-
-                nodeid = core->main_core->node_id;
-        }
-
-        if (ltgconf_global.daemon) {
-                void *hugepage = hugepage_private_init(core->hash, nodeid);
-                core_tls_set(VARIABLE_HUGEPAGE, hugepage);
         }
 
         core->interrupt_eventfd = -1;
@@ -251,6 +243,12 @@ static int __core_worker_init(core_t *core)
 
         DINFO("%s[%u] sche[%d] inited\n", core->name, core->hash, core->sche_idx);
 
+        if (ltgconf_global.daemon) {
+                ret = mem_ring_private_init(core->hash);
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+        }
+
         ret = slab_stream_private_init();
         if (ret)
                 GOTO(err_ret, ret);
@@ -258,12 +256,6 @@ static int __core_worker_init(core_t *core)
         ret = slab_static_private_init();
         if (ret)
                 GOTO(err_ret, ret);
-
-        if (ltgconf_global.daemon) {
-                ret = mem_ring_private_init(core->hash);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
-        }
 
         ret = core_ring_init(core);
         if (ret)
@@ -374,7 +366,7 @@ int core_init(uint64_t mask, int flag)
 
         //DINFO("core init begin %u %u flag %d\n", polling_core, cpuset_useable(), flag);
 
-        ret = hugepage_init(ltgconf_global.daemon, mask, ltgconf_global.nr_hugepage);
+        ret = memseg_init(ltgconf_global.daemon, ltgconf_global.nr_hugepage);
         if (ret)
                 GOTO(err_ret, ret);
 

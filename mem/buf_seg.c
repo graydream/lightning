@@ -126,7 +126,7 @@ inline seg_t *seg_sys_create(ltgbuf_t *buf, uint32_t size)
         if (unlikely(!seg))
                 return NULL;
 
-        ret = ltg_malloc((void **)&seg->sys.base, seg->len);
+        ret = ltg_malign((void **)&seg->sys.base, 4096, seg->len);
         if (unlikely(ret)) {
                 GOTO(err_free, ret);
         }

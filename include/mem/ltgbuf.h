@@ -148,7 +148,7 @@ void ltgbuf_check(const ltgbuf_t *buf);
 
 int ltgbuf_solid_init(ltgbuf_t *buf, int size);
 
-int ltgbuf_trans_sge(struct ibv_sge *sge, ltgbuf_t *src_buf, ltgbuf_t *dst_buf, uint32_t lkey);
+int ltgbuf_trans_sge(struct ibv_sge *sge, ltgbuf_t *src_buf, ltgbuf_t *dst_buf,  struct ibv_mr* (*get_mr)(uint64_t *mr_map, const void *addr), void *mr_map);
 void ltgbuf_trans_addr(void **addr, const ltgbuf_t *buf);
 int ltgbuf_initwith(ltgbuf_t *buf, void *data, int size, void *arg, int (*cb)(void *arg));
 int ltgbuf_initwith2(ltgbuf_t *buf, struct iovec *iov, int count, void *arg, int (*cb)(void *arg));

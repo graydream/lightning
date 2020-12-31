@@ -158,25 +158,23 @@ static void __corerpc_msgid_prep(msgid_t *msgid, const void *wbuf, int wlen,
                                  void *rbuf, int rlen, const rdma_conn_t *handler)
 {
 
+        struct ibv_mr *mr = NULL;
+
         if (rlen == 0 && wlen == 0)
                 return;
 
         memset(&msgid->data_prop, 0x00, sizeof(data_prop_t));
 	if (wbuf != NULL) {
-		msgid->data_prop.rkey = handler->mr->rkey;
-		//ltgbuf_trans_addr((void **)msgid->data_prop.remote_addr, (void *)wbuf);
                 msgid->data_prop.remote_addr[0] = (uintptr_t)wbuf;
-                
 		msgid->data_prop.size = wlen;
+                mr = get_mr(handler->mr_map, wbuf);
 	} else if (rbuf != NULL){
-                //LTG_ASSERT((int)rbuf->len == msg_size);
-
-		msgid->data_prop.rkey = handler->mr->rkey;
-		//__ltgbuf_trans_addr((void **)msgid->data_prop.remote_addr, rbuf);
                 msgid->data_prop.remote_addr[0] = (uintptr_t)rbuf;
 		msgid->data_prop.size = rlen;
+                mr = get_mr(handler->mr_map, rbuf);
 	}
 
+        msgid->data_prop.rkey = mr->rkey;
         MSGID_DUMP(msgid);
 }
 
