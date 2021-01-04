@@ -245,7 +245,7 @@ static void IO_FUNC __sche_task_post(sche_t *sche, reply_queue_t *reply_queue,
                               const task_t *task, int retval, ltgbuf_t *buf)
 {
         int ret;
-        ltgbuf_t *mem = slab_stream_alloc(PAGE_SIZE);
+        ltgbuf_t *mem = slab_stream_alloc(sizeof(*mem));
         reply_t *reply;
         
         LTG_ASSERT(task->scheid >= 0 && task->scheid <= SCHEDULE_MAX);
