@@ -13,6 +13,8 @@
 #include "ltg_rpc.h"
 #include "core/corenet.h"
 
+inline static void INLINE __rpc_table_post(slot_t *slot, ltgbuf_t *buf, int *retval);
+
 rpc_table_t *__rpc_table__;
 
 static int S_LTG __rpc_table_used(rpc_table_t *rpc_table, slot_t *slot)
@@ -45,8 +47,14 @@ static int S_LTG __rpc_table_use(rpc_table_t *rpc_table, slot_t *slot)
 
 static void __rpc_table_free(rpc_table_t *rpc_table, slot_t *slot)
 {
-        slot->func = NULL;
-        slot->arg = NULL;
+        if (slot->free && slot->free_arg) {
+                slot->free(slot->free_arg);
+        }
+        
+        slot->free = NULL;
+        slot->free_arg = NULL;
+        slot->post = NULL;
+        slot->post_arg = NULL;
         slot->timeout = 0;
         slot->figerprint_prev = slot->msgid.figerprint;
         slot->msgid.figerprint = 0;
@@ -87,7 +95,6 @@ static int __rpc_table_unlock(rpc_table_t *rpc_table, slot_t *slot)
 static int __rpc_table_check(rpc_table_t *rpc_table, slot_t *slot, uint32_t now)
 {
         int ret, retval = ETIMEDOUT;
-        sockid_t *closed = NULL, sockid;
         const char *conn;
 
         ret = __rpc_table_trylock(rpc_table, slot);
@@ -124,48 +131,22 @@ static int __rpc_table_check(rpc_table_t *rpc_table, slot_t *slot, uint32_t now)
 
         if (slot->timeout && now > slot->timeout) {
                 DWARN("%s @ %s/%u(%s) timeout, id (%u, %x), rpc %u "
-                      "used %u timeout %d\n", slot->name,
+                      "used %u timeout %d, post %p\n", slot->name,
                       _inet_ntoa(slot->sockid.addr), slot->sockid.sd,
                       conn, slot->msgid.idx,
                       slot->msgid.figerprint,
                       ltgconf_global.rpc_timeout,
-                      (int)(now - slot->begin), slot->timeout);
+                      (int)(now - slot->begin), slot->timeout, slot->post);
 
-                LTG_ASSERT(slot->func);
-                LTG_ASSERT(slot->arg);
+                __rpc_table_post(slot, NULL, &retval);
 
-                ANALYSIS_BEGIN(0);
-                uint64_t latency = -1;
-                slot->func(slot->arg, &retval, NULL, &latency);
-                ANALYSIS_END(0, 1000 * 100, slot->name);
-
-                ANALYSIS_RESET(0);
-                sockid = slot->sockid;
-                closed = &sockid;
-                ANALYSIS_END(0, 1000 * 100, slot->name);
-
+#if !RPC_TABLE_POST_FREE //free in rpc_table_reset
                 __rpc_table_free(rpc_table, slot);
+#endif
         }
 
         __rpc_table_unlock(rpc_table, slot);
 
-        if (closed) {
-                if (closed->type == SOCKID_CORENET && closed->sd != -1) {
-#if 0
-                        UNIMPLEMENTED(__DUMP__);
-#else
-                        DBUG("skip corenet close\n");
-                        //corenet_close(closed);
-#endif
-                } else {
-#if 0
-                        net_handle_t nh;
-                        sock2nh(&nh, sockid);
-                        sdevent_close(&nh);
-#endif
-                }
-        }
-        
         return 0;
 err_ret:
         return ret;
@@ -377,8 +358,8 @@ int S_LTG rpc_table_setslot(rpc_table_t *rpc_table, const msgid_t *msgid,
                 GOTO(err_ret, ret);
         }
 
-        slot->func = func;
-        slot->arg = arg;
+        slot->post = func;
+        slot->post_arg = arg;
         slot->begin = gettime();
         slot->timeout = slot->begin + timeout;
 
@@ -407,15 +388,19 @@ int S_LTG rpc_table_post(rpc_table_t *rpc_table, const msgid_t *msgid, int retva
         int ret;
         slot_t *slot;
 
+        (void) latency;
+        
         slot = __rpc_table_lock_slot(rpc_table, msgid);
         if (unlikely(slot == NULL)) {
                 ret = ESTALE;
                 GOTO(err_ret, ret);
         }
 
-        slot->func(slot->arg, &retval, buf, &latency);
+        __rpc_table_post(slot, buf, &retval);
 
+#if !RPC_TABLE_POST_FREE
         __rpc_table_free(rpc_table, slot);
+#endif
 
         __rpc_table_unlock(rpc_table, slot);
 
@@ -462,20 +447,16 @@ static int __rpc_table_reset(rpc_table_t *rpc_table,
                         GOTO(err_ret, ret);
         }
 
-        LTG_ASSERT(sockid || nid);
-        if (slot->timeout && ((sockid && sockid_cmp(&slot->sockid, sockid) == 0)
-                              || (nid && (nid_cmp(&slot->nid, nid) == 0)))) {
-                LTG_ASSERT(slot->func);
-                LTG_ASSERT(slot->arg);
-
+        (void) nid;
+        LTG_ASSERT(sockid);
+        if (sockid_cmp(&slot->sockid, sockid) == 0) {
                 DINFO("table %s %s @ %s(%s) reset, id (%u, %x), used %u\n",
                       rpc_table->name, slot->name,
                       _inet_ntoa(slot->sockid.addr),
                       nid ? netable_rname(nid) : "NULL", slot->msgid.idx,
                       slot->msgid.figerprint, (int)(gettime() - slot->begin));
-                uint64_t latency = -1;
-                slot->func(slot->arg, &retval, NULL, &latency);
 
+                __rpc_table_post(slot, NULL, &retval);
                 __rpc_table_free(rpc_table, slot);
         }
 
@@ -486,7 +467,7 @@ err_ret:
         return ret;
 }
 
-void  rpc_table_reset(rpc_table_t *rpc_table, const sockid_t *sockid, const nid_t *nid)
+void rpc_table_reset(rpc_table_t *rpc_table, const sockid_t *sockid, const nid_t *nid)
 {
         uint32_t i;
         slot_t *slot;
@@ -495,15 +476,7 @@ void  rpc_table_reset(rpc_table_t *rpc_table, const sockid_t *sockid, const nid_
                 DWARN("rpc table not inited\n");
                 return;
         }
-#if 0
-        if (nid) {
-                DINFO("reset %s node %s\n", rpc_table->name, netable_rname(nid));
-        } else {
-                //DINFO("reset %s node %s\n", rpc_table->name, _inet_ntoa(sockid->addr));
-                DINFO("reset %s\n", rpc_table->name);
-        }
-#endif
-        
+
         for (i = 0; i < rpc_table->count; i++) {
                 slot = rpc_table->slot[i];
                 __rpc_table_reset(rpc_table, slot, sockid, nid);
@@ -553,8 +526,8 @@ static int __rpc_table_create(const char *name, int count, int tabid,
                 slot->figerprint_prev = 0;
                 slot->timeout = 0;
                 slot->name[0] = '\0';
-                slot->arg = NULL;
-                slot->func = NULL;
+                slot->post_arg = NULL;
+                slot->post = NULL;
 
                 rpc_table->slot[i] = slot;
         }
@@ -606,7 +579,6 @@ void rpc_table_destroy(rpc_table_t **_rpc_table)
 {
         slot_t *slot;
         rpc_table_t *rpc_table = *_rpc_table;
-        uint64_t latency = -1;
         int retval = ECONNRESET;
 
         for (int i = 0; i < (int)rpc_table->count; i++) {
@@ -616,7 +588,7 @@ void rpc_table_destroy(rpc_table_t **_rpc_table)
                         continue;
                 }
 
-                slot->func(slot->arg, &retval, NULL, &latency);
+                __rpc_table_post(slot, NULL, &retval);
                 __rpc_table_free(rpc_table, slot);
                 UNIMPLEMENTED(__DUMP__);
         }
@@ -626,4 +598,36 @@ void rpc_table_destroy(rpc_table_t **_rpc_table)
         } else {
                 ltg_free((void **)&rpc_table);
         }
+}
+
+inline static void INLINE __rpc_table_post(slot_t *slot, ltgbuf_t *buf, int *retval)
+{
+        if (slot->post && slot->post_arg) {
+                uint64_t latency = -1;
+                slot->post(slot->post_arg, retval, buf, &latency);
+                slot->post = NULL;
+                slot->post_arg = NULL;
+        }
+}
+
+inline int INLINE rpc_table_setfree(rpc_table_t *rpc_table, const msgid_t *msgid,
+                      func_t func, void *arg)
+{
+        int ret;
+        slot_t *slot;
+
+        slot = __rpc_table_lock_slot(rpc_table, msgid);
+        if (unlikely(slot == NULL)) {
+                ret = ESTALE;
+                GOTO(err_ret, ret);
+        }
+
+        slot->free = func;
+        slot->free_arg = arg;
+
+        __rpc_table_unlock(rpc_table, slot);
+
+        return 0;
+err_ret:
+        return ret;
 }
