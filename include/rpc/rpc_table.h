@@ -18,9 +18,7 @@ typedef struct {
         char name[MAX_NAME_LEN];
         func3_t post;
         func2_t close;
-        func_t free;
         void *post_arg;
-        void *free_arg;
 } slot_t;
 
 typedef struct {

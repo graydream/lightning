@@ -13,8 +13,6 @@
 #include "ltg_rpc.h"
 #include "core/corenet.h"
 
-inline static void INLINE __rpc_table_post(slot_t *slot, ltgbuf_t *buf, int *retval);
-
 rpc_table_t *__rpc_table__;
 
 static int __rpc_table_used(rpc_table_t *rpc_table, slot_t *slot)
@@ -47,12 +45,6 @@ static int __rpc_table_use(rpc_table_t *rpc_table, slot_t *slot)
 
 static void __rpc_table_free(rpc_table_t *rpc_table, slot_t *slot)
 {
-        if (slot->free && slot->free_arg) {
-                slot->free(slot->free_arg);
-        }
-        
-        slot->free = NULL;
-        slot->free_arg = NULL;
         slot->post = NULL;
         slot->post_arg = NULL;
         slot->timeout = 0;
@@ -131,20 +123,18 @@ static int __rpc_table_check(rpc_table_t *rpc_table, slot_t *slot, uint32_t now)
 
         if (slot->timeout && now > slot->timeout) {
                 DWARN("%s @ %s/%u(%s) timeout, id (%u, %x), rpc %u "
-                      "used %u timeout %d, post %p\n", slot->name,
+                      "used %u timeout %d\n", slot->name,
                       _inet_ntoa(slot->sockid.addr), slot->sockid.sd,
                       conn, slot->msgid.idx,
                       slot->msgid.figerprint,
                       ltgconf_global.rpc_timeout,
-                      (int)(now - slot->begin), slot->timeout, slot->post);
+                      (int)(now - slot->begin), slot->timeout);
 
-                __rpc_table_post(slot, NULL, &retval);
-
+                slot->timeout = 0;
+                slot->post(slot->post_arg, &retval, NULL, NULL);
                 slot->close(&slot->nid, &slot->sockid, NULL);
 
-#if !RPC_TABLE_POST_FREE //free in rpc_table_reset
                 __rpc_table_free(rpc_table, slot);
-#endif
         }
 
         __rpc_table_unlock(rpc_table, slot);
@@ -402,11 +392,9 @@ int IO_FUNC rpc_table_post(rpc_table_t *rpc_table, const msgid_t *msgid, int ret
                 GOTO(err_ret, ret);
         }
 
-        __rpc_table_post(slot, buf, &retval);
+        slot->post(slot->post_arg, &retval, buf, NULL);
 
-#if !RPC_TABLE_POST_FREE
         __rpc_table_free(rpc_table, slot);
-#endif
 
         __rpc_table_unlock(rpc_table, slot);
 
@@ -415,7 +403,6 @@ err_ret:
         return ret;
 }
 
-#if RPC_TABLE_POST_FREE
 int rpc_table_free(rpc_table_t *rpc_table, const msgid_t *msgid)
 {
         int ret;
@@ -435,7 +422,6 @@ int rpc_table_free(rpc_table_t *rpc_table, const msgid_t *msgid)
 err_ret:
         return ret;
 }
-#endif
 
 static int __rpc_table_reset(rpc_table_t *rpc_table,
                              slot_t *slot, const sockid_t *sockid,
@@ -464,7 +450,7 @@ static int __rpc_table_reset(rpc_table_t *rpc_table,
                       nid ? netable_rname(nid) : "NULL", slot->msgid.idx,
                       slot->msgid.figerprint, (int)(gettime() - slot->begin));
 
-                __rpc_table_post(slot, NULL, &retval);
+                slot->post(slot->post_arg, &retval, NULL, NULL);
                 __rpc_table_free(rpc_table, slot);
         }
 
@@ -596,7 +582,7 @@ void rpc_table_destroy(rpc_table_t **_rpc_table)
                         continue;
                 }
 
-                __rpc_table_post(slot, NULL, &retval);
+                slot->post(slot->post_arg, &retval, NULL, NULL);
                 __rpc_table_free(rpc_table, slot);
                 UNIMPLEMENTED(__DUMP__);
         }
@@ -606,36 +592,4 @@ void rpc_table_destroy(rpc_table_t **_rpc_table)
         } else {
                 ltg_free((void **)&rpc_table);
         }
-}
-
-inline static void INLINE __rpc_table_post(slot_t *slot, ltgbuf_t *buf, int *retval)
-{
-        if (slot->post && slot->post_arg) {
-                uint64_t latency = -1;
-                slot->post(slot->post_arg, retval, buf, &latency);
-                slot->post = NULL;
-                slot->post_arg = NULL;
-        }
-}
-
-inline int INLINE rpc_table_setfree(rpc_table_t *rpc_table, const msgid_t *msgid,
-                      func_t func, void *arg)
-{
-        int ret;
-        slot_t *slot;
-
-        slot = __rpc_table_lock_slot(rpc_table, msgid);
-        if (unlikely(slot == NULL)) {
-                ret = ESTALE;
-                GOTO(err_ret, ret);
-        }
-
-        slot->free = func;
-        slot->free_arg = arg;
-
-        __rpc_table_unlock(rpc_table, slot);
-
-        return 0;
-err_ret:
-        return ret;
 }

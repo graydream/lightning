@@ -161,10 +161,6 @@ STATIC void __rpc_reply_handler(const ltg_net_head_t *head, ltgbuf_t *buf)
         if (unlikely(ret)) {
                 ltgbuf_free(buf);
         }
-
-#if RPC_TABLE_POST_FREE
-        rpc_table_free(__rpc_table__, &head->msgid);
-#endif
 }
 
 int rpc_pack_handler(const nid_t *nid, const sockid_t *sockid, ltgbuf_t *buf)

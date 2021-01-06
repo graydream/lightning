@@ -98,9 +98,7 @@ static void __rpc_request_reset(const msgid_t *msgid)
                 sche_task_reset();
         }
 
-#if RPC_TABLE_POST_FREE
         rpc_table_free(__rpc_table__, msgid);
-#endif
 }
 
 static void __rpc_table_close(void *arg1, void *arg2, void *arg3)

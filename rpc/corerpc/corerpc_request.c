@@ -15,12 +15,6 @@ typedef struct {
 } rpc_ctx_t;
 
 static void __corerpc_close(void *arg1, void *arg2, void *arg3);
-#if RPC_TABLE_POST_FREE
-inline static void INLINE __corerpc_request_reg(void *ctx, const msgid_t *msgid,
-                                                const ltgbuf_t *wbuf,
-                                                const ltgbuf_t *rbuf);
-#endif
-
 extern rpc_table_t *corerpc_self_byctx(void *);
 extern rpc_table_t *corerpc_self();
 extern int corerpc_inited;
@@ -39,12 +33,9 @@ static void __corerpc_post_task(void *arg1, void *arg2, void *arg3, void *arg4)
 
 static void __corerpc_request_reset(const msgid_t *msgid)
 {
-        (void) msgid;
-        sche_task_reset();
-#if RPC_TABLE_POST_FREE
         rpc_table_t *__rpc_table_private__ = corerpc_self();
+        sche_task_reset();
         rpc_table_free(__rpc_table_private__, msgid);
-#endif
 }
 
 STATIC int __corerpc_getslot(void *_ctx, rpc_ctx_t *ctx, corerpc_op_t *op, const char *name)
@@ -138,10 +129,6 @@ int corerpc_rdma_request(void *ctx, void *_op)
                 GOTO(err_free, ret);
         }
 
-#if RPC_TABLE_POST_FREE
-        __corerpc_request_reg(ctx, &op->msgid, op->wbuf, op->rbuf);
-#endif
-        
         return 0;
 err_free:
         ltgbuf_free(&buf);
@@ -403,32 +390,6 @@ inline static void INLINE __corerpc_request_free(void *ctx)
         ltgbuf_free(buf);
         slab_stream_free(buf);
 }
-
-#if RPC_TABLE_POST_FREE
-inline static void INLINE __corerpc_request_reg(void *ctx, const msgid_t *msgid,
-                                                const ltgbuf_t *wbuf,
-                                                const ltgbuf_t *rbuf)
-{
-        int ret;
-        const ltgbuf_t *iobuf = wbuf ? wbuf : rbuf;
-
-        if (unlikely(iobuf == NULL)) {
-                return;
-        }
-
-        LTG_ASSERT(wbuf == NULL || rbuf == NULL);
-        ltgbuf_t *tmp = slab_stream_alloc(sizeof(*tmp));
-        ltgbuf_init(tmp, 0);
-        ltgbuf_reference(tmp, iobuf);
-
-        rpc_table_t *rpc_table = corerpc_self_byctx(ctx);
-        ret = rpc_table_setfree(rpc_table, msgid, __corerpc_request_free, tmp);
-        if (unlikely(ret)) {
-                ltgbuf_free(tmp);
-                slab_stream_free(tmp);
-        }
-}
-#endif
 
 static void __corerpc_close(void *arg1, void *arg2, void *arg3)
 {
