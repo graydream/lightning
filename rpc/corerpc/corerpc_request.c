@@ -24,9 +24,10 @@ static void __corerpc_post_task(void *arg1, void *arg2, void *arg3, void *arg4)
         rpc_ctx_t *ctx = arg1;
         int retval = *(int *)arg2;
         ltgbuf_t *buf = arg3;
-        uint64_t latency = *(uint64_t *)arg4;
 
-        ctx->latency = latency;
+        (void) arg4;
+
+        ctx->latency = 0;
 
         sche_task_post(&ctx->task, retval, buf);
 }
