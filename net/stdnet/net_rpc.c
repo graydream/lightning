@@ -82,43 +82,6 @@ static int __net_srv_heartbeat(const sockid_t *sockid, const msgid_t *msgid, ltg
         return 0;
 }
 
-int net_rpc_heartbeat(const sockid_t *sockid, uint64_t seq)
-{
-        int ret;
-        char buf[MAX_BUF_LEN], info[MAX_BUF_LEN];
-        uint32_t count, len;
-        msg_t *req;
-        net_handle_t nh;
-
-        ANALYSIS_BEGIN(0);
-
-        len = MAX_BUF_LEN;
-        ret = rpc_getinfo(info, &len);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        req = (void *)buf;
-        req->op = NET_RPC_HEARTBEAT;
-        _opaque_encode(req->buf, &count, &seq, sizeof(seq), info, len, NULL);
-
-#if 0
-        DINFO("heartbeat to %s seq %ju\n", _inet_ntoa(sockid->addr), seq);
-#endif
-        sock2nh(&nh, sockid);
-        ret = stdrpc_request_wait_sock("net_rpc_hb", &nh,
-                                    req, sizeof(*req) + count,
-                                    NULL, NULL,
-                                    MSG_NET, 0, ltgconf_global.hb_timeout);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
-
-        ANALYSIS_END(0, 1000 * 500, NULL);
-
-        return 0;
-err_ret:
-        return ret;
-}
-
 static int __net_srv_hello1(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf)
 {
         int buflen;
@@ -165,13 +128,12 @@ static int __net_srv_hello2(const sockid_t *sockid, const msgid_t *msgid, ltgbuf
         return 0;
 }
 
-int net_rpc_hello1(const sockid_t *sockid, uint64_t seq)
+int net_rpc_hello1(const nid_t *nid, const sockid_t *sockid, uint64_t seq)
 {
         int ret;
         char buf[MAX_BUF_LEN];
         uint32_t count;
         msg_t *req;
-        net_handle_t nh;
 
         ANALYSIS_BEGIN(0);
 
@@ -179,8 +141,7 @@ int net_rpc_hello1(const sockid_t *sockid, uint64_t seq)
         req->op = NET_RPC_HELLO1;
         _opaque_encode(req->buf, &count, &seq, sizeof(seq), NULL);
 
-        sock2nh(&nh, sockid);
-        ret = stdrpc_request_wait_sock("hello1", &nh,
+        ret = stdrpc_request_wait_sock("hello1", nid, sockid,
                                        req, sizeof(*req) + count,
                                        NULL, NULL,
                                        MSG_NET, 0, ltgconf_global.hb_timeout);

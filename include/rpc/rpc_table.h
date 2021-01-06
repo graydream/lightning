@@ -38,7 +38,7 @@ typedef struct {
 
 extern rpc_table_t *__rpc_table__;
 
-#define RPC_TABLE_POST_FREE 1
+#define RPC_TABLE_POST_FREE 0
 
 int rpc_table_init(const char *name, rpc_table_t **rpc_table, int private);
 void rpc_table_destroy(rpc_table_t **_rpc_table);

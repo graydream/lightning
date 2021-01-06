@@ -173,32 +173,29 @@ err_ret:
         return ret;
 }
 
-STATIC int __stdrpc_request_wait(const char *name, const net_handle_t *nh,
-                              int coreid, const void *request,
-                              int reqlen, const ltgbuf_t *wbuf,
-                              ltgbuf_t *rbuf, int msg_type,
-                              int priority, int timeout)
+STATIC int __stdrpc_request_wait(const char *name,
+                                 const nid_t *nid, const sockid_t *_sockid,
+                                 int coreid, const void *request,
+                                 int reqlen, const ltgbuf_t *wbuf,
+                                 ltgbuf_t *rbuf, int msg_type,
+                                 int priority, int timeout)
 {
         int ret;
         msgid_t msgid;
         rpc_ctx_t ctx;
         sockid_t sockid;
-        const nid_t *nid;
 
-        if (nh->type == NET_HANDLE_PERSISTENT) {
-                if (!netable_connected(&nh->u.nid)) {
-                        ret = ENONET;
-                        GOTO(err_ret, ret);
-                }
-        
-                ret = netable_getsock(&nh->u.nid, &sockid);
+        if (!netable_connected(nid)) {
+                ret = ENONET;
+                GOTO(err_ret, ret);
+        }
+
+        if (_sockid) {
+                sockid = *_sockid;
+        } else {
+                ret = netable_getsock(nid, &sockid);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
-
-                nid = &nh->u.nid;
-        } else {
-                sockid = nh->u.sd;
-                nid = NULL;
         }
 
         ANALYSIS_BEGIN(0);
@@ -237,7 +234,6 @@ int stdrpc_request_wait(const char *name, const nid_t *nid, const void *request,
 {
         int ret;
         ltgbuf_t *buf, tmp;
-        net_handle_t nh;
 
         if (reply) {
                 ltgbuf_init(&tmp, *replen);
@@ -246,9 +242,7 @@ int stdrpc_request_wait(const char *name, const nid_t *nid, const void *request,
                 buf = NULL;
         }
 
-        id2nh(&nh, nid);
-
-        ret = __stdrpc_request_wait(name, &nh, -1, request, reqlen, NULL, buf,
+        ret = __stdrpc_request_wait(name, nid, NULL, -1, request, reqlen, NULL, buf,
                                     msg_type, priority, timeout);
         if (unlikely(ret))
                 goto err_ret;
@@ -272,16 +266,16 @@ err_ret:
         return ret;
 }
 
-int stdrpc_request_wait3(const char *name, const coreid_t *coreid, const void *request,
-                      int reqlen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf, int msg_type,
-                      int priority, int timeout)
+int stdrpc_request_wait3(const char *name, const coreid_t *coreid,
+                         const void *request, int reqlen, const ltgbuf_t *wbuf,
+                         ltgbuf_t *rbuf, int msg_type,
+                         int priority, int timeout)
 {
         int ret;
-        net_handle_t nh;
 
-        id2nh(&nh, &coreid->nid);
-        ret = __stdrpc_request_wait(name, &nh, coreid->idx, request, reqlen, wbuf, rbuf,
-                                 msg_type, priority, timeout);
+        ret = __stdrpc_request_wait(name, &coreid->nid, NULL, coreid->idx,
+                                    request, reqlen, wbuf, rbuf,
+                                    msg_type, priority, timeout);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -290,9 +284,10 @@ err_ret:
         return ret;
 }
 
-int stdrpc_request_wait_sock(const char *name, const net_handle_t *nh, const void *request,
-                          int reqlen, void *reply, int *replen, int msg_type,
-                          int priority, int timeout)
+int stdrpc_request_wait_sock(const char *name, const nid_t *nid,
+                             const sockid_t *sockid, const void *request,
+                             int reqlen, void *reply, int *replen, int msg_type,
+                             int priority, int timeout)
 {
         int ret;
         ltgbuf_t *buf, tmp;
@@ -304,8 +299,8 @@ int stdrpc_request_wait_sock(const char *name, const net_handle_t *nh, const voi
                 buf = NULL;
         }
 
-        ret = __stdrpc_request_wait(name, nh, -1, request, reqlen, NULL, buf,
-                                 msg_type, priority, timeout);
+        ret = __stdrpc_request_wait(name, nid, sockid, -1, request, reqlen, NULL, buf,
+                                    msg_type, priority, timeout);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -333,7 +328,6 @@ int stdrpc_request_wait2(const char *name, const coreid_t *coreid,
 {
         int ret;
         ltgbuf_t *buf, tmp;
-        net_handle_t nh;
 
         if (reply) {
                 ltgbuf_init(&tmp, *replen);
@@ -342,10 +336,9 @@ int stdrpc_request_wait2(const char *name, const coreid_t *coreid,
                 buf = NULL;
         }
 
-        id2nh(&nh, &coreid->nid);
-
-        ret = __stdrpc_request_wait(name, &nh, coreid->idx, request, reqlen,
-                                    NULL, buf, msg_type, -1, timeout);
+        ret = __stdrpc_request_wait(name, &coreid->nid, NULL, coreid->idx,
+                                    request, reqlen, NULL, buf, msg_type, -1,
+                                    timeout);
         if (unlikely(ret))
                 goto err_ret;
 

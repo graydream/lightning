@@ -42,7 +42,7 @@ int stdrpc_request_wait(const char *name, const nid_t *nid, const void *request,
                      int reqlen, void *reply, int *replen, int msg_type,
                      int priority, int timeout);
 
-int stdrpc_request_wait_sock(const char *name, const net_handle_t *nh, const void *request,
+int stdrpc_request_wait_sock(const char *name, const nid_t *nid, const sockid_t *sockid, const void *request,
                           int reqlen, void *reply, int *replen, int msg_type,
                           int priority, int timeout);
 int rpc_request_prep(ltgbuf_t *buf, const msgid_t *msgid, const void *request,
