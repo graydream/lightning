@@ -15,9 +15,11 @@ typedef struct {
 } rpc_ctx_t;
 
 static void __corerpc_close(void *arg1, void *arg2, void *arg3);
+#if RPC_TABLE_POST_FREE
 inline static void INLINE __corerpc_request_reg(void *ctx, const msgid_t *msgid,
                                                 const ltgbuf_t *wbuf,
                                                 const ltgbuf_t *rbuf);
+#endif
 
 extern rpc_table_t *corerpc_self_byctx(void *);
 extern rpc_table_t *corerpc_self();
@@ -402,6 +404,7 @@ inline static void INLINE __corerpc_request_free(void *ctx)
         slab_stream_free(buf);
 }
 
+#if RPC_TABLE_POST_FREE
 inline static void INLINE __corerpc_request_reg(void *ctx, const msgid_t *msgid,
                                                 const ltgbuf_t *wbuf,
                                                 const ltgbuf_t *rbuf)
@@ -425,6 +428,7 @@ inline static void INLINE __corerpc_request_reg(void *ctx, const msgid_t *msgid,
                 slab_stream_free(tmp);
         }
 }
+#endif
 
 static void __corerpc_close(void *arg1, void *arg2, void *arg3)
 {
