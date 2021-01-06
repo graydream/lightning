@@ -14,6 +14,7 @@ typedef struct {
         uint64_t latency;
 } rpc_ctx_t;
 
+static void __corerpc_close(void *arg1, void *arg2, void *arg3);
 inline static void INLINE __corerpc_request_reg(void *ctx, const msgid_t *msgid,
                                                 const ltgbuf_t *wbuf,
                                                 const ltgbuf_t *rbuf);
@@ -43,19 +44,6 @@ static void __corerpc_request_reset(const msgid_t *msgid)
         rpc_table_free(__rpc_table_private__, msgid);
 #endif
 }
-
-static void __corerpc_close(void *arg1, void *arg2, void *arg3)
-{
-        const nid_t *nid = arg1;
-        const sockid_t *sockid = arg2;
-
-        (void) arg3;
-        (void) nid;
-        (void) sockid;
-
-        corenet_maping_close(nid, sockid);
-}
-
 
 STATIC int __corerpc_getslot(void *_ctx, rpc_ctx_t *ctx, corerpc_op_t *op, const char *name)
 {
@@ -438,3 +426,14 @@ inline static void INLINE __corerpc_request_reg(void *ctx, const msgid_t *msgid,
         }
 }
 
+static void __corerpc_close(void *arg1, void *arg2, void *arg3)
+{
+        const nid_t *nid = arg1;
+        const sockid_t *sockid = arg2;
+
+        (void) arg3;
+        (void) nid;
+        (void) sockid;
+
+        corenet_maping_close(nid, sockid);
+}
