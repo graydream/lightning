@@ -140,6 +140,8 @@ static int __rpc_table_check(rpc_table_t *rpc_table, slot_t *slot, uint32_t now)
 
                 __rpc_table_post(slot, NULL, &retval);
 
+                slot->close(&slot->nid, &slot->sockid, NULL);
+
 #if !RPC_TABLE_POST_FREE //free in rpc_table_reset
                 __rpc_table_free(rpc_table, slot);
 #endif
@@ -343,9 +345,8 @@ static slot_t S_LTG *__rpc_table_lock_slot(rpc_table_t *rpc_table, const msgid_t
         return slot;
 }
 
-int S_LTG rpc_table_setslot(rpc_table_t *rpc_table, const msgid_t *msgid,
-                            func3_t func, void *arg, const sockid_t *sockid,
-                            const nid_t *nid, int timeout)
+int S_LTG rpc_table_setslot(rpc_table_t *rpc_table, const msgid_t *msgid, func3_t func, void *arg,
+                      func2_t _close, const nid_t *nid, const sockid_t *sockid, int timeout)
 {
         int ret;
         slot_t *slot;
@@ -360,6 +361,7 @@ int S_LTG rpc_table_setslot(rpc_table_t *rpc_table, const msgid_t *msgid,
 
         slot->post = func;
         slot->post_arg = arg;
+        slot->close = _close;
         slot->begin = gettime();
         slot->timeout = slot->begin + timeout;
 
@@ -383,7 +385,7 @@ err_ret:
 }
 
 int S_LTG rpc_table_post(rpc_table_t *rpc_table, const msgid_t *msgid, int retval,
-                   ltgbuf_t *buf, uint64_t latency)
+                           ltgbuf_t *buf, uint64_t latency)
 {
         int ret;
         slot_t *slot;
@@ -409,6 +411,7 @@ err_ret:
         return ret;
 }
 
+#if RPC_TABLE_POST_FREE
 int rpc_table_free(rpc_table_t *rpc_table, const msgid_t *msgid)
 {
         int ret;
@@ -428,6 +431,7 @@ int rpc_table_free(rpc_table_t *rpc_table, const msgid_t *msgid)
 err_ret:
         return ret;
 }
+#endif
 
 static int __rpc_table_reset(rpc_table_t *rpc_table,
                              slot_t *slot, const sockid_t *sockid,

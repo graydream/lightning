@@ -52,6 +52,7 @@ typedef struct {
         corerpc_ring_ctx_t *ctx;
 } rpc_ctx_t;
 
+static void __corerpc_close(void *arg1, void *arg2, void *arg3);
 inline static void INLINE __corerpc_request_reg(void *ctx, const msgid_t *msgid,
                                                 const ltgbuf_t *wbuf,
                                                 const ltgbuf_t *rbuf);
@@ -82,14 +83,11 @@ static void S_LTG __corerpc_post_task(void *arg1, void *arg2, void *arg3, void *
 
 static void __corerpc_request_reset(const msgid_t *msgid, int retval)
 {
-        rpc_table_t *__rpc_table_private__ = corerpc_self();
-
         (void) retval;
 
         DBUG("reset (%d, %d)\n", msgid->idx, msgid->figerprint);
-#if 1
-        rpc_table_post(__rpc_table_private__, msgid, retval, NULL, 0);
-#else
+#if RPC_TABLE_POST_FREE
+        rpc_table_t *__rpc_table_private__ = corerpc_self();
         rpc_table_free(__rpc_table_private__, msgid);
 #endif
 }
@@ -115,8 +113,8 @@ STATIC int S_LTG __corerpc_getslot(void *_ctx, const char *name,
         }
 
         ret = rpc_table_setslot(__rpc_table_private__, &op->msgid,
-                                func3, ctx, &op->sockid,
-                                &op->netctl.nid, op->timeout);
+                                func3, ctx, __corerpc_close,
+                                &op->coreid.nid, &op->sockid, op->timeout);
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
@@ -744,4 +742,16 @@ inline static void INLINE __corerpc_request_reg(void *ctx, const msgid_t *msgid,
                 ltgbuf_free(tmp);
                 slab_stream_free(tmp);
         }
+}
+
+static void __corerpc_close(void *arg1, void *arg2, void *arg3)
+{
+        const nid_t *nid = arg1;
+        const sockid_t *sockid = arg2;
+
+        (void) arg3;
+        (void) nid;
+        (void) sockid;
+
+        corenet_maping_close(nid, sockid);
 }
