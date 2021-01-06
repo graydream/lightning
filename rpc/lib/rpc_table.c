@@ -130,11 +130,15 @@ static int __rpc_table_check(rpc_table_t *rpc_table, slot_t *slot, uint32_t now)
                       ltgconf_global.rpc_timeout,
                       (int)(now - slot->begin), slot->timeout);
 
+                sockid_t sockid = slot->sockid; 
+                nid_t nid = slot->nid;
+                func2_t _close = slot->close;
+                
                 slot->timeout = 0;
                 slot->post(slot->post_arg, &retval, NULL, NULL);
-                slot->close(&slot->nid, &slot->sockid, NULL);
-
                 __rpc_table_free(rpc_table, slot);
+
+                _close(&nid, &sockid, NULL);
         }
 
         __rpc_table_unlock(rpc_table, slot);
@@ -439,7 +443,7 @@ static int __rpc_table_reset(rpc_table_t *rpc_table,
 
         (void) nid;
         LTG_ASSERT(sockid);
-        if (sockid_cmp(&slot->sockid, sockid) == 0) {
+        if (slot->timeout && sockid_cmp(&slot->sockid, sockid) == 0) {
                 DINFO("table %s %s @ %s(%s) reset, id (%u, %x), used %u\n",
                       rpc_table->name, slot->name,
                       _inet_ntoa(slot->sockid.addr),

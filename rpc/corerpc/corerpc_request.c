@@ -62,10 +62,11 @@ static void S_LTG __corerpc_post_task(void *arg1, void *arg2, void *arg3, void *
         rpc_ctx_t *ctx = arg1;
         int retval = *(int *)arg2;
         ltgbuf_t *buf = arg3;
-        uint64_t latency = *(uint64_t *)arg4;
         corerpc_op_t *op = &ctx->op;
         
-        ctx->latency = latency;
+        (void) arg4;
+
+        ctx->latency = 0;
 
         if (buf && buf->len) {
                 LTG_ASSERT(op->rbuf);

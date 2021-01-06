@@ -63,9 +63,10 @@ static void __rpc_request_post_sem(void *arg1, void *arg2, void *arg3, void *arg
         rpc_ctx_t *ctx = arg1;
         int retval = *(int *)arg2;
         ltgbuf_t *buf = arg3;
-        uint64_t latency = *(uint64_t *)arg4;
 
-        ctx->latency = latency;
+        (void) arg4;
+        
+        ctx->latency = 0;
         ctx->retval = retval;
         if (buf) {
                 ltgbuf_merge(&ctx->buf, buf);
@@ -81,9 +82,10 @@ static void __rpc_request_post_task(void *arg1, void *arg2, void *arg3, void *ar
         rpc_ctx_t *ctx = arg1;
         int retval = *(int *)arg2;
         ltgbuf_t *buf = arg3;
-        uint64_t latency = *(uint64_t *)arg4;
 
-        ctx->latency = latency;
+        (void) arg4;
+        
+        ctx->latency = 0;
         ctx->retval = -1;
 
         if (buf) {
