@@ -36,10 +36,26 @@ static void __corerpc_post_task(void *arg1, void *arg2, void *arg3, void *arg4)
 
 static void __corerpc_request_reset(const msgid_t *msgid)
 {
-        rpc_table_t *__rpc_table_private__ = corerpc_self();
+        (void) msgid;
         sche_task_reset();
+#if RPC_TABLE_POST_FREE
+        rpc_table_t *__rpc_table_private__ = corerpc_self();
         rpc_table_free(__rpc_table_private__, msgid);
+#endif
 }
+
+static void __corerpc_close(void *arg1, void *arg2, void *arg3)
+{
+        const nid_t *nid = arg1;
+        const sockid_t *sockid = arg2;
+
+        (void) arg3;
+        (void) nid;
+        (void) sockid;
+
+        corenet_maping_close(nid, sockid);
+}
+
 
 STATIC int __corerpc_getslot(void *_ctx, rpc_ctx_t *ctx, corerpc_op_t *op, const char *name)
 {
@@ -55,8 +71,8 @@ STATIC int __corerpc_getslot(void *_ctx, rpc_ctx_t *ctx, corerpc_op_t *op, const
         ctx->task = sche_task_get();
 
         ret = rpc_table_setslot(__rpc_table_private__, &op->msgid,
-                                __corerpc_post_task, ctx, &op->sockid,
-                                &op->coreid.nid, op->timeout);
+                                __corerpc_post_task, ctx, __corerpc_close,
+                                &op->coreid.nid, &op->sockid, op->timeout);
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
@@ -183,7 +199,7 @@ static int __corerpc_send_and_wait(void *core, const char *name, corerpc_op_t *o
         ret = op->sockid.request(core, op);
         if (unlikely(ret)) {
                 sche_task_reset();
-                corenet_maping_close(&op->coreid.nid, &op->sockid);
+                corenet_maping_closeall(&op->coreid.nid, &op->sockid);
 		ret = _errno_net(ret);
 		LTG_ASSERT(ret == ENONET || ret == ESHUTDOWN);
 		GOTO(err_free, ret);
@@ -421,3 +437,4 @@ inline static void INLINE __corerpc_request_reg(void *ctx, const msgid_t *msgid,
                 slab_stream_free(tmp);
         }
 }
+

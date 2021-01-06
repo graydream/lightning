@@ -92,11 +92,31 @@ static void __rpc_request_post_task(void *arg1, void *arg2, void *arg3, void *ar
 
 static void __rpc_request_reset(const msgid_t *msgid)
 {
+        (void) msgid;
+        
         if (sche_running()) {
                 sche_task_reset();
         }
-        
+
+#if RPC_TABLE_POST_FREE
         rpc_table_free(__rpc_table__, msgid);
+#endif
+}
+
+static void __rpc_table_close(void *arg1, void *arg2, void *arg3)
+{
+        const nid_t *nid = arg1;
+        const sockid_t *sockid = arg2;
+
+        (void) arg3;
+        (void) nid;
+        (void) sockid;
+
+#if 0
+        net_handle_t nh;
+        sock2nh(&nh, sockid);
+        sdevent_close(&nh);
+#endif
 }
 
 static int __rpc_request_getslot(msgid_t *msgid, rpc_ctx_t *ctx, const char *name,
@@ -116,7 +136,7 @@ static int __rpc_request_getslot(msgid_t *msgid, rpc_ctx_t *ctx, const char *nam
                 ctx->task = sche_task_get();
 
                 ret = rpc_table_setslot(__rpc_table__, msgid, __rpc_request_post_task,
-                                        ctx, sockid, nid, timeout);
+                                        ctx, __rpc_table_close, nid, sockid, timeout);
                 if (unlikely(ret))
                         UNIMPLEMENTED(__DUMP__);
         } else {
@@ -125,7 +145,7 @@ static int __rpc_request_getslot(msgid_t *msgid, rpc_ctx_t *ctx, const char *nam
                         UNIMPLEMENTED(__DUMP__);
 
                 ret = rpc_table_setslot(__rpc_table__, msgid, __rpc_request_post_sem,
-                                        ctx, sockid, nid, timeout);
+                                        ctx, __rpc_table_close, nid, sockid, timeout);
                 if (unlikely(ret))
                         UNIMPLEMENTED(__DUMP__);
         }

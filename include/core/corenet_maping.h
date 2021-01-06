@@ -25,6 +25,7 @@ typedef struct {
 int corenet_maping_init();
 void corenet_maping_destroy(corenet_maping_t **maping);
 int corenet_maping_connected(const nid_t *nid, const sockid_t *sockid);
+void corenet_maping_closeall(const nid_t *nid, const sockid_t *sockid);
 void corenet_maping_close(const nid_t *nid, const sockid_t *sockid);
 int corenet_maping(void *core, const coreid_t *coreid, sockid_t *sockid);
 
