@@ -105,13 +105,12 @@ static int __net_srv_hello2(ltgbuf_t *_buf, ltgbuf_t *out, int *outlen)
         return 0;
 }
 
-int net_rpc_hello1(const sockid_t *sockid, uint64_t seq)
+int net_rpc_hello1(const nid_t *nid, const sockid_t *sockid, uint64_t seq)
 {
         int ret;
         char buf[MAX_BUF_LEN];
         uint32_t count;
         msg_t *req;
-        net_handle_t nh;
 
         ANALYSIS_BEGIN(0);
 
@@ -119,8 +118,7 @@ int net_rpc_hello1(const sockid_t *sockid, uint64_t seq)
         req->op = NET_RPC_HELLO1;
         _opaque_encode(req->buf, &count, &seq, sizeof(seq), NULL);
 
-        sock2nh(&nh, sockid);
-        ret = stdrpc_request_wait_sock("hello1", &nh,
+        ret = stdrpc_request_wait_sock("hello1", nid, sockid,
                                        req, sizeof(*req) + count,
                                        NULL, NULL,
                                        MSG_NET, 0, ltgconf_global.hb_timeout);

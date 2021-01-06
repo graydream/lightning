@@ -209,7 +209,9 @@ int S_LTG corerpc_rdma_request(void *ctx, void *_op)
                 GOTO(err_free, ret);
         }
 
+#if RPC_TABLE_POST_FREE
         __corerpc_request_reg(ctx, &op->msgid, op->wbuf, op->rbuf);
+#endif
         
         return 0;
 err_free:
