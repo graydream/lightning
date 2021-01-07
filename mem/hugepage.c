@@ -1,7 +1,6 @@
 #include <numaif.h>
 #include <sys/mman.h>
 #include <numa.h>
-#include <hugetlbfs.h>
 
 #define DBG_SUBSYS S_LTG_MEM
 
