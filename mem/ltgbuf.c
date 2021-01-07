@@ -524,7 +524,7 @@ inline int INLINE ltgbuf_init(ltgbuf_t *buf, uint32_t size)
 }
 
 #if 1
-inline int ltgbuf_init1(ltgbuf_t *buf, int size)
+int ltgbuf_init1(ltgbuf_t *buf, int size)
 {
         seg_t *seg;
 
