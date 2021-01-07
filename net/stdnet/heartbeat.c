@@ -30,7 +30,7 @@ static int __netable_hb_send(void *_ctx, uint64_t seq)
         int ret;
         hb_ctx_t *ctx = _ctx;
 
-        ret = net_rpc_hello1(&ctx->sockid, seq);
+        ret = net_rpc_hello1(&ctx->nid, &ctx->sockid, seq);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
         

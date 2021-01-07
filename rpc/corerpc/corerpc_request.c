@@ -52,6 +52,7 @@ typedef struct {
         corerpc_ring_ctx_t *ctx;
 } rpc_ctx_t;
 
+static void __corerpc_close(void *arg1, void *arg2, void *arg3);
 extern rpc_table_t *corerpc_self_byctx(void *);
 extern rpc_table_t *corerpc_self();
 extern int corerpc_inited;
@@ -61,10 +62,11 @@ static void S_LTG __corerpc_post_task(void *arg1, void *arg2, void *arg3, void *
         rpc_ctx_t *ctx = arg1;
         int retval = *(int *)arg2;
         ltgbuf_t *buf = arg3;
-        uint64_t latency = *(uint64_t *)arg4;
         corerpc_op_t *op = &ctx->op;
         
-        ctx->latency = latency;
+        (void) arg4;
+
+        ctx->latency = 0;
 
         if (buf && buf->len) {
                 LTG_ASSERT(op->rbuf);
@@ -78,16 +80,12 @@ static void S_LTG __corerpc_post_task(void *arg1, void *arg2, void *arg3, void *
 
 static void __corerpc_request_reset(const msgid_t *msgid, int retval)
 {
-        rpc_table_t *__rpc_table_private__ = corerpc_self();
-
         (void) retval;
 
         DBUG("reset (%d, %d)\n", msgid->idx, msgid->figerprint);
-#if 1
-        rpc_table_post(__rpc_table_private__, msgid, retval, NULL, 0);
-#else
+        rpc_table_t *__rpc_table_private__ = corerpc_self();
+        sche_task_reset();
         rpc_table_free(__rpc_table_private__, msgid);
-#endif
 }
 
 STATIC int S_LTG __corerpc_getslot(void *_ctx, const char *name,
@@ -111,8 +109,8 @@ STATIC int S_LTG __corerpc_getslot(void *_ctx, const char *name,
         }
 
         ret = rpc_table_setslot(__rpc_table_private__, &op->msgid,
-                                func3, ctx, &op->sockid,
-                                &op->netctl.nid, op->timeout);
+                                func3, ctx, __corerpc_close,
+                                &op->coreid.nid, &op->sockid, op->timeout);
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
@@ -700,4 +698,26 @@ err_ret:
         }
         ANALYSIS_END(0, IO_INFO, name);
         return ret;
+}
+
+inline static void INLINE __corerpc_request_free(void *ctx)
+{
+        ltgbuf_t *buf = ctx;
+
+        DBUG("free %p\n", ctx);
+        
+        ltgbuf_free(buf);
+        slab_stream_free(buf);
+}
+
+static void __corerpc_close(void *arg1, void *arg2, void *arg3)
+{
+        const nid_t *nid = arg1;
+        const sockid_t *sockid = arg2;
+
+        (void) arg3;
+        (void) nid;
+        (void) sockid;
+
+        corenet_maping_close(nid, sockid);
 }

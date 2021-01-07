@@ -598,7 +598,7 @@ static int __corenet_maping_close(va_list ap)
         return 0;
 }
 
-void corenet_maping_close(const nid_t *nid, const sockid_t *sockid)
+void corenet_maping_closeall(const nid_t *nid, const sockid_t *sockid)
 {
         LTG_ASSERT(sockid);
         LTG_ASSERT(ltgconf_global.daemon);
@@ -657,4 +657,20 @@ int corenet_maping_connected(const nid_t *nid, const sockid_t *sockid)
         LTG_ASSERT(entry->connected);
 
         return entry->connected(sockid);
+}
+
+void corenet_maping_close(const nid_t *nid, const sockid_t *sockid)
+{
+        corenet_maping_t *entry, *maping;
+        maping = __corenet_maping_get__();
+
+        if (maping == NULL) {
+                return;
+        }
+
+        entry = &maping[nid->id];
+
+        __corenet_maping_close_entry(entry, sockid);
+
+        return;
 }
