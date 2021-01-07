@@ -17,7 +17,7 @@ message("***************Build for ${CMAKE_BUILD_TYPE}***************")
 
 execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tools/get_version.sh ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(CMAKE_C_LIBS lightning pthread uuid m curl yajl rdmacm yaml numa ibverbs hugetlbfs)
+set(CMAKE_C_LIBS lightning pthread uuid m curl yajl rdmacm yaml numa ibverbs)
 
 message("lightning: install directory ${CMAKE_INSTALL_PREFIX}, use -D CMAKE_INSTALL_PREFIX=<dir> replace it")
 

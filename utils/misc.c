@@ -38,6 +38,33 @@ static uint64_t __global_hz__ = 0;
 
 #undef MAXSIZE_LOGFILE
 #define BACKTRACE_SIZE (1024 * 8)
+#define MAX_LINE_SIZE 128
+
+size_t gethugepagesize()
+{
+        char line[MAX_LINE_SIZE], *res, *res1;
+        size_t ret = 0;
+
+        FILE *fh = fopen("/proc/meminfo", "r");
+        if (fh == NULL)
+                return ret;
+
+        while(fgets(line, MAX_LINE_SIZE, fh) != NULL) {
+                res = strstr(line, "Hugepagesize");
+                if(res != NULL) {
+                        strtok(res, " ");
+                        res1 = strtok(NULL,  " ");
+                        if (res1 != NULL)
+                                ret = atol(res1) * 1024;
+
+                        break;
+                } else
+                        break;
+
+        }
+
+        return ret;
+}
 
 int nid_cmp(const nid_t *keyid, const nid_t *dataid)
 {
