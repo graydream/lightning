@@ -52,7 +52,7 @@ void corerpc_scan(void *ctx)
         }
 }
 
-#if ENABLE_RDMA
+#if 0
 void corerpc_rdma_reset(const sockid_t *sockid)
 {
         rpc_table_t *__rpc_table_private__ = NULL;
@@ -70,6 +70,7 @@ void corerpc_rdma_reset(const sockid_t *sockid)
 rpc_table_t *corerpc_self_byctx(void *ctx);
 rpc_table_t *corerpc_self();
 
+#if 1
 void corerpc_reset(const sockid_t *sockid)
 {
         rpc_table_t *__rpc_table_private__ = corerpc_self();
@@ -78,6 +79,7 @@ void corerpc_reset(const sockid_t *sockid)
                 rpc_table_reset(__rpc_table_private__, sockid, NULL);
         }
 }
+#endif
 
 inline static void __corerpc_scan(void *_core, void *var, void *_corerpc)
 {

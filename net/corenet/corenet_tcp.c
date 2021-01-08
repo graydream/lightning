@@ -321,7 +321,9 @@ static void __corenet_close__(const sockid_t *sockid)
         if (node->reset)
                 node->reset(node->ctx);
 
+#if 0
         corerpc_reset(&node->sockid);
+#endif
 
         close(node->sockid.sd);
         ltgbuf_free(&node->recv_buf);
