@@ -81,6 +81,8 @@ static int __corenet_hb_close_va(va_list ap)
         
         corenet_maping_closeall(&ctx->coreid.nid, &ctx->sockid);
 
+        corerpc_reset(&ctx->sockid);
+        
         return 0;
 }
 static int __corenet_hb_close(void *_ctx)

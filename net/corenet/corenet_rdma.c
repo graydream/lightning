@@ -407,7 +407,9 @@ void corenet_rdma_close(rdma_conn_t *rdma_handler, const char *caller)
 
                 list_del_init(&node->send_list);
 
+#if 0
                 corerpc_rdma_reset(&node->sockid);
+#endif
 
                 RDMA_CONN_DUMP_L3(DINFO, caller, rdma_handler);
                 CORENET_RDMA_NODE_DUMP_L(DINFO, node);
