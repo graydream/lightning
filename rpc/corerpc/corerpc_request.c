@@ -542,14 +542,6 @@ inline static void INLINE __corerpc_trans_addr(const ltgbuf_t *buf,
         if (likely(ltgbuf_segcount(buf) == 1)) {
                 *addr = ltgbuf_head(buf);
         } else if (ltgconf_global.nr_hugepage) {
-                (void) handler;
-                void *tmp;
-                ret = ltg_malloc((void **)&tmp, buf->len);
-                if (unlikely(ret))
-                        UNIMPLEMENTED(__DUMP__);
-
-                *addr = tmp;
-        } else {
                 uint32_t len = buf->len;
                 ret = mem_ring_new(&len, handler);
                 if (unlikely(ret)) {
@@ -558,6 +550,14 @@ inline static void INLINE __corerpc_trans_addr(const ltgbuf_t *buf,
 
                 LTG_ASSERT(len == buf->len);
                 *addr = handler->ptr;
+        } else {
+                (void) handler;
+                void *tmp;
+                ret = ltg_malloc((void **)&tmp, buf->len);
+                if (unlikely(ret))
+                        UNIMPLEMENTED(__DUMP__);
+
+                *addr = tmp;
         }
 }
 
