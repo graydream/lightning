@@ -130,6 +130,12 @@ static int __rpc_table_check(rpc_table_t *rpc_table, slot_t *slot, uint32_t now)
                       ltgconf_global.rpc_timeout,
                       (int)(now - slot->begin), slot->timeout);
 
+#if 1
+                slot->timeout = 0;
+                slot->close(&slot->nid, &slot->sockid, NULL);
+                slot->post(slot->post_arg, &retval, NULL, NULL);
+                __rpc_table_free(rpc_table, slot);
+#else
                 sockid_t sockid = slot->sockid; 
                 nid_t nid = slot->nid;
                 func2_t _close = slot->close;
@@ -139,6 +145,7 @@ static int __rpc_table_check(rpc_table_t *rpc_table, slot_t *slot, uint32_t now)
                 __rpc_table_free(rpc_table, slot);
 
                 _close(&nid, &sockid, NULL);
+#endif
         }
 
         __rpc_table_unlock(rpc_table, slot);
@@ -450,6 +457,7 @@ static int __rpc_table_reset(rpc_table_t *rpc_table,
                       nid ? netable_rname(nid) : "NULL", slot->msgid.idx,
                       slot->msgid.figerprint, (int)(gettime() - slot->begin));
 
+                slot->close(&slot->nid, &slot->sockid, NULL);
                 slot->post(slot->post_arg, &retval, NULL, NULL);
                 __rpc_table_free(rpc_table, slot);
         }

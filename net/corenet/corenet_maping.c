@@ -664,10 +664,7 @@ void corenet_maping_close(const nid_t *nid, const sockid_t *sockid)
         corenet_maping_t *entry, *maping;
         maping = __corenet_maping_get__();
 
-        if (maping == NULL) {
-                return;
-        }
-
+        LTG_ASSERT(maping);
         entry = &maping[nid->id];
 
         __corenet_maping_close_entry(entry, sockid);

@@ -79,8 +79,10 @@ static int __corenet_hb_close_va(va_list ap)
 
         DINFO("close %s\n", netable_rname(&ctx->coreid.nid));
         
-        corenet_maping_closeall(&ctx->coreid.nid, &ctx->sockid);
+        corenet_maping_close(&ctx->coreid.nid, &ctx->sockid);
 
+        corerpc_reset(&ctx->sockid);
+        
         return 0;
 }
 static int __corenet_hb_close(void *_ctx)
