@@ -56,10 +56,7 @@ void corerpc_reply_tcp(void *ctx, void *arg)
                                        reply->buf ? reply->buf->len : 0);
 
                 if (reply->buf ? reply->buf->len : 0) {
-                        ltgbuf_t tmp;
-                        ltgbuf_init(&tmp, 0);
-                        ltgbuf_reference(&tmp, reply->buf);
-                        ltgbuf_merge(&reply_buf, &tmp);
+                        ltgbuf_merge(&reply_buf, reply->buf);
                 }
                 
                 ret = corenet_tcp_send(NULL, reply->sockid, &reply_buf);

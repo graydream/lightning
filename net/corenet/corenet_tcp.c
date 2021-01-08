@@ -417,6 +417,7 @@ static int __corenet_tcp_local(int fd, ltgbuf_t *buf, int op)
                 ret = -ret;
                 DWARN("sd %u %u %s\n", fd, ret, strerror(ret));
                 LTG_ASSERT(ret != EMSGSIZE);
+                LTG_ASSERT(ret != EFAULT);
                 GOTO(err_ret, ret);
         }
 
