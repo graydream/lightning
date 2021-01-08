@@ -529,8 +529,6 @@ err_ret:
         return ret;
 }
 
-#define MEM_MALLOC 0
-
 inline static void INLINE __corerpc_trans_addr(const ltgbuf_t *buf,
                                                mem_handler_t *handler, void **addr)
 {
@@ -543,8 +541,7 @@ inline static void INLINE __corerpc_trans_addr(const ltgbuf_t *buf,
 
         if (likely(ltgbuf_segcount(buf) == 1)) {
                 *addr = ltgbuf_head(buf);
-        } else {
-#if MEM_MALLOC
+        } else if (ltgconf_global.nr_hugepage) {
                 (void) handler;
                 void *tmp;
                 ret = ltg_malloc((void **)&tmp, buf->len);
@@ -552,7 +549,7 @@ inline static void INLINE __corerpc_trans_addr(const ltgbuf_t *buf,
                         UNIMPLEMENTED(__DUMP__);
 
                 *addr = tmp;
-#else
+        } else {
                 uint32_t len = buf->len;
                 ret = mem_ring_new(&len, handler);
                 if (unlikely(ret)) {
@@ -561,7 +558,6 @@ inline static void INLINE __corerpc_trans_addr(const ltgbuf_t *buf,
 
                 LTG_ASSERT(len == buf->len);
                 *addr = handler->ptr;
-#endif
         }
 }
 
@@ -574,15 +570,13 @@ inline static void INLINE __corerpc_trans_free(const ltgbuf_t *buf,
 
         if (likely(addr == ltgbuf_head(buf))) {
                 return;
+        } else if (ltgconf_global.nr_hugepage) {
+                LTG_ASSERT(addr == handler->ptr);
+                mem_ring_deref(handler);
+        } else {
+                (void) handler;
+                ltg_free((void **)&addr);
         }
-
-#if MEM_MALLOC
-        (void) handler;
-        ltg_free((void **)&addr);
-#else
-        LTG_ASSERT(addr == handler->ptr);
-        mem_ring_deref(handler);
-#endif
 }
 
 inline int INLINE corerpc_postwait(const char *name, const coreid_t *coreid,
