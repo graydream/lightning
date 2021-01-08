@@ -20,10 +20,7 @@ void stdrpc_reply1(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf)
         stdrpc_reply_init_prep(msgid, &buf, _buf ? _buf->len : 0);
 
         if (_buf ? _buf->len : 0) {
-                ltgbuf_t tmp;
-                ltgbuf_init(&tmp, 0);
-                ltgbuf_reference(&tmp, _buf);
-                ltgbuf_merge(&buf, &tmp);
+                ltgbuf_merge(&buf, _buf);
         }
         
         sock2nh(&nh, sockid);

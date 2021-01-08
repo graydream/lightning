@@ -48,19 +48,6 @@ int S_LTG rpc_request_prep(ltgbuf_t *buf, const msgid_t *msgid, const void *requ
 
         net_req->blocks = datalen;
         
-#if 0
-        if (data) {
-                net_req->blocks = data->len;
-                
-                if (unlikely(merge)) {
-                        ltgbuf_t tmp;
-                        ltgbuf_init(&tmp, 0);
-                        ltgbuf_reference(&tmp, data);
-                        ltgbuf_merge(buf, &tmp);
-                }
-        }
-#endif
-
         return 0;
 err_ret:
         return ret;
