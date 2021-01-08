@@ -457,6 +457,7 @@ static int __rpc_table_reset(rpc_table_t *rpc_table,
                       nid ? netable_rname(nid) : "NULL", slot->msgid.idx,
                       slot->msgid.figerprint, (int)(gettime() - slot->begin));
 
+                slot->close(&slot->nid, &slot->sockid, NULL);
                 slot->post(slot->post_arg, &retval, NULL, NULL);
                 __rpc_table_free(rpc_table, slot);
         }
