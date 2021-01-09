@@ -58,9 +58,7 @@ size_t gethugepagesize()
                                 ret = atol(res1) * 1024;
 
                         break;
-                } else
-                        break;
-
+                }
         }
 
         return ret;

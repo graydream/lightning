@@ -224,7 +224,7 @@ int memseg_init(int daemon, int nr_2mb_hugepage)
 
         total_size /=  (8 * numa_count);
 
-        if ((total_size << 33) & (((uint64_t)1 << 31) - 1) << 33) {
+        if ((total_size << 34) & (((uint64_t)1 << 30) - 1) << 34) {
                 DWARN("inval mem size %lu %d\n", total_size, numa_count);
                 ret =  EINVAL;
                 GOTO(err_ret, ret);
