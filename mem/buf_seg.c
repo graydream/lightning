@@ -46,7 +46,10 @@ static seg_t S_LTG *__seg_alloc_head(ltgbuf_t *buf, uint32_t size, int sys)
                         DBUG("%p alloc %p, len %u\n", buf, seg, size);
                 } else {
                         int ret = ltg_malloc((void **)&seg, sizeof(seg_t));
-                        LTG_ASSERT(ret == 0);
+                        if (unlikely(ret)) {
+                                DERROR("malloc fail\n");
+                                UNIMPLEMENTED(__DUMP__);
+                        }
                 }
 
                 //memset(seg, 0x0, sizeof(*seg));
@@ -128,6 +131,8 @@ inline seg_t *seg_sys_create(ltgbuf_t *buf, uint32_t size)
 
         ret = ltg_malign((void **)&seg->sys.base, 4096, seg->len);
         if (unlikely(ret)) {
+                DERROR("malloc fail, size %ju %ju\n", size, seg->len);
+                UNIMPLEMENTED(__DUMP__);
                 GOTO(err_free, ret);
         }
 
