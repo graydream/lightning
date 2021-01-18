@@ -129,11 +129,20 @@ inline seg_t *seg_sys_create(ltgbuf_t *buf, uint32_t size)
         if (unlikely(!seg))
                 return NULL;
 
-        ret = ltg_malign((void **)&seg->sys.base, 512, seg->len);
-        if (unlikely(ret)) {
-                DERROR("malloc fail, size %u %u\n", size, seg->len);
-                UNIMPLEMENTED(__DUMP__);
-                GOTO(err_free, ret);
+        if (seg->len % 512 == 0) {
+                ret = ltg_malign((void **)&seg->sys.base, 512, seg->len);
+                if (unlikely(ret)) {
+                        DERROR("malloc fail, size %u %u\n", size, seg->len);
+                        UNIMPLEMENTED(__DUMP__);
+                        GOTO(err_free, ret);
+                }
+        } else {
+                ret = ltg_malloc((void **)&seg->sys.base, seg->len);
+                if (unlikely(ret)) {
+                        DERROR("malloc fail, size %u %u\n", size, seg->len);
+                        UNIMPLEMENTED(__DUMP__);
+                        GOTO(err_free, ret);
+                }
         }
 
         DBT("alloc %p", seg->sys.base);
