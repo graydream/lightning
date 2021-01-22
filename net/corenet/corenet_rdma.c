@@ -1259,10 +1259,17 @@ static int __corenet_rdma_post_mem_handler(rdma_conn_t *handler, core_t *core)
         void *ptr, *tmp = NULL;
         uint32_t size = RDMA_INFO_SIZE + RDMA_MESSAGE_SIZE;
 
+#if 1
+        ret = ltg_malloc(&tmp, size * DEFAULT_MH_NUM);
+        if (ret) {
+                LTG_ASSERT(0);
+        }
+#else
         ret = posix_memalign(&tmp, 4096, size * DEFAULT_MH_NUM);
         if (ret) {
                 LTG_ASSERT(0);
         }
+#endif
 
         if (core->main_core) {
                 long unsigned int node_id;
