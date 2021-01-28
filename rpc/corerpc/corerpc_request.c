@@ -648,7 +648,7 @@ inline int INLINE corerpc_postwait(const char *name, const coreid_t *coreid,
 
         return 0;
 err_ret:
-        DINFO("%p %p\n", op.wbuf, op.rbuf);
+        DBUG("%p %p\n", op.wbuf, op.rbuf);
         __corerpc_trans_free(wbuf, &whandler, op.wbuf);
         __corerpc_trans_free(rbuf, &rhandler, op.rbuf);
         return ret;
