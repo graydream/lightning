@@ -50,7 +50,7 @@ typedef long long LLD;
 
 #define MAX_MSG_SIZE (512)
 #define UUID_LEN        (64)
-#define MAX_NET_COUNT 12
+#define MAX_NET_COUNT 128
 
 #define SOCKID_NORMAL 10
 #define SOCKID_CORENET 20
