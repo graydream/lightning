@@ -594,6 +594,7 @@ etcd_delete_dir (_etcd_session *session, const char *key, int recursive, etcd_se
         char                    *url = NULL;
         CURL                    *curl           = NULL;
         etcd_result             res             = ETCD_ERR;
+        long                    retcode         = 0;
         CURLcode                curl_res;
         void                    *err_label      = &&done;
         char                    *namespace = NULL;
@@ -645,6 +646,11 @@ etcd_delete_dir (_etcd_session *session, const char *key, int recursive, etcd_se
                 // print_curl_error("perform",curl_res);
                 DWARN("http code: %d\n", curl_res);
                 goto *err_label;
+        }
+
+        curl_res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &retcode);
+        if (CURLE_OK == curl_res) {
+                res = parse_http_code(retcode);
         }
 
 cleanup_curl:
@@ -1215,6 +1221,7 @@ etcd_update_ttl_one (_etcd_session *session, const char *key,unsigned int ttl, e
         char                    *url = NULL;
         char                    *contents       = NULL;
         CURL                    *curl           = NULL;
+        long                    retcode         = 0;
         etcd_result             res             = ETCD_ERR;
         CURLcode                curl_res;
         void                    *err_label      = &&done;
@@ -1282,6 +1289,11 @@ etcd_update_ttl_one (_etcd_session *session, const char *key,unsigned int ttl, e
                 // print_curl_error("perform",curl_res);
                 DWARN("http code: %d\n", curl_res);
                 goto *err_label;
+        }
+
+        curl_res = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &retcode);
+        if (CURLE_OK == curl_res) {
+                res = parse_http_code(retcode);
         }
 
 cleanup_curl:
