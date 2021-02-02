@@ -30,7 +30,7 @@ typedef long long LLD;
 #define FALSE 0
 #endif
 
-#define RDMA_MESSAGE_SIZE 512
+#define RDMA_MESSAGE_SIZE 1024
 
 
 #define IO_MAX (1024 * 1024 * 4)
@@ -48,7 +48,7 @@ typedef long long LLD;
 
 #define SCHEDULE_MAX  (1024 * 2)
 
-#define MAX_MSG_SIZE (512)
+#define MAX_MSG_SIZE (1024)
 #define UUID_LEN        (64)
 #define MAX_NET_COUNT 12
 
