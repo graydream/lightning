@@ -542,7 +542,7 @@ int tcp_sock_getaddr(uint32_t *info_count, sock_info_t *info,
                      uint32_t info_count_max, uint32_t port,
                      const ltg_netconf_t *filter)
 {
-        int ret, i, new = 32;
+        int ret, i, new = MAX_NET_COUNT;
         uint32_t addr[new], count;
 
         count = 0;
