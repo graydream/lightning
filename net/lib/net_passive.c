@@ -110,12 +110,12 @@ err_ret:
 
 int net_getaddr(const ltg_netconf_t *filter, uint32_t *addr, int *_count)
 {
-        int ret, max = MAX_NET_COUNT * 2;
+        int ret, max = MAX_ADDR_COUNT;
         sock_info_t info[max];
         uint32_t count;
 
         count = *_count;
-        LTG_ASSERT(count > 0 && count <= MAX_NET_COUNT);
+        LTG_ASSERT(count > 0 && count <= MAX_ADDR_COUNT);
         
         ret = sock_getinfo(&count, info,
                            max, -1, filter);
