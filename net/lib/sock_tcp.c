@@ -475,7 +475,7 @@ static int __tcp_sock_getaddr(uint32_t network, uint32_t mask, uint32_t *_addr, 
                 GOTO(err_ret, ret);
         }
 
-        ret = ltg_malloc((void **)&buf, sizeof(*buf) * 512);
+        ret = ltg_malloc((void **)&buf, sizeof(*buf) * MAX_ADDR_COUNT);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
@@ -486,7 +486,7 @@ static int __tcp_sock_getaddr(uint32_t network, uint32_t mask, uint32_t *_addr, 
                 GOTO(err_free, ret);
         }
 
-        ifc.ifc_len = sizeof(struct ifreq) * 512;
+        ifc.ifc_len = sizeof(struct ifreq) * MAX_ADDR_COUNT;
         ifc.ifc_buf = (caddr_t)buf;
 
         ret = ioctl(sd, SIOCGIFCONF, &ifc);
@@ -551,12 +551,11 @@ int tcp_sock_getaddr(uint32_t *info_count, sock_info_t *info,
                      const ltg_netconf_t *filter)
 {
         int ret, i, new;
-        uint32_t addr[MAX_NET_COUNT * 2], count;
+        uint32_t addr[MAX_ADDR_COUNT], count;
 
         count = 0;
         for (i = 0; i < filter->count; i++) {
-                LTG_ASSERT(count < info_count_max);
-                new = MAX_NET_COUNT * 2;
+                new = MAX_ADDR_COUNT;
                 ret = __tcp_sock_getaddr(filter->network[i].network,
                                          filter->network[i].mask, addr, &new);
                 if (unlikely(ret)) {
@@ -565,6 +564,7 @@ int tcp_sock_getaddr(uint32_t *info_count, sock_info_t *info,
 
                 DBUG("info[%u] addr %u\n", count, addr);
 
+                LTG_ASSERT(count + new < info_count_max);
                 for (int j = 0; j < new; j++) {
                         info[count].addr = addr[j];
                         info[count].port = htons(port);
