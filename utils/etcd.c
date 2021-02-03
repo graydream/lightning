@@ -617,7 +617,7 @@ err_ret:
 int etcd_create_text(const char *prefix, const char *_key, const char *_value, int ttl)
 {
         int ret;
-        char key[MAX_PATH_LEN], value[MAX_BUF_LEN];
+        char key[MAX_PATH_LEN], value[MAX_BUF_LEN * 4];
         etcd_prevcond_t precond;
 
         LTG_ASSERT(strcmp(_value, ""));
@@ -642,10 +642,10 @@ int etcd_create(const char *prefix, const char *_key, const void *_value,
                 int valuelen, int ttl)
 {
         int ret;
-        char buf[MAX_BUF_LEN];
+        char buf[MAX_BUF_LEN * 4];
         size_t size;
 
-        size = MAX_BUF_LEN;
+        size = MAX_BUF_LEN * 4;
         ret = urlsafe_b64_encode(_value, valuelen, buf, &size);
         LTG_ASSERT(ret == 0);
 
@@ -663,7 +663,7 @@ int etcd_update_text(const char *prefix, const char *_key, const char *_value,
 {
         int ret;
         etcd_prevcond_t precond;
-        char key[MAX_PATH_LEN], value[MAX_BUF_LEN], tmp[MAX_BUF_LEN];
+        char key[MAX_PATH_LEN], value[MAX_BUF_LEN * 4], tmp[MAX_BUF_LEN * 4];
 
         LTG_ASSERT(strcmp(_value, ""));
 
@@ -709,10 +709,10 @@ int etcd_update(const char *prefix, const char *_key, const void *_value, int va
                 int *idx, int ttl)
 {
         int ret;
-        char buf[MAX_BUF_LEN];
+        char buf[MAX_BUF_LEN * 4];
         size_t size;
 
-        size = MAX_BUF_LEN;
+        size = MAX_BUF_LEN * 4;
         ret = urlsafe_b64_encode(_value, valuelen, buf, &size);
         LTG_ASSERT(ret == 0);
 
@@ -772,14 +772,14 @@ int etcd_get_bin(const char *prefix, const char *_key, void *_value,
                  int *_valuelen, int *idx)
 {
         int ret;
-        char buf[MAX_BUF_LEN];
+        char buf[MAX_BUF_LEN * 4];
         size_t size;
 
         ret = etcd_get_text(prefix, _key, buf, idx);
         if (ret)
                 GOTO(err_ret, ret);
 
-        size = MAX_BUF_LEN;
+        size = MAX_BUF_LEN * 4;
         ret = urlsafe_b64_decode(buf, strlen(buf), _value, &size);
         LTG_ASSERT(ret == 0);
 
@@ -1359,7 +1359,7 @@ err_ret:
 int etcd_set_text(const char *prefix, const char *_key, const char *_value, int flag, int ttl)
 {
         int ret;
-        char key[MAX_PATH_LEN], value[MAX_BUF_LEN];
+        char key[MAX_PATH_LEN], value[MAX_BUF_LEN * 4];
         etcd_prevcond_t *precond, _precond;
 
         //LTG_ASSERT(strcmp(_value, ""));
@@ -1388,10 +1388,10 @@ int etcd_set_bin(const char *prefix, const char *_key, const void *_value,
                  int valuelen, int flag, int ttl)
 {
         int ret;
-        char buf[MAX_BUF_LEN];
+        char buf[MAX_BUF_LEN * 4];
         size_t size;
 
-        size = MAX_BUF_LEN;
+        size = MAX_BUF_LEN * 4;
         ret = urlsafe_b64_encode(_value, valuelen, buf, &size);
         LTG_ASSERT(ret == 0);
 
@@ -1500,7 +1500,7 @@ int etcd_watch_key(const char *prefix, const char *_key, int timeout,
                    etcd_func_t func, void *arg)
 {
         int ret, etcd_idx = 0, idx = 0;
-        char key[MAX_PATH_LEN], value[MAX_BUF_LEN];
+        char key[MAX_PATH_LEN], value[MAX_BUF_LEN * 4];
 
 retry:
         ret = etcd_get_text(prefix, _key, value, &idx);
@@ -1698,14 +1698,14 @@ int etcd_get_bin1(const char *prefix, const char *_key, void *_value,
                   int *_valuelen, int *idx, int consistent)
 {
         int ret;
-        char buf[MAX_BUF_LEN];
+        char buf[MAX_BUF_LEN * 4];
         size_t size;
 
         ret = etcd_get_text1(prefix, _key, buf, idx, consistent);
         if (ret)
                 GOTO(err_ret, ret);
 
-        size = MAX_BUF_LEN;
+        size = MAX_BUF_LEN * 4;
         ret = urlsafe_b64_decode(buf, strlen(buf), _value, &size);
         LTG_ASSERT(ret == 0);
 
