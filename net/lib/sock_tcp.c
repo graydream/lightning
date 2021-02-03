@@ -462,7 +462,8 @@ static int __tcp_sock_getaddr(uint32_t network, uint32_t mask, uint32_t *_addr, 
 {
         int ret, sd, i, count = 0;
         uint32_t addr;
-        char buf[MAX_BUF_LEN];
+        // char buf[MAX_BUF_LEN];
+        struct ifreq *buf;
         struct ifconf ifc;
         struct ifreq *ifcreq, ifr;
         struct sockaddr_in localaddr, *sin;
@@ -474,15 +475,19 @@ static int __tcp_sock_getaddr(uint32_t network, uint32_t mask, uint32_t *_addr, 
                 GOTO(err_ret, ret);
         }
 
+        ret = ltg_malloc((void **)&buf, sizeof(*buf) * 512);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
         sd = socket(PF_INET, SOCK_STREAM, 0);
         if (sd == -1) {
                 ret = errno;
                 DERROR("%d - %s\n", ret, strerror(ret));
-                GOTO(err_ret, ret);
+                GOTO(err_free, ret);
         }
 
-        ifc.ifc_len = MAX_BUF_LEN;
-        ifc.ifc_buf = buf;
+        ifc.ifc_len = sizeof(struct ifreq) * 512;
+        ifc.ifc_buf = (caddr_t)buf;
 
         ret = ioctl(sd, SIOCGIFCONF, &ifc);
         if (ret == -1) {
@@ -512,8 +517,8 @@ static int __tcp_sock_getaddr(uint32_t network, uint32_t mask, uint32_t *_addr, 
                 if ((ifr.ifr_flags & IFF_UP) == 0)
                         continue;
 
-                DBUG("ifname[%d] %s, %s, len %d\n", idx, ifcreq->ifr_name,
-                     _inet_ntoa(addr), ifc.ifc_len / sizeof(struct ifreq));
+                DBUG("ifname[%d] %s, %s, check %s len %d\n", idx, ifcreq->ifr_name,
+                     _inet_ntoa(addr), _inet_ntoa(*_addr),ifc.ifc_len / sizeof(struct ifreq));
                 
                 if ((addr & mask) == (network & mask)) {
                         DBUG("ifname %s, %s\n", ifcreq->ifr_name, _inet_ntoa(addr));
@@ -523,6 +528,7 @@ static int __tcp_sock_getaddr(uint32_t network, uint32_t mask, uint32_t *_addr, 
         }
 
         close(sd);
+        ltg_free((void **)&buf);
 
         if (count == 0) {
                 ret = ENONET;
@@ -534,6 +540,8 @@ static int __tcp_sock_getaddr(uint32_t network, uint32_t mask, uint32_t *_addr, 
         return 0;
 err_sd:
         (void) close(sd);
+err_free:
+        ltg_free((void **)&buf);
 err_ret:
         return ret;
 }
@@ -542,12 +550,13 @@ int tcp_sock_getaddr(uint32_t *info_count, sock_info_t *info,
                      uint32_t info_count_max, uint32_t port,
                      const ltg_netconf_t *filter)
 {
-        int ret, i, new = MAX_NET_COUNT;
-        uint32_t addr[new], count;
+        int ret, i, new;
+        uint32_t addr[MAX_NET_COUNT * 2], count;
 
         count = 0;
         for (i = 0; i < filter->count; i++) {
                 LTG_ASSERT(count < info_count_max);
+                new = MAX_NET_COUNT * 2;
                 ret = __tcp_sock_getaddr(filter->network[i].network,
                                          filter->network[i].mask, addr, &new);
                 if (unlikely(ret)) {
