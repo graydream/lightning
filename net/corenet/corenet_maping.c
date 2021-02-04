@@ -219,6 +219,7 @@ static int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
         corenet_addr_t *addr = (void *)buf;
         uint64_t coremask;
         coreid_t coreid = {*nid, 0};
+        sockid_t tmp[CORE_MAX];
 
         snprintf(key, MAX_NAME_LEN, "%d/coremask", nid->id);
         valuelen = sizeof(coremask);
@@ -244,6 +245,7 @@ static int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
                         GOTO(err_close, ret);
                 }
 
+                tmp[count] = _sockid[i];
                 count++;
         }
 
@@ -251,14 +253,11 @@ static int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
 
         return 0;
 err_close:
-        if (count) {
-                DERROR("%s %d connected, restart for safe\n",
-                       netable_rname(nid), count);
-                EXIT(EAGAIN);
-                UNIMPLEMENTED(__DUMP__);
-        } else {
-                DBUG("connect to %s fail\n", netable_rname(nid));
+        for (int i = 0; i < count; i++) {
+                __corenet_maping_close_finally__(NULL, &tmp[i]);
         }
+
+        DBUG("connect to %s fail\n", netable_rname(nid));
 err_ret:
         return ret;
 }
