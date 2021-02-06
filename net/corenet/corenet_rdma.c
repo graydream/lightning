@@ -1621,6 +1621,8 @@ static int __corenet_rdma_on_active_event(struct rdma_event_channel *evt_channel
         struct rdma_cm_event *ev = NULL;
         enum rdma_cm_event_type ev_type;
 
+        ANALYSIS_BEGIN2(0);
+        
         DINFO("rdma_get_cm_event\n");
         /**
          * rdma_get_cm_event will blocked, so cannot exec in core/task.
@@ -1693,11 +1695,14 @@ static int __corenet_rdma_on_active_event(struct rdma_event_channel *evt_channel
 
 out:
         DINFO("rdma_get_cm_event finish\n");
+        ANALYSIS_END2(0, 1000 * 1000 * 1, NULL);
+
         return 0;
 err_ack:
         rdma_ack_cm_event(ev);
 err_ret:
         DERROR("rdma_get_cm_event failed, ret %d\n", ret);
+        ANALYSIS_END2(0, 1000 * 1000 * 1, NULL);
         return ret;
 }
 
@@ -1766,7 +1771,7 @@ int corenet_rdma_connect_by_channel(const uint32_t addr, const uint32_t port,
 
         DBUG("connect %s:%d\n", _inet_ntoa(addr), port);
         
-        ANALYSIS_BEGIN(0);
+        ANALYSIS_BEGIN2(0);
 
         //evt_channel = corenet_rdma_get_evt_channel(core->hash);
         evt_channel = rdma_create_event_channel();
@@ -1821,7 +1826,7 @@ int corenet_rdma_connect_by_channel(const uint32_t addr, const uint32_t port,
         CMID_DUMP_L(DINFO, cma_conn_id);
         RDMA_CONN_DUMP_L(DINFO, rconn);
 
-        ANALYSIS_END(0, 1000 * 1000 * 5, NULL);
+        ANALYSIS_END2(0, 1000 * 1000 * 1, NULL);
         return 0;
 
 /*err_id:

@@ -206,6 +206,28 @@
 #endif
 
 
+#define ANALYSIS_BEGIN2(mark)                   \
+        ltg_time_t t1##mark;                    \
+        int used##mark;                         \
+        static time_t __warn__##mark;           \
+        (void ) __warn__##mark;                 \
+                                                \
+        _microsec_update_now(&t1##mark);
+
+
+#define ANALYSIS_END2(mark, __usec, __str)                              \
+        used##mark = _microsec_time_used_from_now(&t1##mark);           \
+        if (used##mark > (__usec)) {                                    \
+                if (used##mark > IO_WARN * 2) {                         \
+                        DERROR("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
+                } else if (used##mark > IO_WARN) {                      \
+                        DWARN("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
+                } else {                                                \
+                        DINFO("analysis used %fs %s\n", (double)(used##mark) / 1000 / 1000, (__str) ? (__str) : ""); \
+                }                                                       \
+        }
+
+
 #define _ceil(size, align) ((size) % (align) == 0 ? (size) / (align) : (size) / (align) + 1)
 #define _min(x, y) ((x) < (y) ? (x) : (y))
 #define _max(x, y) ((x) > (y) ? (x) : (y))

@@ -95,6 +95,8 @@ STATIC int __corenet_maping_connect_core(const coreid_t *coreid,
         sockid_t sockid;
         const sock_info_t *sock;
 
+        ANALYSIS_BEGIN2(0);
+        
         idx = _random() % addr->info_count;
 
         for (i = 0; i < addr->info_count; i++) {
@@ -125,8 +127,11 @@ STATIC int __corenet_maping_connect_core(const coreid_t *coreid,
 
         *_sockid = sockid;
 
+        ANALYSIS_END2(0, 1000 * 1000 * 1, NULL);
+        
         return 0;
 err_ret:
+        ANALYSIS_END2(0, 1000 * 1000 * 1, NULL);
         return ret;
 }
 
@@ -221,6 +226,8 @@ static int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
         coreid_t coreid = {*nid, 0};
         sockid_t tmp[CORE_MAX];
 
+        ANALYSIS_BEGIN2(0);
+        
         snprintf(key, MAX_NAME_LEN, "%d/coremask", nid->id);
         valuelen = sizeof(coremask);
         ret = etcd_get_bin(ETCD_CORENET, key, (void *)&coremask, &valuelen, NULL);
@@ -251,6 +258,8 @@ static int __corenet_maping_connect__(const nid_t *nid, sockid_t *_sockid,
 
         *_coremask = coremask;
 
+        ANALYSIS_END2(0, 1000 * 1000 * 1, NULL);
+        
         return 0;
 err_close:
         for (int i = 0; i < count; i++) {
@@ -259,6 +268,7 @@ err_close:
 
         DBUG("connect to %s fail\n", netable_rname(nid));
 err_ret:
+        ANALYSIS_END2(0, 1000 * 1000 * 1, NULL);
         return ret;
 }
 
@@ -326,6 +336,7 @@ STATIC int __corenet_maping_connect(const nid_t *nid)
         if (unlikely(ret))
                 UNIMPLEMENTED(__DUMP__);
 
+        return 0;
 err_ret:
         return ret;
 }
@@ -363,6 +374,8 @@ static void __corenet_maping_connect_task(void *arg)
         corenet_maping_t *entry = arg;
         const nid_t *nid = &entry->nid;
 
+        ANALYSIS_BEGIN2(0);
+        
 #if 1
         __corenet_maping_close_entry(entry, NULL);
 #endif
@@ -377,6 +390,8 @@ static void __corenet_maping_connect_task(void *arg)
         }
 
         entry->connecting = 0;
+
+        ANALYSIS_END2(0, 1000 * 1000 * 1, NULL);
 }
 
 static int __corenet_maping_connect_wait_task(corenet_maping_t *entry,
