@@ -133,11 +133,11 @@ static void __mem_ring_local_free(mem_handler_t *mem_handler)
         hpage->ref--;
 
         if (hpage->ref == 0) {
-                head->nr_used--;
                 hpage->offset = 0;
 
                 LTG_ASSERT(((hpage->type + 1)* HUGEPAGE_SIZE) == hpage->size);
                 if (head->cur_hpage[hpage->type] != hpage){
+                        head->nr_used--;
                         list_del(&hpage->list);
                         hpage_free(head->hpage_list, (hpage->size - 1)/ HUGEPAGE_SIZE, hpage);
                 }
@@ -287,7 +287,7 @@ static void __mem_ring_scan__(core_t *core, mem_ring_head_t *head)
         list_for_each(pos, &head->used_list) {
                 hpage = (void *)pos;
 
-                if (now - head->time > 256) {
+                if (unlikely(hpage->ref && now - head->time > 256)) {
                         DWARN("%s[%d] ring %p used %d ,"
                               " page %p ref %d, seq[%d],"
                               " last update %d %d, offset %u\n",
