@@ -189,6 +189,7 @@ void mem_ring_deref(mem_handler_t *mem_handler)
 
                 ltg_spin_unlock(&head->lock);
         } else {
+                UNIMPLEMENTED(__DUMP__);
                 DBUG("cross free\n");
 
                 __mem_ring_crossfree(core, mem_handler);
@@ -287,7 +288,7 @@ static void __mem_ring_scan__(core_t *core, mem_ring_head_t *head)
                 hpage = (void *)pos;
 
                 if (now - head->time > 256) {
-                        DWARN("%s[%d] ring %p used %u ,"
+                        DWARN("%s[%d] ring %p used %d ,"
                               " page %p ref %d, seq[%d],"
                               " last update %d %d, offset %u\n",
                               core->name, core->hash, head, head->nr_used,

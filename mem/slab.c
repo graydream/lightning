@@ -363,6 +363,7 @@ inline void INLINE slab_free(slab_t *slab, void *ptr)
                 
                 __slab_free_public(slab, ptr);
         } else {
+                UNIMPLEMENTED(__DUMP__);
                 DBUG("cross free %p\n", ptr);
 
                 //slab_array_t *array = slab->private;

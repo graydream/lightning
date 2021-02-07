@@ -52,21 +52,6 @@ void corerpc_scan(void *ctx)
         }
 }
 
-#if 0
-void corerpc_rdma_reset(const sockid_t *sockid)
-{
-        rpc_table_t *__rpc_table_private__ = NULL;
-
-        __rpc_table_private__ = corerpc_self();
-
-        if (__rpc_table_private__) {
-                DINFO("rpc table reset ... \n");
-                rpc_table_reset(__rpc_table_private__, sockid, NULL);
-        } else
-                LTG_ASSERT(0);
-}
-#endif
-
 rpc_table_t *corerpc_self_byctx(void *ctx);
 rpc_table_t *corerpc_self();
 
