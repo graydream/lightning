@@ -12,6 +12,7 @@
 #define MAX_INFO_LEN    (512)
 
 #define MAX_BUF_LEN     (1024 * 4)
+#define MAX_MSG_LEN     (1024 * 16)
 
 #ifndef PAGE_SIZE
 #define PAGE_SIZE (1024 * 4)
