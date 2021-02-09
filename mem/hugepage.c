@@ -86,7 +86,7 @@ inline static void __init_memseg_slice(memseg_t *memseg)
         LTG_ASSERT(memseg->size % MEMSLICE_SIZE == 0);
         
         for (i = 0; i < (int)(memseg->size / MEMSLICE_SIZE); i++) {
-                slice = malloc(sizeof(memslice_t));
+                slice = ltg_malloc1(sizeof(memslice_t));
                 memset(slice, 0x00, sizeof(memslice_t));
                 slice->addr = memseg->start_addr + ((size_t)i) * MEMSLICE_SIZE;
                 slice->memseg = memseg;
@@ -97,7 +97,7 @@ inline static void __init_memseg_slice(memseg_t *memseg)
 inline static size_t __max_malloc_size(size_t memseg_size)
 {
         size_t size = memseg_size;
-        void *ptr = malloc(size);
+        void *ptr = ltg_malloc1(size);
         int ret;
 
         while (ptr == NULL) {
@@ -113,7 +113,7 @@ inline static size_t __max_malloc_size(size_t memseg_size)
                 }
 
                 free(ptr);
-                ptr = malloc(size);
+                ptr = ltg_malloc1(size);
         }
 
         free(ptr);
@@ -130,13 +130,13 @@ static int __memseg_alloc(memseg_t **_memseg, size_t size)
         memseg_t *memseg;
         int ret;
 
-        memseg = malloc(sizeof(memseg_t));
+        memseg = ltg_malloc1(sizeof(memseg_t));
         if (memseg == NULL) {
                 ret = ENOMEM;
                 GOTO(err_ret, ret);
         }
 
-        addr = malloc(size + HUGEPAGE_SIZE * 512); /*多分配1个G,用于1gb对齐*/
+        addr = ltg_malloc1(size + HUGEPAGE_SIZE * 512); /*多分配1个G,用于1gb对齐*/
         if (addr == NULL) {
                 ret = ENOMEM;
                 GOTO(err_ret, ret);
@@ -428,7 +428,7 @@ int hugepage_getfree(void **addr, uint32_t *size, const char *caller)
         hpage_t *hpage;
 
         if (unlikely(use_huge == 0)) {
-                *addr = malloc(*size);
+                *addr = ltg_malloc1(*size);
                 //ret = posix_memalign(addr, 4096, *size);
                 if (*addr == NULL) 
                         LTG_ASSERT(0);

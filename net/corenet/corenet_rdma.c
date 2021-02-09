@@ -1143,7 +1143,7 @@ int __rdma_create_cq(rdma_info_t **_dev, struct rdma_cm_id *cm_id, int ib_port, 
 #if 1
         // TODO by core?
 
-        dev->mr_map = malloc(((uint32_t)1 << 18) * sizeof(uint64_t)); /*1 << 18  1G*/
+        dev->mr_map = ltg_malloc1(((uint32_t)1 << 18) * sizeof(uint64_t)); /*1 << 18  1G*/
         memset(dev->mr_map, 0x00, ((uint32_t)1 << 18) * sizeof(uint64_t));
 
         DINFO("create cq dev %p, mr_map %p\n", dev, dev->mr_map);
@@ -1265,7 +1265,7 @@ static int __corenet_rdma_post_mem_handler(rdma_conn_t *handler, core_t *core)
                 LTG_ASSERT(0);
         }
 #else
-        ret = posix_memalign(&tmp, 4096, size * DEFAULT_MH_NUM);
+        ret = ltg_malign(&tmp, 4096, size * DEFAULT_MH_NUM);
         if (ret) {
                 LTG_ASSERT(0);
         }
