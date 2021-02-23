@@ -230,11 +230,8 @@ static int __core_worker_init(core_t *core)
                       core->main_core->cpu_id);
         }
 
-        core->interrupt_eventfd = -1;
-        int *interrupt = !(core->flag & CORE_FLAG_POLLING) ? &core->interrupt_eventfd : NULL;
-
         snprintf(name, sizeof(name), core->name);
-        ret = sche_create(interrupt, name, &core->sche_idx, &core->sche, NULL);
+        ret = sche_create(core->flag, name, &core->sche_idx, &core->sche, NULL);
         if (unlikely(ret)) {
                 GOTO(err_ret, ret);
         }

@@ -64,25 +64,26 @@ static void S_LTG __corenet_poller(void *_core, void *var, void *_corenet)
 #if 1
 inline static void __core_interrupt_eventfd_func(void *arg)
 {
-        int ret;
+        int ret, eventfd;
         char buf[MAX_BUF_LEN];
         core_t *core = core_self();
 
         (void) arg;
 
-        ret = read(core->interrupt_eventfd, buf, MAX_BUF_LEN);
+        eventfd = core->sche->eventfd;
+        ret = read(eventfd, buf, MAX_BUF_LEN);
         if (ret < 0) {
                 ret = errno;
                 LTG_ASSERT(ret == EAGAIN);
         }
 
-        DBUG("interrupt_eventfd %d\n", core->interrupt_eventfd);
+        DBUG("interrupt eventfd %d\n", eventfd);
 }
 #endif
 
 static int __corenet_tcp_init(core_t *core, __corenet_t *corenet, int flag)
 {
-        int ret;
+        int ret, eventfd;
 
         (void) core;
         (void) flag;
@@ -92,9 +93,10 @@ static int __corenet_tcp_init(core_t *core, __corenet_t *corenet, int flag)
                 GOTO(err_ret, ret);
 
 #if 1
-        if (core->interrupt_eventfd != -1) {
+        eventfd = core->sche->eventfd;
+        if (eventfd != -1) {
                 sockid_t sockid;
-                sockid.sd = core->interrupt_eventfd;
+                sockid.sd = eventfd;
                 sockid.seq = _random();
                 sockid.type = SOCKID_CORENET;
                 sockid.addr = 123;

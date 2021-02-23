@@ -531,7 +531,7 @@ inline void INLINE sche_fingerprint_new(sche_t *sche, taskctx_t *taskctx)
 }
 
 static int __sche_create__(sche_t **_sche, const char *name, int idx,
-                           void *private_mem, int *_eventfd)
+                           void *private_mem, int flag)
 {
         int ret, fd, i;
         sche_t *sche;
@@ -545,14 +545,12 @@ static int __sche_create__(sche_t **_sche, const char *name, int idx,
 
         memset(sche, 0x0, sizeof(*sche));
 
-        if (_eventfd) {
+        if ((flag & CORE_FLAG_POLLING) == 0) {
                 fd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
                 if (fd < 0) {
                         ret = errno;
                         GOTO(err_ret, ret);
                 }
-
-                *_eventfd = fd;
         } else {
                 fd = -1;
         }
@@ -613,7 +611,7 @@ err_ret:
         return ret;
 }
 
-static int __sche_create(int *eventfd, const char *name, int idx,
+static int __sche_create(int flag, const char *name, int idx,
                          sche_t **_sche, void *private_mem)
 {
         int ret;
@@ -634,9 +632,9 @@ static int __sche_create(int *eventfd, const char *name, int idx,
 
         if (ltgconf_global.solomode) {
                 (void)private_mem;
-                ret = __sche_create__(&sche, name, idx, NULL, eventfd);
+                ret = __sche_create__(&sche, name, idx, NULL, flag);
         } else {
-                ret = __sche_create__(&sche, name, idx, private_mem, eventfd);
+                ret = __sche_create__(&sche, name, idx, private_mem, flag);
         }
 
         if (unlikely(ret))
@@ -654,13 +652,13 @@ err_ret:
         return ret;
 }
 
-int sche_create(int *eventfd, const char *name, int *idx,
+int sche_create(int flag, const char *name, int *idx,
                     sche_t **_sche, void *private_mem)
 {
         int ret, i;
 
         for (i = 0; i < SCHEDULE_MAX; i++) {
-                ret = __sche_create(eventfd, name, i, _sche, private_mem);
+                ret = __sche_create(flag, name, i, _sche, private_mem);
                 if (unlikely(ret)) {
                         if (ret == EEXIST)
                                 continue;

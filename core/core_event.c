@@ -19,16 +19,17 @@ extern int ltg_nofile_max;
 
 static void __core_event_poller(void *_core, void *var, void *_corenet)
 {
-        int ret, count;
+        int ret, count, eventfd;
         struct pollfd pfd[1];
         core_t *core = _core;
 
         (void) var;
         (void) _corenet;
-        
-        LTG_ASSERT(core->interrupt_eventfd != -1);
 
-        pfd[0].fd = core->interrupt_eventfd;
+        eventfd = core->sche->eventfd;
+        LTG_ASSERT(eventfd != -1);
+
+        pfd[0].fd = eventfd;
         pfd[0].events = POLLIN;
         pfd[0].revents = 0;
         count = 1;
@@ -52,7 +53,7 @@ static void __core_event_poller(void *_core, void *var, void *_corenet)
         uint64_t left;
 
         if (count) {
-                ret = read(core->interrupt_eventfd, &left, sizeof(left));
+                ret = read(eventfd, &left, sizeof(left));
                 if (unlikely(ret < 0)) {
                         ret = errno;
                         GOTO(err_ret, ret);

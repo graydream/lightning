@@ -246,7 +246,7 @@ typedef enum {
 } task_type_t;
 
 int sche_init();
-int sche_create(int *eventfd, const char *name, int *idx, sche_t **_sche, void *private_mem);
+int sche_create(int flag, const char *name, int *idx, sche_t **_sche, void *private_mem);
 void sche_run(sche_t *_sche);
 sche_t *sche_self();
 int sche_running();

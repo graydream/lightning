@@ -20,8 +20,6 @@ extern int ltg_nofile_max;
 typedef struct {
         int epoll_rfd;   // 只监听EPOLL_IN事件
 
-        int eventfd;     // sche->eventfd
-
         int idx;
         int busy;
         sem_t sem;
@@ -45,20 +43,18 @@ int main_loop_check()
 
 static int __main_loop_worker_init(worker_t *worker)
 {
-        int ret, interrupt_eventfd;
+        int ret;
         event_t ev;
         char name[MAX_NAME_LEN];
 
         snprintf(name, sizeof(name), "main_loop");
-        ret = sche_create(&interrupt_eventfd, name, &worker->idx, &worker->sche, NULL);
+        ret = sche_create(0, name, &worker->idx, &worker->sche, NULL);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
-        worker->eventfd = interrupt_eventfd;
-
-        ev.data.fd = worker->eventfd;
+        ev.data.fd = worker->sche->eventfd;
         ev.events = EPOLLIN;
-        ret = epoll_ctl(worker->epoll_rfd, EPOLL_CTL_ADD, worker->eventfd, &ev);
+        ret = epoll_ctl(worker->epoll_rfd, EPOLL_CTL_ADD, worker->sche->eventfd, &ev);
         if (ret < 0) {
                 ret = errno;
                 GOTO(err_ret, ret);
@@ -120,7 +116,7 @@ STATIC void *__main_loop_worker(void *_args)
 
         while (1) {
                 DBUG("running thread %u, epoll_fd %u, eventfd %u\n",
-                      worker->idx, worker->epoll_rfd, worker->eventfd);
+                      worker->idx, worker->epoll_rfd, worker->sche->eventfd);
 
                 nfds = _epoll_wait(worker->epoll_rfd, &ev,  1, EPOLL_TMO * 1000);
                 if (nfds < 0) {
@@ -141,7 +137,7 @@ STATIC void *__main_loop_worker(void *_args)
                 LTG_ASSERT(nfds == 1);
                 LTG_ASSERT((ev.events & EPOLLOUT) == 0);
 
-                if (ev.data.fd == worker->eventfd) {
+                if (ev.data.fd == worker->sche->eventfd) {
                         DBUG("got sche event\n");
 
                         ret = read(ev.data.fd, buf, MAX_BUF_LEN);

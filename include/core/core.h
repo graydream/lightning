@@ -88,8 +88,6 @@ typedef struct __core {
         void *io_buf;
         core_ring_t *ring;
         char name[MAX_NAME_LEN];
-        int interrupt_eventfd;   // === sche->eventfd, 通知机制
-
         int sche_idx;
         int hash;
         int flag;
