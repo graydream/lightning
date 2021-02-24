@@ -9,6 +9,7 @@
 #include "ltg_net.h"
 #include "ltg_core.h"
 
+#if 0
 static void __net_checkinfo(const sock_info_t *sock, int count)
 {
         int i;
@@ -31,6 +32,7 @@ static void __net_checkinfo(const sock_info_t *sock, int count)
         if (count > 2)
                 __net_checkinfo(&sock[1], count - 1);
 }
+#endif
 
 int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port,
                 const ltg_netconf_t *filter)
@@ -94,10 +96,12 @@ int net_getinfo(char *infobuf, uint32_t *infobuflen, uint32_t port,
                 GOTO(err_ret, ret);
         }
 
+#if 0
         DBUG("local nid "NID_FORMAT" info_count %u port %u\n",
              NID_ARG(&info->id), info->info_count, port);
 
         __net_checkinfo(info->info, info->info_count);
+#endif
 
         return 0;
 err_ret:
@@ -106,12 +110,12 @@ err_ret:
 
 int net_getaddr(const ltg_netconf_t *filter, uint32_t *addr, int *_count)
 {
-        int ret, max = 32;
+        int ret, max = MAX_ADDR_COUNT;
         sock_info_t info[max];
         uint32_t count;
 
         count = *_count;
-        LTG_ASSERT(count > 0 && count <= 32);
+        LTG_ASSERT(count > 0 && count <= MAX_ADDR_COUNT);
         
         ret = sock_getinfo(&count, info,
                            max, -1, filter);

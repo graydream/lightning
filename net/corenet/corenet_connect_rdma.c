@@ -32,7 +32,18 @@ static int __rdma_connect_request(va_list ap)
 
         va_end(ap);
 
-        return corenet_rdma_connect_by_channel(addr, port, core, sockid);
+        ANALYSIS_BEGIN2(0);
+
+        int ret = corenet_rdma_connect_by_channel(addr, port, core, sockid);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
+        ANALYSIS_END2(0, 1000 * 1000 * 1, NULL);
+        
+        return 0;
+err_ret:
+        ANALYSIS_END2(0, 1000 * 1000 * 1, NULL);
+        return ret;
 }
 #endif
 
@@ -45,7 +56,7 @@ int corenet_rdma_connect(uint32_t addr, uint32_t port, sockid_t *sockid)
 
         DINFO("connect to %s:%d\n", _inet_ntoa(addr), port);
 
-        ANALYSIS_BEGIN(0);
+        ANALYSIS_BEGIN2(0);
 
 #if 1
         ret = sche_thread_solo(SCHE_THREAD_MISC, _random(), FALSE,
@@ -58,13 +69,13 @@ int corenet_rdma_connect(uint32_t addr, uint32_t port, sockid_t *sockid)
                 GOTO(err_ret, ret);
         }
 
-        ANALYSIS_END(0, 1000 * 1000 * 5, NULL);
+        ANALYSIS_END2(0, 1000 * 1000 * 1, NULL);
 
         SOCKID_DUMP(sockid);
 
         return 0;
 err_ret:
-        ANALYSIS_END(0, 1000 * 1000 * 5, NULL);
+        ANALYSIS_END2(0, 1000 * 1000 * 5, NULL);
         return ret;
 }
 

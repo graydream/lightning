@@ -12,6 +12,7 @@
 #define MAX_INFO_LEN    (512)
 
 #define MAX_BUF_LEN     (1024 * 4)
+#define MAX_MSG_LEN     (1024 * 16)
 
 #ifndef PAGE_SIZE
 #define PAGE_SIZE (1024 * 4)
@@ -50,14 +51,15 @@ typedef long long LLD;
 
 #define MAX_MSG_SIZE (1024)
 #define UUID_LEN        (64)
-#define MAX_NET_COUNT 12
+#define MAX_NET_COUNT 128
+#define MAX_ADDR_COUNT 512
 
 #define SOCKID_NORMAL 10
 #define SOCKID_CORENET 20
 
 #define ENABLE_HUGEPAGE 1
 
-#define ENABLE_TASK_HUGEPAGE 0
+#define ENABLE_TASK_HUGEPAGE 1
 
 #if LTG_CMAKE_DEBUG
 #define ENABLE_LTG_DEBUG 1

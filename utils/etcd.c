@@ -617,10 +617,14 @@ err_ret:
 int etcd_create_text(const char *prefix, const char *_key, const char *_value, int ttl)
 {
         int ret;
-        char key[MAX_PATH_LEN], value[MAX_BUF_LEN];
+        char key[MAX_PATH_LEN], *value;
         etcd_prevcond_t precond;
 
         LTG_ASSERT(strcmp(_value, ""));
+
+        ret = ltg_malloc((void **)&value, MAX_MSG_LEN);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
 
         snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
         strcpy(value, _value);
@@ -630,10 +634,13 @@ int etcd_create_text(const char *prefix, const char *_key, const char *_value, i
 
         ret = __etcd_set(key, value, &precond, 0, ttl);
         if (ret) {
-                GOTO(err_ret, ret);
+                GOTO(err_free, ret);
         }
 
+        ltg_free((void **)&value);
         return 0;
+err_free:
+        ltg_free((void **)&value);
 err_ret:
         return ret;
 }
@@ -642,18 +649,26 @@ int etcd_create(const char *prefix, const char *_key, const void *_value,
                 int valuelen, int ttl)
 {
         int ret;
-        char buf[MAX_BUF_LEN];
+        char *buf;
         size_t size;
 
-        size = MAX_BUF_LEN;
+        size = MAX_MSG_LEN;
+
+        ret = ltg_malloc((void **)&buf, size);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
         ret = urlsafe_b64_encode(_value, valuelen, buf, &size);
         LTG_ASSERT(ret == 0);
 
         ret = etcd_create_text(prefix, _key, buf, ttl);
         if (ret)
-                GOTO(err_ret, ret);
+                GOTO(err_free, ret);
 
+        ltg_free((void **)&buf);
         return 0;
+err_free:
+        ltg_free((void **)&buf);
 err_ret:
         return ret;
 }
@@ -663,9 +678,17 @@ int etcd_update_text(const char *prefix, const char *_key, const char *_value,
 {
         int ret;
         etcd_prevcond_t precond;
-        char key[MAX_PATH_LEN], value[MAX_BUF_LEN], tmp[MAX_BUF_LEN];
+        char key[MAX_PATH_LEN], *value, *tmp;
 
         LTG_ASSERT(strcmp(_value, ""));
+
+        ret = ltg_malloc((void **)&value, MAX_MSG_LEN);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
+        ret = ltg_malloc((void **)&tmp, MAX_MSG_LEN);
+        if (unlikely(ret))
+                GOTO(err_free_value, ret);
 
         snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
         strcpy(value, _value);
@@ -681,7 +704,7 @@ int etcd_update_text(const char *prefix, const char *_key, const char *_value,
 
         ret = __etcd_set(key, value, &precond, 0, ttl);
         if (ret) {
-                GOTO(err_ret, ret);
+                GOTO(err_free_tmp, ret);
         }
 
 #if 1
@@ -689,18 +712,24 @@ int etcd_update_text(const char *prefix, const char *_key, const char *_value,
                 int newidx;
                 ret = etcd_get_text(prefix, _key, tmp, &newidx);
                 if (ret)
-                        GOTO(err_ret, ret);
+                        GOTO(err_free_tmp, ret);
 
                 if (strcmp(_value, tmp)) {
                         ret = ESTALE;
-                        GOTO(err_ret, ret);
+                        GOTO(err_free_tmp, ret);
                 }
 
                 *idx = newidx;
         }
 #endif
         
+        ltg_free((void **)&tmp);
+        ltg_free((void **)&value);
         return 0;
+err_free_tmp:
+        ltg_free((void **)&tmp);
+err_free_value:
+        ltg_free((void **)&value);
 err_ret:
         return ret;
 }
@@ -709,18 +738,25 @@ int etcd_update(const char *prefix, const char *_key, const void *_value, int va
                 int *idx, int ttl)
 {
         int ret;
-        char buf[MAX_BUF_LEN];
+        char *buf;
         size_t size;
 
-        size = MAX_BUF_LEN;
+        size = MAX_MSG_LEN;
+        ret = ltg_malloc((void **)&buf, size);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
         ret = urlsafe_b64_encode(_value, valuelen, buf, &size);
         LTG_ASSERT(ret == 0);
 
         ret = etcd_update_text(prefix, _key, buf, idx, ttl);
         if (ret)
-                GOTO(err_ret, ret);
+                GOTO(err_free, ret);
 
+        ltg_free((void **)&buf);
         return 0;
+err_free:
+        ltg_free((void **)&buf);
 err_ret:
         return ret;
 }
@@ -772,14 +808,18 @@ int etcd_get_bin(const char *prefix, const char *_key, void *_value,
                  int *_valuelen, int *idx)
 {
         int ret;
-        char buf[MAX_BUF_LEN];
+        char *buf;
         size_t size;
+
+        ret = ltg_malloc((void **)&buf, MAX_MSG_LEN);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
 
         ret = etcd_get_text(prefix, _key, buf, idx);
         if (ret)
-                GOTO(err_ret, ret);
+                GOTO(err_free, ret);
 
-        size = MAX_BUF_LEN;
+        size = MAX_MSG_LEN;
         ret = urlsafe_b64_decode(buf, strlen(buf), _value, &size);
         LTG_ASSERT(ret == 0);
 
@@ -788,7 +828,10 @@ int etcd_get_bin(const char *prefix, const char *_key, void *_value,
                 *_valuelen = size;
         }
 
+        ltg_free((void **)&buf);
         return 0;
+err_free:
+        ltg_free((void **)&buf);
 err_ret:
         return ret;
 }
@@ -1359,10 +1402,14 @@ err_ret:
 int etcd_set_text(const char *prefix, const char *_key, const char *_value, int flag, int ttl)
 {
         int ret;
-        char key[MAX_PATH_LEN], value[MAX_BUF_LEN];
+        char key[MAX_PATH_LEN], *value;
         etcd_prevcond_t *precond, _precond;
 
         //LTG_ASSERT(strcmp(_value, ""));
+
+        ret = ltg_malloc((void **)&value, MAX_MSG_LEN);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
 
         snprintf(key, MAX_NAME_LEN, "/%s/%s/%s", ltgconf_global.system_name, prefix, _key);
         strcpy(value, _value);
@@ -1376,10 +1423,13 @@ int etcd_set_text(const char *prefix, const char *_key, const char *_value, int 
 
         ret = __etcd_set(key, value, precond, 0, ttl);
         if (ret) {
-                GOTO(err_ret, ret);
+                GOTO(err_free, ret);
         }
 
+        ltg_free((void **)&value);
         return 0;
+err_free:
+        ltg_free((void **)&value);
 err_ret:
         return ret;
 }
@@ -1388,18 +1438,25 @@ int etcd_set_bin(const char *prefix, const char *_key, const void *_value,
                  int valuelen, int flag, int ttl)
 {
         int ret;
-        char buf[MAX_BUF_LEN];
+        char *buf;
         size_t size;
 
-        size = MAX_BUF_LEN;
+        size = MAX_MSG_LEN;
+        ret = ltg_malloc((void **)&buf, size);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
+
         ret = urlsafe_b64_encode(_value, valuelen, buf, &size);
         LTG_ASSERT(ret == 0);
 
         ret = etcd_set_text(prefix, _key, buf, flag, ttl);
         if (ret)
-                GOTO(err_ret, ret);
+                GOTO(err_free, ret);
 
+        ltg_free((void **)&buf);
         return 0;
+err_free:
+        ltg_free((void **)&buf);
 err_ret:
         return ret;
 }
@@ -1500,16 +1557,20 @@ int etcd_watch_key(const char *prefix, const char *_key, int timeout,
                    etcd_func_t func, void *arg)
 {
         int ret, etcd_idx = 0, idx = 0;
-        char key[MAX_PATH_LEN], value[MAX_BUF_LEN];
+        char key[MAX_PATH_LEN], *value;
+
+        ret = ltg_malloc((void **)&value, MAX_MSG_LEN);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
 
 retry:
         ret = etcd_get_text(prefix, _key, value, &idx);
         if (ret)
-                GOTO(err_ret, ret);
+                GOTO(err_free, ret);
 
         ret = func(value, idx, arg);
         if (ret)
-                GOTO(err_ret, ret);
+                GOTO(err_free, ret);
 
         etcd_idx = _max(etcd_idx, idx);
         
@@ -1525,18 +1586,21 @@ retry:
                                 DBUG("%s timeout\n", key);
                                 goto retry;
                         } else {
-                                GOTO(err_ret, ret);
+                                GOTO(err_free, ret);
                         }
                 }
 
                 ret = func(value, idx, arg);
                 if (ret)
-                        GOTO(err_ret, ret);
+                        GOTO(err_free, ret);
 
                 etcd_idx = idx;
         }
 
+        ltg_free((void **)&value);
         return 0;
+err_free:
+        ltg_free((void **)&value);
 err_ret:
         return ret;
 }
@@ -1698,14 +1762,18 @@ int etcd_get_bin1(const char *prefix, const char *_key, void *_value,
                   int *_valuelen, int *idx, int consistent)
 {
         int ret;
-        char buf[MAX_BUF_LEN];
+        char *buf;
         size_t size;
+
+        ret = ltg_malloc((void **)&buf, MAX_MSG_LEN);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
 
         ret = etcd_get_text1(prefix, _key, buf, idx, consistent);
         if (ret)
-                GOTO(err_ret, ret);
+                GOTO(err_free, ret);
 
-        size = MAX_BUF_LEN;
+        size = MAX_MSG_LEN;
         ret = urlsafe_b64_decode(buf, strlen(buf), _value, &size);
         LTG_ASSERT(ret == 0);
 
@@ -1714,7 +1782,10 @@ int etcd_get_bin1(const char *prefix, const char *_key, void *_value,
                 *_valuelen = size;
         }
 
+        ltg_free((void **)&buf);
         return 0;
+err_free:
+        ltg_free((void **)&buf);
 err_ret:
         return ret;
 }
