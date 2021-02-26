@@ -80,11 +80,11 @@ err_ret:
         return ret;
 }
         
-int core_event_init()
+int core_event_init(uint64_t mask)
 {
         int ret;
 
-        ret = core_init_modules("corenet", __core_event_init, NULL);
+        ret = core_init_modules1("corenet", mask, __core_event_init, NULL);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
