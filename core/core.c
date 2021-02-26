@@ -305,13 +305,9 @@ static int __core_create(core_t **_core, const char *name, int hash, int flag)
         lock = ltgconf_global.daemon;
 #endif
 
-        if (lock) {
-                ret = cpuset_lock(hash, &core->main_core);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
-        } else {
-                core->main_core = NULL;
-        }
+        ret = cpuset_lock(hash, &core->main_core, !lock);
+        if (unlikely(ret))
+                GOTO(err_ret, ret);
 
         strcpy(core->name, name);
         core->sche_idx = -1;
@@ -363,6 +359,7 @@ int core_init(uint64_t mask, int flag)
 
         //DINFO("core init begin %u %u flag %d\n", polling_core, cpuset_useable(), flag);
 
+        DINFO("hugepage %d\n", ltgconf_global.nr_hugepage);
         ret = memseg_init(ltgconf_global.daemon, ltgconf_global.nr_hugepage);
         if (ret)
                 GOTO(err_ret, ret);
@@ -493,8 +490,8 @@ static int __core_dump_memory(void *_core, void *_arg)
 
         sche_t *sche = core->sche;
         *memory += sizeof(core_t) +
-                   sizeof(sche_t) +
-                   (sizeof(taskctx_t) + DEFAULT_STACK_SIZE) * sche->size;
+                sizeof(sche_t) +
+                (sizeof(taskctx_t) + DEFAULT_STACK_SIZE) * sche->size;
 
         return 0;
 }

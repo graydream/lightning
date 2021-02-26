@@ -287,18 +287,20 @@ err_ret:
         return ret;
 }
 
-int cpuset_lock(int idx, coreinfo_t **_coreinfo)
+int cpuset_lock(int idx, coreinfo_t **_coreinfo, int shared)
 {
         int ret, fd;
         coreinfo_t *coreinfo;
 
         coreinfo = &__coreinfo__[idx];
 
-        ret = __cpu_lock(coreinfo->cpu_id, &fd);
-        if (ret) {
-                DWARN("cpu[%u] used by other process\n", idx);
-                ret = EBUSY;
-                GOTO(err_ret, ret);
+        if (shared == 0) {
+                ret = __cpu_lock(coreinfo->cpu_id, &fd);
+                if (ret) {
+                        DWARN("cpu[%u] used by other process\n", idx);
+                        ret = EBUSY;
+                        GOTO(err_ret, ret);
+                }
         }
 
         coreinfo->lockfd = fd;
