@@ -424,8 +424,12 @@ int core_init(uint64_t mask, int flag)
                 ret = corenet_maping_init(mask);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
+
+                ret = core_event_init(ltgconf_global.coremask & (~mask));
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
         } else {
-                ret = core_event_init();
+                ret = core_event_init(ltgconf_global.coremask);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
         }
