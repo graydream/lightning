@@ -120,10 +120,6 @@ static int __ltg_init_stage1(const nid_t *nid, const char *name)
         if (ret)
                 GOTO(err_ret, ret);
 
-        ret = qd_init();
-        if (ret)
-                GOTO(err_ret, ret);
-        
         ret = analysis_init();
         if (unlikely(ret))
                 GOTO(err_ret, ret);
