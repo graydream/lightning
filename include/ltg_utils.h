@@ -20,7 +20,6 @@
 #include "utils/etcd.h"
 #include "utils/ltg_global.h"
 #include "utils/plock.h"
-#include "utils/qd.h"
 #include "ltg_mem.h"
 
 #endif
