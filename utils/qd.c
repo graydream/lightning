@@ -9,7 +9,6 @@
 #define DBG_SUBSYS S_LTG_UTILS
 
 #include "ltg_lib.h"
-#include "qd.h"
 
 static __thread struct list_head __qd_list__;
 
