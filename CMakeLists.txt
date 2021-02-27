@@ -40,7 +40,6 @@ configure_file (
 
 add_library(lightning STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/utils/plock.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/utils/qd.c
     ${CMAKE_CURRENT_SOURCE_DIR}/utils/gettime_tsc.c
     ${CMAKE_CURRENT_SOURCE_DIR}/3part/crc32.c
     ${CMAKE_CURRENT_SOURCE_DIR}/3part/hash.c
@@ -62,6 +61,7 @@ add_library(lightning STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/utils/gettime.c
     ${CMAKE_CURRENT_SOURCE_DIR}/utils/fnotify.c
     ${CMAKE_CURRENT_SOURCE_DIR}/utils/ltg_errno.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils/qd.c
 
     ${CMAKE_CURRENT_SOURCE_DIR}/mem/malloc.c
     ${CMAKE_CURRENT_SOURCE_DIR}/mem/mem_ring.c

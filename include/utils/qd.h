@@ -3,7 +3,6 @@
 
 #include <sys/epoll.h>
 #include <semaphore.h>
-#include <linux/aio_abi.h> 
 #include <pthread.h>
 
 typedef int (*qd_func_t)(void *);
