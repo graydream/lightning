@@ -165,7 +165,7 @@ static int __corenet_add(corenet_tcp_t *corenet, const sockid_t *sockid, void *c
         sche_t *sche = sche_self();
 
         sd = sockid->sd;
-        event = EPOLLIN;
+        event = EPOLLIN | EPOLLET;
         memset(&ev, 0x0, sizeof(struct epoll_event));
 
         LTG_ASSERT(sd < ltg_nofile_max);
@@ -191,6 +191,7 @@ static int __corenet_add(corenet_tcp_t *corenet, const sockid_t *sockid, void *c
         node->recv = recv;
         node->check = check;
         node->sockid = *sockid;
+        node->left = 0;
 
         LTG_ASSERT(node->name == NULL);
         ret = ltg_malloc((void **)&node->name, strlen(name) + 1);
@@ -482,6 +483,12 @@ static int __corenet_tcp_recv(corenet_node_t *node, int *count)
                 GOTO(err_ret, ret);
         }
 
+        if (node->left > toread) {
+                DINFO("skip read %d %d\n", node->left, toread);
+                goto out;
+        }
+        
+        node->left = 0;
         left = toread;
         while (left) {
                 cp = _min(left, (LLU)BUFFER_SEG_SIZE * CORE_IOV_MAX);
@@ -500,10 +507,15 @@ static int __corenet_tcp_recv(corenet_node_t *node, int *count)
 
         // __iscsi_newtask_core
         // corerpc_recv
-        ret = node->exec(node->ctx, &node->recv_buf, count);
+        ret = node->exec(node->ctx, &node->recv_buf, count, &node->left);
         if (unlikely(ret))
                 GOTO(err_ret, ret);
 
+        if (node->left) {
+                DBUG("need more data %u\n", node->left);
+        }
+        
+out:
         ANALYSIS_QUEUE(0, IO_WARN, NULL);
 
         return 0;

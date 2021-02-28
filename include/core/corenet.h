@@ -251,6 +251,8 @@ typedef struct {
         ltgbuf_t send_buf;
         ltgbuf_t recv_buf;
 
+        int left;
+        
 #if ENABLE_TCP_THREAD
         plock_t rwlock;
 #endif

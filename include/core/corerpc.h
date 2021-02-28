@@ -63,7 +63,7 @@ void corerpc_reply_error(const sockid_t *sockid, const msgid_t *msgid, int _erro
 void corerpc_reply_rdma(void *ctx, void *arg);
 void corerpc_reply_tcp(void *ctx, void *arg);
 
-int corerpc_tcp_recv(void *ctx, void *buf, int *count);
+int corerpc_tcp_recv(void *ctx, void *buf, int *count, int *_left);
 
 void corerpc_scan(void *ctx);
 
@@ -79,7 +79,7 @@ int corerpc_init(uint64_t mask);
 #if ENABLE_RDMA
 
 void corerpc_rdma_reset(const sockid_t *sockid);
-int corerpc_rdma_recv_msg(void *_ctx, void *iov, int *_count);
+int corerpc_rdma_recv_msg(void *_ctx, void *iov, int *_count, int *left);
 int corerpc_rdma_recv_data(void *_ctx, void *_msg_buf);
 
 #endif

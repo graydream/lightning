@@ -648,7 +648,7 @@ static int S_LTG __corenet_rdma_handle_wc(struct ibv_wc *wc, __corenet_t *corene
         switch (req->mode) {
         case RDMA_RECV_MSG:
                 count = wc->byte_len;
-                node->exec(node->ctx, (void *)req, &count);
+                node->exec(node->ctx, (void *)req, &count, NULL);
                 break;
         case RDMA_SEND_MSG:
                 req->ref--;

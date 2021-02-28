@@ -33,7 +33,7 @@ typedef enum {
         RING_TASK,
 } core_ring_type_t;
 
-typedef int (*core_exec)(void *ctx, void *buf, int *count);
+typedef int (*core_exec)(void *ctx, void *buf, int *count, int *left);
 typedef int (*core_exec1)(void *ctx, void *msg_buf);
 typedef int (*core_reconnect)(int *fd, void *ctx);
 typedef int (*core_func)();

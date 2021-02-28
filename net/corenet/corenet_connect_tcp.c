@@ -151,7 +151,7 @@ STATIC void *__corenet_tcp_accept__(void *arg)
         ctx->coreid = msg->from;
 
         DBUG("core[%d] %p maping:%p, sd %u\n", msg->to.idx, core,
-              core->maping, sockid->sd);
+             core->maping, sockid->sd);
 
         ret = corenet_tcp_attach(msg->to.idx, sockid, ctx, corerpc_tcp_recv,
                                  corerpc_close, NULL, NULL,

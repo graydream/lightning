@@ -429,7 +429,7 @@ err_ret:
         return ret;
 }
 
-int S_LTG corerpc_rdma_recv_msg(void *_ctx, void *iov, int *_count)
+int S_LTG corerpc_rdma_recv_msg(void *_ctx, void *iov, int *_count, int *_left)
 {
         int len = 0, left = 0;
         ltgbuf_t _buf;
@@ -438,6 +438,8 @@ int S_LTG corerpc_rdma_recv_msg(void *_ctx, void *iov, int *_count)
         ltg_net_head_t *net_head = NULL;
         sockid_t *sockid;
 
+        (void) _left;
+        
         left = *_count;
         sockid = &ctx->sockid;
         net_head = msg;
@@ -467,7 +469,7 @@ int S_LTG corerpc_rdma_recv_msg(void *_ctx, void *iov, int *_count)
 /**
  * for TCP
  */
-int corerpc_tcp_recv(void *_ctx, void *buf, int *_count)
+int corerpc_tcp_recv(void *_ctx, void *buf, int *_count, int *_left)
 {
         int len, count = 0;
         char tmp[MAX_BUF_LEN];
@@ -477,6 +479,10 @@ int corerpc_tcp_recv(void *_ctx, void *buf, int *_count)
         DBUG("recv %u\n", mbuf->len);
 
         if (mbuf->len < sizeof(ltg_net_head_t)) {
+                if (*_left) {
+                        *_left = sizeof(ltg_net_head_t) - mbuf->len;
+                }
+                
                 DERROR("buflen %u, need %u\n", mbuf->len, sizeof(ltg_net_head_t));
                 return 0;
         }
@@ -488,6 +494,10 @@ int corerpc_tcp_recv(void *_ctx, void *buf, int *_count)
                 DBUG("msg len %u\n", len);
 
                 if (len > (int)mbuf->len) {
+                        if (*_left) {
+                                *_left = len - mbuf->len;
+                        }
+                
                         DBUG("wait %u %u\n", len, mbuf->len);
                         break;
                 }
