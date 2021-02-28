@@ -484,7 +484,7 @@ static int __corenet_tcp_recv(corenet_node_t *node, int *count)
         }
 
         if (node->left > toread) {
-                DINFO("skip read %d %d\n", node->left, toread);
+                DBUG("skip read %d %d\n", node->left, toread);
                 goto out;
         }
         
