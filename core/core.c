@@ -305,9 +305,13 @@ static int __core_create(core_t **_core, const char *name, int hash, int flag)
         lock = ltgconf_global.daemon;
 #endif
 
-        ret = cpuset_lock(hash, &core->main_core, !lock);
-        if (unlikely(ret))
-                GOTO(err_ret, ret);
+        if (lock) {
+                ret = cpuset_lock(hash, &core->main_core, !lock);
+                if (unlikely(ret))
+                        GOTO(err_ret, ret);
+        } else {
+                core->main_core = NULL;
+        }
 
         strcpy(core->name, name);
         core->sche_idx = -1;
