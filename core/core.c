@@ -408,27 +408,31 @@ int core_init(uint64_t mask, int flag)
         }
 
         if (flag & CORE_FLAG_NET) {
-                uint64_t mask = ltgconf_global.netmask;
-                
-                ret = corenet_init(mask);
+                uint64_t netmask = ltgconf_global.netmask;
+
+                ret = corenet_init(netmask);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
 
-                ret = corerpc_init(mask);
+                ret = corerpc_init(netmask);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
                 
-                ret = corenet_maping_init(mask);
+                ret = corenet_maping_init(netmask);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
 
-                ret = core_event_init(ltgconf_global.coremask & (~mask));
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
+                if (!(flag & CORE_FLAG_POLLING)) {
+                        ret = core_event_init(mask & (~netmask));
+                        if (unlikely(ret))
+                                GOTO(err_ret, ret);
+                }
         } else {
-                ret = core_event_init(ltgconf_global.coremask);
-                if (unlikely(ret))
-                        GOTO(err_ret, ret);
+                if (!(flag & CORE_FLAG_POLLING)) {
+                        ret = core_event_init(mask);
+                        if (unlikely(ret))
+                                GOTO(err_ret, ret);
+                }
         }
 
         if (flag & CORE_FLAG_POLLING) {
