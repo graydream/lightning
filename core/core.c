@@ -219,7 +219,7 @@ static int __core_worker_init(core_t *core)
         __core__ = core;
         core_tls_set(VARIABLE_CORE, core);
 
-        if (core->main_core) {
+        if (core->main_core && (core->flag & CORE_FLAG_POLLING)) {
                 ret = cpuset_set(name, core->main_core->cpu_id);
                 if (unlikely(ret)) {
                         ret = EINVAL;
