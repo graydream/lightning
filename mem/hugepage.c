@@ -57,7 +57,7 @@ static void __slice_bind(memslice_t *slice, int numa)
                 bind_size = MEMSLICE_SIZE;
         
         if (((uint64_t)slice->addr) % hugepage_size == 0) {
-                mbind(slice->addr, bind_size, MPOL_PREFERRED, &sock, 3, 0);
+                mbind(slice->addr, bind_size, MPOL_PREFERRED, &sock, numa + 1, 0);
                 memset(slice->addr, 0x00, bind_size);
         }
 

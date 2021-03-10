@@ -59,17 +59,6 @@ static void __free__(void *mem)
 #endif
 }
 
-void __ltg_malloc_bind(void *ptr, size_t size)
-{
-        return;
-
-        core_t *core = core_self();
-        if (core && core->main_core){
-                long unsigned int node_id = core->main_core->node_id;
-                mbind(ptr, size, MPOL_PREFERRED, &node_id, 3, 0);
-        }
-}
-
 int ltg_malign(void **_ptr, size_t align, size_t size)
 {
         int i;
@@ -87,7 +76,6 @@ int ltg_malign(void **_ptr, size_t align, size_t size)
         for (i = 0; i < 3; i++) {
                 ptr = __memalign__(align, size);
                 if (ptr != NULL) {
-                        __ltg_malloc_bind(ptr, size);
 
                         memset(ptr, 0x0, size);
         
@@ -123,8 +111,6 @@ int S_LTG ltg_malloc(void **_ptr, size_t size)
         for (i = 0; i < 3; i++) {
                 ptr = __calloc__(1, size);
                 if (ptr != NULL) {
-                        __ltg_malloc_bind(ptr, size);
-                        
                         goto out;
                 }
         }
@@ -146,10 +132,6 @@ void *ltg_malloc1(size_t size)
         void *ptr = malloc(size);
 
         DBUG("mem %u\n", (int)size);
-        
-        if (ptr) {
-                __ltg_malloc_bind(ptr, size);
-        }
 
         return ptr;
 }
@@ -190,7 +172,6 @@ inline int ltg_realloc(void **_ptr, size_t size, size_t newsize)
         for (i = 0; i < 3; i++) {
                 ptr = realloc(*_ptr, newsize);
                 if (ptr != NULL) {
-                        __ltg_malloc_bind(ptr, newsize);
                         goto out;
                 }
         }
