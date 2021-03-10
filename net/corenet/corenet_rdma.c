@@ -1259,9 +1259,14 @@ static int __corenet_rdma_post_mem_handler(rdma_conn_t *handler, core_t *core)
         void *ptr, *tmp = NULL;
         uint32_t size = RDMA_INFO_SIZE + RDMA_MESSAGE_SIZE;
 
+        (void) core;
+        
+        int retry = 0;
+retry:
 #if 1
         ret = ltg_malloc(&tmp, size * DEFAULT_MH_NUM);
         if (ret) {
+                USLEEP_RETRY(err_ret, ret, retry, retry, 100, 1000 * 100);
                 LTG_ASSERT(0);
         }
 #else
@@ -1271,11 +1276,13 @@ static int __corenet_rdma_post_mem_handler(rdma_conn_t *handler, core_t *core)
         }
 #endif
 
+#if 0
         if (core->main_core) {
                 long unsigned int node_id;
                 node_id = core->main_core->node_id;
                 mbind(tmp, size, MPOL_PREFERRED, &node_id, 3, 0);
         }
+#endif
 
         memset(tmp, 0x0, size * DEFAULT_MH_NUM);
 
@@ -1313,6 +1320,9 @@ static int __corenet_rdma_post_mem_handler(rdma_conn_t *handler, core_t *core)
         corenet_rdma_get(handler, DEFAULT_MH_NUM, __FUNCTION__, 1);
 
         return 0;
+err_ret:
+        UNIMPLEMENTED(__DUMP__);
+        return ret;
 }
 
 static int __corenet_rdma_create_qp_real(core_t *core, struct rdma_cm_id *cm_id, rdma_conn_t *rdma_handler)

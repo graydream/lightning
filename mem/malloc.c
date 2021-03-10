@@ -61,6 +61,7 @@ static void __free__(void *mem)
 
 void __ltg_malloc_bind(void *ptr, size_t size)
 {
+        return;
 
         core_t *core = core_self();
         if (core && core->main_core){
@@ -88,7 +89,10 @@ int ltg_malign(void **_ptr, size_t align, size_t size)
                 if (ptr != NULL) {
                         __ltg_malloc_bind(ptr, size);
 
+                        memset(ptr, 0x0, size);
+        
                         *_ptr = ptr;
+
                         return 0;
                 }
         }
