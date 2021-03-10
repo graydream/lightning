@@ -36,8 +36,6 @@ typedef struct{
         int closed;
 } sock_wbuf_t;
 
-#define BUFFER_KEEP 0x00000001
-
 //extern void get_sockstate(struct sockstate *);
 extern int sock_rbuffer_create(sock_rltgbuf_t *buf);
 extern void sock_rbuffer_free(sock_rltgbuf_t *buf);

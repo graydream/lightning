@@ -11,6 +11,8 @@
 #include "ltg_utils.h"
 #include "core/core.h"
 
+#define BUFFER_POP_KEEP 1
+
 #if 0
 #define BUFFER_DEBUG
 #endif
@@ -49,6 +51,25 @@ inline static int __coreid()
                 return core->hash;
 }
 
+inline static void INLINE __ltgbuf_popfree(ltgbuf_t *buf, seg_t *seg)
+{
+        list_del(&seg->hook);
+#if BUFFER_POP_KEEP
+        list_add_tail(&seg->hook, &buf->keep);
+#else
+        (void) buf;
+        seg->sop->seg_free(seg);
+#endif
+}
+
+inline static void INLINE __ltgbuf_init(ltgbuf_t *buf)
+{
+        buf->len = 0;
+        buf->used = 0;
+        INIT_LIST_HEAD(&buf->list);
+        INIT_LIST_HEAD(&buf->keep);
+}
+
 int S_LTG ltgbuf_rdma_popmsg(ltgbuf_t *buf, void *dist, uint32_t len)
 {
         struct list_head *pos;
@@ -65,8 +86,7 @@ int S_LTG ltgbuf_rdma_popmsg(ltgbuf_t *buf, void *dist, uint32_t len)
         seg->len -= len;
 
         if (seg->len == 0) {
-                list_del(pos);
-                seg->sop->seg_free(seg);
+                __ltgbuf_popfree(buf, seg);                
         }
 
         buf->len -= len;
@@ -290,8 +310,7 @@ int ltgbuf_popmsg(ltgbuf_t *buf, void *dist, uint32_t len)
                         seg->handler.phyaddr += cp;
                         seg->len -= cp;
                 } else {
-                        list_del(pos);
-                        seg->sop->seg_free(seg);
+                        __ltgbuf_popfree(buf, seg);
                 }
 
                 left -= cp;
@@ -363,6 +382,14 @@ inline static void INLINE __ltgbuf_free1(ltgbuf_t *buf)
                 seg->sop->seg_free(seg);
         }
 
+#if BUFFER_POP_KEEP
+        list_for_each_safe(pos, n, &buf->keep) {
+                list_del(pos);
+                seg = (seg_t *)pos;
+                seg->sop->seg_free(seg);
+        }
+#endif
+        
         buf->len = 0;
         buf->used = 0;
 }
@@ -422,8 +449,12 @@ void S_LTG ltgbuf_merge(ltgbuf_t *dist, ltgbuf_t *src)
         list_for_each_safe(pos, n, &src->list) {
                 list_del(pos);
                 seg_t *seg = (seg_t *)pos;
-                seg_t *newseg = seg->sop->seg_trans(dist, seg);
-                seg_add_tail(dist, newseg);
+                if (likely(seg->local)) {
+                        seg_t *newseg = seg->sop->seg_trans(dist, seg);
+                        seg_add_tail(dist, newseg);
+                } else {
+                        seg_add_tail(dist, seg);
+                }
         }
 
         src->len = 0;
@@ -454,9 +485,7 @@ inline int INLINE ltgbuf_initwith(ltgbuf_t *buf, void *data, int size,
 {
         seg_t *seg;
 
-        buf->len = 0;
-        buf->used = 0;
-        INIT_LIST_HEAD(&buf->list);
+        __ltgbuf_init(buf);
 
         seg = seg_ext_create(buf, data, size, arg, cb);
 
@@ -471,9 +500,7 @@ inline int INLINE ltgbuf_initwith2(ltgbuf_t *buf, struct iovec *iov, int count,
 {
         seg_t *seg;
 
-        buf->len = 0;
-        buf->used = 0;
-        INIT_LIST_HEAD(&buf->list);
+        __ltgbuf_init(buf);
 
         for (int i = 0; i < count; i++) {
                 seg = seg_ext_create(buf, iov[i].iov_base, iov[i].iov_len,
@@ -495,9 +522,8 @@ inline int INLINE ltgbuf_init(ltgbuf_t *buf, uint32_t size)
 
         LTG_ASSERT(size < (1024 * 1024 * 100));
 
-        buf->len = 0;
-        buf->used = 0;
-        INIT_LIST_HEAD(&buf->list);
+        __ltgbuf_init(buf);
+
         if (unlikely(size == 0))
                 return 0;
 
@@ -530,9 +556,8 @@ int ltgbuf_init1(ltgbuf_t *buf, int size)
 
         LTG_ASSERT(size >= 0 && size < (1024 * 1024 * 100));
 
-        buf->len = 0;
-        buf->used = 0;
-        INIT_LIST_HEAD(&buf->list);
+        __ltgbuf_init(buf);
+
         if (size == 0)
                 return 0;
 
@@ -607,13 +632,12 @@ int S_LTG ltgbuf_pop1(ltgbuf_t *buf, ltgbuf_t *newbuf, uint32_t len, int deep)
                         seg->handler.phyaddr += min;
                         seg->len -= min;
                 } else {
-                        list_del(pos);
-
                         LTG_ASSERT(min == seg->len);
                         if (newbuf) {
+                                list_del(pos);
                                 seg_add_tail(newbuf, seg);
                         } else {
-                                seg->sop->seg_free(seg);
+                                __ltgbuf_popfree(buf, seg);
                         }
                 }
 
@@ -1159,8 +1183,7 @@ int ltgbuf_compress2(ltgbuf_t *buf, uint32_t max_seg_len)
 
                         if (idx1 == seg1->len) {
                                 idx1 = 0;
-                                list_del(pos);
-                                seg1->sop->seg_free(seg1);
+                                __ltgbuf_popfree(buf, seg1);
                         }
                         if (idx2 == seg2->len) {
                                 idx2 = 0;
@@ -1348,9 +1371,8 @@ int ltgbuf_solid_init(ltgbuf_t *buf, int size)
 
         LTG_ASSERT(size >= 0 && size < (1024 * 1024 * 100));
 
-        buf->len = 0;
-        buf->used = 0;
-        INIT_LIST_HEAD(&buf->list);
+        __ltgbuf_init(buf);
+
         if (size == 0)
                 return 0;
 
@@ -1411,10 +1433,9 @@ retry:
         if (seg->len > drop) {
                 seg->len -= drop;
         } else {
-                list_del(&seg->hook);
-
                 seg_len = seg->len;
-                seg->sop->seg_free(seg);
+
+                __ltgbuf_popfree(buf, seg);
 
                 if (seg_len < drop) {
                         drop -= seg_len;

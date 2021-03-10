@@ -69,6 +69,7 @@ struct ltgbuf_t {
         uint32_t len;
         uint32_t used;
         struct list_head list;
+        struct list_head keep;
         seg_t array[SEG_KEEP];
 };
 
