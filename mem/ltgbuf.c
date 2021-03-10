@@ -11,8 +11,6 @@
 #include "ltg_utils.h"
 #include "core/core.h"
 
-#define BUFFER_POP_KEEP 1
-
 #if 0
 #define BUFFER_DEBUG
 #endif
@@ -67,7 +65,9 @@ inline static void INLINE __ltgbuf_init(ltgbuf_t *buf)
         buf->len = 0;
         buf->used = 0;
         INIT_LIST_HEAD(&buf->list);
+#if BUFFER_POP_KEEP
         INIT_LIST_HEAD(&buf->keep);
+#endif
 }
 
 int S_LTG ltgbuf_rdma_popmsg(ltgbuf_t *buf, void *dist, uint32_t len)

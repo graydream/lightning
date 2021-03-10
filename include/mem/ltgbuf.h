@@ -64,12 +64,15 @@ struct seg_t {
 } ;
 
 #define SEG_KEEP 5
+#define BUFFER_POP_KEEP 0
 
 struct ltgbuf_t {
         uint32_t len;
         uint32_t used;
         struct list_head list;
+#if BUFFER_POP_KEEP
         struct list_head keep;
+#endif
         seg_t array[SEG_KEEP];
 };
 
