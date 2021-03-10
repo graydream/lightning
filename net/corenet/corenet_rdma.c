@@ -1276,14 +1276,6 @@ retry:
         }
 #endif
 
-#if 0
-        if (core->main_core) {
-                long unsigned int node_id;
-                node_id = core->main_core->node_id;
-                mbind(tmp, size, MPOL_PREFERRED, &node_id, 3, 0);
-        }
-#endif
-
         memset(tmp, 0x0, size * DEFAULT_MH_NUM);
 
         handler->iov_addr = tmp;
