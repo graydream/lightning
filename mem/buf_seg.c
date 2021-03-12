@@ -58,16 +58,6 @@ static seg_t S_LTG *__seg_alloc_head(ltgbuf_t *buf, uint32_t size, int sys)
 
         seg->len = size;
         seg->shared = 0;
-#if 0
-        seg->huge.head = NULL;
-        seg->handler.ptr = NULL;
-        seg->sop->seg_share = NULL;
-        seg->sop->seg_free = NULL;
-        seg->sop->seg_trans = NULL;
-
-        DBUG("ptr %p %u %u %p\n", seg->handler.ptr, seg->len, size, seg->huge.head);
-        LTG_ASSERT(seg->len == size && seg->huge.head == NULL);
-#endif
 
         return seg;
 }
