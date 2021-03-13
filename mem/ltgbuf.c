@@ -620,7 +620,7 @@ int S_LTG ltgbuf_pop1(ltgbuf_t *buf, ltgbuf_t *newbuf, uint32_t len, int deep)
                         LTG_ASSERT(min == seg->len);
                         if (newbuf) {
                                 list_del(pos);
-#if 0
+#if 1
                                 if (likely(seg->local)) {
                                         seg_t *newseg = seg->sop->seg_trans(newbuf, seg);
                                         seg_add_tail(newbuf, newseg);
