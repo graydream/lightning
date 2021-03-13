@@ -75,7 +75,6 @@ int S_LTG ltgbuf_rdma_popmsg(ltgbuf_t *buf, void *dist, uint32_t len)
         memcpy(dist, seg->handler.ptr, len);
         //*dist = seg->handler.ptr;
         seg->handler.ptr += len;
-        seg->handler.phyaddr += len;
         seg->len -= len;
 
         if (seg->len == 0) {
@@ -300,7 +299,6 @@ int ltgbuf_popmsg(ltgbuf_t *buf, void *dist, uint32_t len)
 
                 if (cp < seg->len) {
                         seg->handler.ptr = seg->handler.ptr + cp;
-                        seg->handler.phyaddr += cp;
                         seg->len -= cp;
                 } else {
                         __ltgbuf_popfree(buf, seg);
@@ -614,7 +612,6 @@ int S_LTG ltgbuf_pop1(ltgbuf_t *buf, ltgbuf_t *newbuf, uint32_t len, int deep)
                         }
 
                         seg->handler.ptr = seg->handler.ptr + min;
-                        seg->handler.phyaddr += min;
                         seg->len -= min;
                 } else {
                         LTG_ASSERT(min == seg->len);
@@ -1302,11 +1299,11 @@ int ltgbuf_nvme_init2(nvmeio_t *io, uint32_t size, uint64_t offset, ltgbuf_t *bu
         ltgbuf_init(buf, io->size);
         seg = (seg_t *)buf->list.next;
         io->addr = seg->handler.ptr;
-        io->phyaddr = seg->handler.phyaddr;
 
         return 0;
 }
 
+#if 0
 int ltgbuf_itor(const ltgbuf_t *buf, uint32_t size, off_t offset,
                  buf_itor_func func, void *ctx)
 {
@@ -1328,7 +1325,7 @@ int ltgbuf_itor(const ltgbuf_t *buf, uint32_t size, off_t offset,
                 rest = seg->len - offset;
                 c = rest < size ? rest : size;
                 ret = func(ctx, seg->handler.ptr + offset,
-                           seg->handler.phyaddr + offset,
+                           0,
                            c);
                 if (unlikely(ret))
                         GOTO(err_ret, ret);
@@ -1341,6 +1338,7 @@ int ltgbuf_itor(const ltgbuf_t *buf, uint32_t size, off_t offset,
 err_ret:
         return ret;
 }
+#endif
 
 void ltgbuf_bezero(ltgbuf_t *buf)
 {

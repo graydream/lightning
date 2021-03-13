@@ -138,7 +138,6 @@ inline seg_t *seg_sys_create(ltgbuf_t *buf, uint32_t size)
         DBT("alloc %p", seg->sys.base);
 
         seg->handler.ptr = seg->sys.base;
-        seg->handler.phyaddr = 0;
         
         seg->sop = &__sop_sys__;
         
@@ -194,7 +193,6 @@ seg_t S_LTG *seg_ext_create(ltgbuf_t *buf, void *data, uint32_t size,
         seg->sop = &__sop_ext__;
         
         seg->handler.ptr = data;
-        seg->handler.phyaddr = 0;
 
         seg->ext.cb = cb;
         seg->ext.arg = arg;
@@ -216,7 +214,6 @@ static void S_LTG __seg_huge_free(seg_t *seg)
                 handler.pool = seg->huge.pool;
                 handler.head = seg->huge.head;
                 handler.ptr = seg->handler.ptr;
-                handler.phyaddr = seg->handler.phyaddr;
                 mem_ring_deref(&handler);
         }
 
@@ -320,7 +317,6 @@ inline void seg_check(seg_t *seg)
                 handler.pool = seg->huge.pool;
                 handler.head = seg->huge.head;
                 handler.ptr = seg->handler.ptr;
-                handler.phyaddr = seg->handler.phyaddr;
                 mem_ring_check(&handler);
         }
 }
@@ -390,7 +386,6 @@ inline seg_t *seg_solid_create(ltgbuf_t *buf, uint32_t size)
         DBT("alloc %p", seg->solid.base);
         
         seg->handler.ptr = seg->solid.base;
-        seg->handler.phyaddr = 0;
         
         seg->sop = &__sop_solid__;
 

@@ -52,7 +52,6 @@ struct seg_t {
 
         struct {
                 void *ptr;
-                uint64_t phyaddr;
         } handler;
         
         union {
