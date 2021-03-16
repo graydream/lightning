@@ -158,10 +158,16 @@ inline static void INLINE __corerpc_request_queue_task1(void *_ctx)
 static void S_LTG __corerpc_request_queue_task(void *_ctx)
 {
         corerpc_ring_t *ctx = _ctx;
-
         DBUG("corerpc request queue task\n");
-
+#if 0
         ctx->retval = ctx->handler(&ctx->in, &ctx->out, &ctx->outlen);
+#else
+        ltgbuf_t in;
+        ltgbuf_init(&in, 0);
+        ltgbuf_reference(&in, &ctx->in);
+        ctx->retval = ctx->handler(&in, &ctx->out, &ctx->outlen);
+        ltgbuf_free(&in);
+#endif
 }
 
 static void S_LTG __corerpc_request_queue_reply(void *_ctx)
