@@ -48,7 +48,7 @@ int rpc_table_getslot(rpc_table_t *rpc_table, msgid_t *msgid, const char *name);
 int rpc_table_setslot(rpc_table_t *rpc_table, const msgid_t *msgid, func3_t func, void *arg,
                       func2_t _close, const nid_t *nid, const sockid_t *sockid, int timeout);
 
-int rpc_table_post(rpc_table_t *rpc_table, const msgid_t *msgid, int retval, ltgbuf_t *buf, uint64_t latency);
+int rpc_table_post(rpc_table_t *rpc_table, const msgid_t *msgid, int retval, ltgbuf_t *buf, uint64_t status);
 int rpc_table_free(rpc_table_t *rpc_table, const msgid_t *msgid);
 void rpc_table_reset(rpc_table_t *rpc_table, const sockid_t *sockid, const nid_t *nid);
 int rpc_table_setfree(rpc_table_t *rpc_table, const msgid_t *msgid,

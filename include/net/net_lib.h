@@ -26,17 +26,15 @@ typedef enum {
 typedef struct  {
         uint32_t magic;
         uint32_t len;
+        uint32_t crcode;     /* crc code of following data */
         uint32_t blocks;
         uint32_t replen;
         uint32_t prog;
-        msgid_t msgid;
         uint32_t type;
-        uint32_t crcode;     /* crc code of following data */
-        uint32_t time;
-        uint32_t group;
         uint32_t coreid;
         uint32_t master_magic;
-        uint64_t latency;
+        uint64_t status;
+        msgid_t msgid;
         char buf[0];
 } ltg_net_head_t ;
 

@@ -25,8 +25,8 @@ void stdrpc_reply_init_prep(const msgid_t *msgid, ltgbuf_t *buf, int datalen)
         net_rep->msgid = *msgid;
         net_rep->crcode = 0;
         net_rep->blocks = datalen;
-        net_rep->latency = 0;
-        net_rep->time = gettime();
+        net_rep->status = 0;
+        //net_rep->time = gettime();
         net_rep->coreid = -1;
 
 #if 0
@@ -63,8 +63,8 @@ void stdrpc_reply_error_prep(const msgid_t *msgid, ltgbuf_t *buf, int _error)
         net_rep->msgid = *msgid;
         net_rep->crcode = 0;
         net_rep->blocks = 0;
-        net_rep->latency = core_latency_get();
-        net_rep->time = gettime();
+        net_rep->status = 0;
+        //net_rep->time = gettime();
         net_rep->coreid = -1;
 
         net_err = (void *)net_rep->buf;
@@ -96,8 +96,8 @@ void stdrpc_reply_error(const sockid_t *sockid, const msgid_t *msgid, int _error
         net_rep->msgid = *msgid;
         net_rep->crcode = 0;
         net_rep->blocks = 0;
-        net_rep->latency = core_latency_get();
-        net_rep->time = gettime();
+        net_rep->status = 0;
+        //net_rep->time = gettime();
         net_rep->coreid = -1;
 
         net_err = (void *)net_rep->buf;

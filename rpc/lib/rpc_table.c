@@ -386,20 +386,18 @@ err_ret:
 }
 
 int S_LTG rpc_table_post(rpc_table_t *rpc_table, const msgid_t *msgid, int retval,
-                           ltgbuf_t *buf, uint64_t latency)
+                           ltgbuf_t *buf, uint64_t status)
 {
         int ret;
         slot_t *slot;
 
-        (void) latency;
-        
         slot = __rpc_table_lock_slot(rpc_table, msgid);
         if (unlikely(slot == NULL)) {
                 ret = ESTALE;
                 GOTO(err_ret, ret);
         }
 
-        slot->post(slot->post_arg, &retval, buf, NULL);
+        slot->post(slot->post_arg, &retval, buf, &status);
 
         __rpc_table_free(rpc_table, slot);
 

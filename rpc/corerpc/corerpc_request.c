@@ -46,7 +46,7 @@ typedef struct {
 typedef struct {
         sem_t sem;
         task_t task;
-        uint64_t latency;
+        uint64_t status;
         corerpc_op_t op;
         int coreid;
         corerpc_ring_ctx_t *ctx;
@@ -63,10 +63,9 @@ static void S_LTG __corerpc_post_task(void *arg1, void *arg2, void *arg3, void *
         int retval = *(int *)arg2;
         ltgbuf_t *buf = arg3;
         corerpc_op_t *op = &ctx->op;
+        uint64_t *status = arg4;
         
-        (void) arg4;
-
-        ctx->latency = 0;
+        ctx->status = *status;
 
         if (buf && buf->len) {
                 LTG_ASSERT(op->rbuf);
@@ -642,7 +641,7 @@ inline int INLINE corerpc_postwait(const char *name, const coreid_t *coreid,
         if (unlikely(op.rbuf && ltgbuf_head(rbuf) != op.rbuf)) {
                 ltgbuf_copy3(rbuf, op.rbuf, rbuf->len);
         }
-        
+
         __corerpc_trans_free(wbuf, &whandler, op.wbuf);
         __corerpc_trans_free(rbuf, &rhandler, op.rbuf);
 
