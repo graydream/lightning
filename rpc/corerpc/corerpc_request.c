@@ -405,7 +405,12 @@ static void S_LTG __corerpc_post_queue(void *arg1, void *arg2, void *arg3,
 #endif
         
         ring->retval = retval;
-        ring->status = *status;
+        if (likely(status)) {
+                ring->status = *status;
+        } else {
+                ring->status = 0;
+        }
+
         if (buf && buf->len) {
                 LTG_ASSERT(op->rbuf);
                 LTG_ASSERT(op->rbuflen >= (int)buf->len);
@@ -679,6 +684,7 @@ inline int INLINE corerpc_postrecv(const char *name, const coreid_t *coreid,
         op.group = -1;
 
         op.rbuflen = rbuf ? rbuf->len : 0;
+        op.wbuflen = 0;
 
         LTG_ASSERT(replen == op.rbuflen);
         
