@@ -25,8 +25,7 @@ void stdrpc_reply_init_prep(const msgid_t *msgid, ltgbuf_t *buf, int datalen)
         net_rep->msgid = *msgid;
         net_rep->crcode = 0;
         net_rep->blocks = datalen;
-        net_rep->status = 0;
-        //net_rep->time = gettime();
+        net_rep->status = 0x866aa9f0;
         net_rep->coreid = -1;
 
 #if 0

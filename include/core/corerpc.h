@@ -42,10 +42,14 @@ typedef struct {
 
 void corerpc_register(int type, request_get_handler handler, void *context);
 
-int corerpc_postwait(const char *name,
-                     const coreid_t *coreid, const void *request,
-                     int reqlen, int replen, const ltgbuf_t *wbuf, ltgbuf_t *rbuf,
-                     int msg_type, int msg_size, int group, int timeout);
+int corerpc_postsend(const char *name, const coreid_t *coreid,
+                     const void *request, int reqlen, int replen,
+                     const ltgbuf_t *wbuf, int msg_type,
+                     uint64_t *status, int timeout);
+int corerpc_postrecv(const char *name, const coreid_t *coreid,
+                     const void *request, int reqlen, int replen,
+                     ltgbuf_t *rbuf, int msg_type,
+                     uint64_t *status, int timeout);
 
 int corerpc_postwait1(const char *name,
                       const coreid_t *coreid, const void *request,
