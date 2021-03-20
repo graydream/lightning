@@ -20,10 +20,10 @@ void stdrpc_reply_tcp(void *ctx, void *arg);
 /* stdrpc_reply.c */
 void stdrpc_reply_error(const sockid_t *sockid, const msgid_t *msgid, int _error);
 void stdrpc_reply_error_prep(const msgid_t *msgid, ltgbuf_t *buf, int _error);
-void stdrpc_reply(const sockid_t *sockid, const msgid_t *msgid,
-               const void *_buf, int len);
-void stdrpc_reply1(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf);
-void stdrpc_reply_init_prep(const msgid_t *msgid, ltgbuf_t *buf, int datalen);
+void stdrpc_reply(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf,
+                  uint64_t status);
+void stdrpc_reply_init_prep(const msgid_t *msgid, ltgbuf_t *buf,
+                            int datalen, uint64_t status);
 
 /* rpc_xnect.c */
 int rpc_getinfo(char *infobuf, uint32_t *infobuflen);

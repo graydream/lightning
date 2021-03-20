@@ -8,7 +8,8 @@
 #include "ltg_utils.h"
 #include "ltg_rpc.h"
 
-void stdrpc_reply_init_prep(const msgid_t *msgid, ltgbuf_t *buf, int datalen)
+void stdrpc_reply_init_prep(const msgid_t *msgid, ltgbuf_t *buf, int datalen,
+                            uint64_t status)
 {
         int ret;
         ltg_net_head_t *net_rep;
@@ -25,19 +26,9 @@ void stdrpc_reply_init_prep(const msgid_t *msgid, ltgbuf_t *buf, int datalen)
         net_rep->msgid = *msgid;
         net_rep->crcode = 0;
         net_rep->blocks = datalen;
-        net_rep->status = 0x866aa9f0;
+        net_rep->status = status;
         net_rep->coreid = -1;
 
-#if 0
-        if (data) {
-                if (unlikely(flag)) {
-                        net_rep->blocks = data->len;
-                        net_rep->len += data->len;
-                }
-                ltgbuf_merge(buf, data);
-        }
-#endif
-        
         DBUG("msgid %d.%d\n", net_rep->msgid.idx, net_rep->msgid.figerprint);
 }
 

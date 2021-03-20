@@ -27,6 +27,7 @@ typedef struct {
 #endif
         ltgbuf_t out;
         ltgbuf_t in;
+        uint64_t status;
         int outlen;
         int replen;
         int retval;
@@ -102,10 +103,11 @@ static void S_LTG __corerpc_request_task(void *arg)
 
         ltgbuf_t out;
         int outlen;
+        uint64_t status;
 
         ltgbuf_init(&out, replen);
 
-        ret = handler(&buf, &out, &outlen);
+        ret = handler(&buf, &out, &outlen, &status);
         if (unlikely(ret))
                 GOTO(err_free, ret);
 
@@ -114,7 +116,7 @@ static void S_LTG __corerpc_request_task(void *arg)
                 ltgbuf_droptail(&out, replen - outlen);
         }
         
-        corerpc_reply_buffer(&sockid, &msgid, &out);
+        corerpc_reply_buffer(&sockid, &msgid, &out, status);
 
         ltgbuf_free(&buf);
         ltgbuf_free(&out);
@@ -148,7 +150,7 @@ inline static void INLINE __corerpc_request_queue_task1(void *_ctx)
         ltgbuf_initwith2(&in, ctx->in_iov, ctx->in_cnt, NULL, NULL);
         ltgbuf_initwith2(&out, ctx->out_iov, ctx->out_cnt, NULL, NULL);
         
-        ctx->retval = ctx->handler(&in, &out, &ctx->outlen);
+        ctx->retval = ctx->handler(&in, &out, &ctx->outlen, &ctx->status);
 
         ltgbuf_free(&in);
         ltgbuf_free(&out);
@@ -165,7 +167,7 @@ static void S_LTG __corerpc_request_queue_task(void *_ctx)
         ltgbuf_t in;
         ltgbuf_init(&in, 0);
         ltgbuf_reference(&in, &ctx->in);
-        ctx->retval = ctx->handler(&in, &ctx->out, &ctx->outlen);
+        ctx->retval = ctx->handler(&in, &ctx->out, &ctx->outlen, &ctx->status);
         ltgbuf_free(&in);
 #endif
 }
@@ -186,7 +188,7 @@ static void S_LTG __corerpc_request_queue_reply(void *_ctx)
                 ltgbuf_droptail(&ctx->out, ctx->replen - ctx->outlen);
         }
 
-        corerpc_reply_buffer(&ctx->sockid, &ctx->msgid, &ctx->out);
+        corerpc_reply_buffer(&ctx->sockid, &ctx->msgid, &ctx->out, ctx->status);
 
         ltgbuf_free(&ctx->in);
         ltgbuf_free(&ctx->out);

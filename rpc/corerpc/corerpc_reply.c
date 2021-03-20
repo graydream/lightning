@@ -18,7 +18,7 @@ void S_LTG corerpc_reply_rdma(void *ctx, void *arg)
         (void) ctx;
 
         if (likely(reply->err == 0)) {
-                stdrpc_reply_init_prep(msgid, &reply_buf, 0);
+                stdrpc_reply_init_prep(msgid, &reply_buf, 0, reply->status);
 
                 if (reply->buf) {
                         ltgbuf_merge(&reply_buf, reply->buf);
@@ -53,7 +53,7 @@ void corerpc_reply_tcp(void *ctx, void *arg)
 
         if (likely(reply->err == 0)) {
                 stdrpc_reply_init_prep(msgid, &reply_buf,
-                                       reply->buf ? reply->buf->len : 0);
+                                       reply->buf ? reply->buf->len : 0, reply->status);
 
                 if (reply->buf ? reply->buf->len : 0) {
                         ltgbuf_merge(&reply_buf, reply->buf);
@@ -71,13 +71,14 @@ void corerpc_reply_tcp(void *ctx, void *arg)
         }
 }
 
-void S_LTG corerpc_reply_buffer(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *buf)
+void S_LTG corerpc_reply_buffer(const sockid_t *sockid, const msgid_t *msgid,
+                                ltgbuf_t *buf, uint64_t status)
 {
 
         sockop_reply_t reply;
 
         reply.err = 0;
-        reply.latency = 0;
+        reply.status = status;
         reply.msgid = msgid;
         reply.buf = buf;
         reply.sockid = sockid;

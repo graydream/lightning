@@ -4,7 +4,8 @@
 #include "ltg_utils.h"
 #include "ltg_net.h"
 
-typedef int (*request_handler_func)(ltgbuf_t *input, ltgbuf_t *output, int *outlen);
+typedef int (*request_handler_func)(ltgbuf_t *input, ltgbuf_t *output,
+                                    int *outlen, uint64_t *status);
 
 typedef void (*request_get_handler)(const ltgbuf_t *buf, request_handler_func *func,
                                     const char **name);

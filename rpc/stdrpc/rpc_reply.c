@@ -8,7 +8,8 @@
 #include "ltg_utils.h"
 #include "ltg_rpc.h"
 
-void stdrpc_reply1(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf)
+void stdrpc_reply(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf,
+                  uint64_t status)
 {
         int ret;
         ltgbuf_t buf;
@@ -17,7 +18,7 @@ void stdrpc_reply1(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf)
         DBUG("reply msgid (%d, %x) %s, len %u\n", msgid->idx, msgid->figerprint,
               _inet_ntoa(sockid->addr), _buf->len);
 
-        stdrpc_reply_init_prep(msgid, &buf, _buf ? _buf->len : 0);
+        stdrpc_reply_init_prep(msgid, &buf, _buf ? _buf->len : 0, status);
 
         if (_buf ? _buf->len : 0) {
                 ltgbuf_merge(&buf, _buf);
@@ -38,17 +39,6 @@ err_free:
         return;
 }
 
-void stdrpc_reply(const sockid_t *sockid, const msgid_t *msgid, const void *_buf, int len)
-{
-        ltgbuf_t buf;
-
-        ltgbuf_init(&buf, 0);
-        if (len)
-                ltgbuf_copy(&buf, _buf, len);
-
-        stdrpc_reply1(sockid, msgid, &buf);
-}
-
 void stdrpc_reply_tcp(void *ctx, void *arg)
 {
         sockop_reply_t *reply = arg;
@@ -57,7 +47,7 @@ void stdrpc_reply_tcp(void *ctx, void *arg)
         (void) ctx;
 
         if (likely(reply->err == 0)) {
-                stdrpc_reply1(reply->sockid, msgid, reply->buf);
+                stdrpc_reply(reply->sockid, msgid, reply->buf, reply->status);
         } else {
                 stdrpc_reply_error(reply->sockid, msgid, reply->err);
         }

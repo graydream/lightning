@@ -77,7 +77,7 @@ typedef struct {
         const sockid_t *sockid;
         const msgid_t *msgid;
         int err;
-        uint64_t latency;
+        uint64_t status;
         ltgbuf_t *buf;
 } sockop_reply_t;
 

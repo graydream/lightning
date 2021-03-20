@@ -61,7 +61,8 @@ int corerpc_postwait_sock(const char *name, const coreid_t *coreid,
                           int reqlen, int msg_type,
                           int group, int timeout);
 
-void corerpc_reply_buffer(const sockid_t *sockid, const msgid_t *msgid, ltgbuf_t *_buf);
+void corerpc_reply_buffer(const sockid_t *sockid, const msgid_t *msgid,
+                          ltgbuf_t *_buf, uint64_t status);
 void corerpc_reply_error(const sockid_t *sockid, const msgid_t *msgid, int _error);
 
 void corerpc_reply_rdma(void *ctx, void *arg);

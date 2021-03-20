@@ -59,7 +59,8 @@ static void __getmsg(ltgbuf_t *buf, msg_t **_req, int *buflen, char *_buf)
         *_req = req;
 }
 
-static int __net_srv_hello1(ltgbuf_t *_buf, ltgbuf_t *out, int *outlen)
+static int __net_srv_hello1(ltgbuf_t *_buf, ltgbuf_t *out, int *outlen,
+                            uint64_t *status)
 {
         int buflen;
         msg_t *req;
@@ -76,13 +77,14 @@ static int __net_srv_hello1(ltgbuf_t *_buf, ltgbuf_t *out, int *outlen)
                        NULL);
 
         *outlen = 0;
+        *status = 0;
 
         ANALYSIS_END(0, 1000 * 100, NULL);
         
         return 0;
 }
 
-static int __net_srv_hello2(ltgbuf_t *_buf, ltgbuf_t *out, int *outlen)
+static int __net_srv_hello2(ltgbuf_t *_buf, ltgbuf_t *out, int *outlen, uint64_t *status)
 {
         int buflen;
         msg_t *req;
@@ -99,6 +101,7 @@ static int __net_srv_hello2(ltgbuf_t *_buf, ltgbuf_t *out, int *outlen)
                        NULL);
 
         *outlen = 0;
+        *status = 0;
 
         ANALYSIS_END(0, 1000 * 100, NULL);
         

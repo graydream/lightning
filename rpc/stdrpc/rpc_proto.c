@@ -101,10 +101,11 @@ static void S_LTG __rpc_request_task(void *arg)
 
         ltgbuf_t out;
         int outlen;
+        uint64_t status;
 
         ltgbuf_init(&out, replen);
 
-        ret = handler(&buf, &out, &outlen);
+        ret = handler(&buf, &out, &outlen, &status);
         if (unlikely(ret))
                 GOTO(err_free, ret);
 
@@ -113,7 +114,7 @@ static void S_LTG __rpc_request_task(void *arg)
                 ltgbuf_droptail(&out, replen - outlen);
         }
         
-        stdrpc_reply1(&sockid, &msgid, &out);
+        stdrpc_reply(&sockid, &msgid, &out, status);
 
         ltgbuf_free(&buf);
         ltgbuf_free(&out);
