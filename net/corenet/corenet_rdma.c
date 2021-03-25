@@ -2021,7 +2021,7 @@ void corenet_rdma_connect_request(struct rdma_cm_event *ev, void *_core)
 
         return;
 err_ret:
-        slab_stream_free((void *)ctx);
+        slab_static_free((void *)ctx);
         ret = rdma_reject(cm_id, NULL, 0);
         if (unlikely(ret))
                 DERROR("cm_id:%p rdma_reject failed, %m\n", cm_id);
