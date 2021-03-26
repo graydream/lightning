@@ -230,9 +230,10 @@ void rdma_handle_event(int fd, int type,
                 rdma_request_op[type].rdma_established_requtest(ev, core);
                 break;
 
+        case RDMA_CM_EVENT_ADDR_CHANGE:
+                break;
         case RDMA_CM_EVENT_CONNECT_ERROR:
         case RDMA_CM_EVENT_REJECTED:
-        case RDMA_CM_EVENT_ADDR_CHANGE:
         case RDMA_CM_EVENT_DISCONNECTED:
                 DINFO("ev_type %d %s:%d disconnected request fd %d\n",
                       ev_type,
